@@ -87,13 +87,15 @@ DATA_SECTION
     int rseed;
     int no_estimation;
     int pin_write;
-    
+    int clean;
 
  LOCAL_CALCS
     adstring input_dir=".";     // directory containing input files. Defaults to the same directory as the .TPL file.
     int on = 0;
     rseed  = 0;
     no_estimation = 0;
+    clean = 0;                  // Flag to delete intermediate files from output directory after run is complete.
+
     if (ad_comm::argc > 1){
       int on = 0;
 
@@ -106,8 +108,11 @@ DATA_SECTION
       }
 
       if ( (on=option_match(ad_comm::argc,ad_comm::argv,"--input_dir")) > -1 ){
-        cout << argc << endl;
-        input_dir = argv[argc-1];
+        input_dir = argv[on+1];
+      }
+
+      if ( (on=option_match(ad_comm::argc,ad_comm::argv,"--clean")) > -1 ){
+        clean = 1;
       }
 
     }
@@ -1035,6 +1040,26 @@ PROCEDURE_SECTION
     if(mceval_phase()){
         project_biomass(); // Project current year biomass using last year's data
         write_chain_results();
+    }
+
+    if(clean != 0){
+        remove("admodel.cov");
+        remove("fmin.log");
+        remove("PWS_ASA.b01");
+        remove("PWS_ASA.b02");
+        remove("PWS_ASA.b03");
+        remove("PWS_ASA.b04");
+        remove("PWS_ASA.bar");
+        remove("PWS_ASA.eva");
+        remove("PWS_ASA.htp");
+        remove("PWS_ASA.p01");
+        remove("PWS_ASA.p02");
+        remove("PWS_ASA.p03");
+        remove("PWS_ASA.p04");
+        remove("PWS_ASA.r01");
+        remove("PWS_ASA.r02");
+        remove("PWS_ASA.r03");
+        remove("PWS_ASA.r04");
     }
 
 
@@ -2370,19 +2395,19 @@ FUNCTION write_chain_results
     if(stat("mcmc_out",&buf)!=0){
         system("mkdir mcmc_out");
     }
-    ofstream MCMCreport1("mcmc_out/VarsReport.csv",ios::app);
-    ofstream MCMCreport2("mcmc_out/Age3.csv",ios::app);
-    ofstream MCMCreport3("mcmc_out/HYD_ADFG.csv",ios::app);
-    ofstream MCMCreport4("mcmc_out/HYD_PWSSC.csv",ios::app);
-    ofstream MCMCreport5("mcmc_out/EGG.csv",ios::app);
-    ofstream MCMCreport6("mcmc_out/MDM.csv",ios::app);
-    ofstream MCMCreport7("mcmc_out/PostFRbiomass.csv",ios::app);
-    ofstream MCMCreport8("mcmc_out/SeAC.csv",ios::app); // writes Seine age comps from each iteration to a file
-    ofstream MCMCreport9("mcmc_out/SpAC.csv",ios::app); // writes spawner age comps from each iteration to a file
-    ofstream MCMCreport10("mcmc_out/juv_schools.csv",ios::app); 
-    ofstream MCMCreport11("mcmc_out/Num_at_age.csv",ios::app); 
-    ofstream MCMCreport12("mcmc_out/Sero_pred.csv",ios::app);
-    ofstream MCMCreport13("mcmc_out/Ich_pred.csv",ios::app); 
+    ofstream VarsReport("mcmc_out/VarsReport.csv",ios::app);
+    ofstream Age3Report("mcmc_out/Age3.csv",ios::app);
+    ofstream ADFGHydroReport("mcmc_out/HYD_ADFG.csv",ios::app);
+    ofstream PWSSCHydroReport("mcmc_out/HYD_PWSSC.csv",ios::app);
+    ofstream EggDepReport("mcmc_out/EGG.csv",ios::app);
+    ofstream MDMReport("mcmc_out/MDM.csv",ios::app);
+    ofstream PostFRBiomassReport("mcmc_out/PostFRbiomass.csv",ios::app);
+    ofstream SeineAgeCompReport("mcmc_out/SeAC.csv",ios::app); // writes Seine age comps from each iteration to a file
+    ofstream SpawnAgeCompReport("mcmc_out/SpAC.csv",ios::app); // writes spawner age comps from each iteration to a file
+    ofstream JuvenileSchoolsReport("mcmc_out/juv_schools.csv",ios::app); 
+    ofstream NumAtAgeReport("mcmc_out/Num_at_age.csv",ios::app); 
+    ofstream SeroPredReport("mcmc_out/Sero_pred.csv",ios::app);
+    ofstream IchPredReport("mcmc_out/Ich_pred.csv",ios::app); 
     ofstream LLikReport("mcmc_out/llikcomponents.csv",ios::app);
     ofstream PriorReport("mcmc_out/priordensities.csv",ios::app);
     ofstream PFRReport("mcmc_out/PFRBiomass.csv",ios::app);
@@ -2390,42 +2415,42 @@ FUNCTION write_chain_results
     ofstream recruit_effect_report("mcmc_out/recruitment_effects.csv",ios::app);
     ofstream summer_survival_report("mcmc_out/adult_survival_effects_summer.csv",ios::app);
     ofstream winter_survival_report("mcmc_out/adult_survival_effects_winter.csv",ios::app);
-    ofstream vhs_report1("mcmc_out/vhs_survival.csv",ios::app);
-    ofstream vhs_report2("mcmc_out/vhs_infection.csv",ios::app);
-    ofstream vhs_report3("mcmc_out/vhs_prev.csv",ios::app);
-    ofstream vhs_report4("mcmc_out/vhs_fatality.csv",ios::app);
-    ofstream vhs_report5("mcmc_out/vhs_infection_age3.csv",ios::app);
-    ofstream vhs_report6("mcmc_out/vhs_prev_age3.csv",ios::app);
-    ofstream vhs_report7("mcmc_out/vhs_fatality_age3.csv",ios::app);
-    ofstream ich_report1("mcmc_out/ich_survival.csv",ios::app);
-    ofstream ich_report2("mcmc_out/ich_infection.csv",ios::app);
-    ofstream ich_report3("mcmc_out/ich_prev.csv",ios::app);
-    ofstream ich_report4("mcmc_out/ich_fatality.csv",ios::app);
-    ofstream ich_report5("mcmc_out/ich_infection_age3.csv",ios::app);
-    ofstream ich_report6("mcmc_out/ich_prev_age3.csv",ios::app);
-    ofstream ich_report7("mcmc_out/ich_fatality_age3.csv",ios::app);
+    ofstream vhs_survival_report("mcmc_out/vhs_survival.csv",ios::app);
+    ofstream vhs_infection_report("mcmc_out/vhs_infection.csv",ios::app);
+    ofstream vhs_prev_report("mcmc_out/vhs_prev.csv",ios::app);
+    ofstream vhs_fatality_report("mcmc_out/vhs_fatality.csv",ios::app);
+    ofstream vhs_ag3_infection_report("mcmc_out/vhs_infection_age3.csv",ios::app);
+    ofstream vhs_ag3_prev_report("mcmc_out/vhs_prev_age3.csv",ios::app);
+    ofstream vhs_ag3_fatality_report("mcmc_out/vhs_fatality_age3.csv",ios::app);
+    ofstream ich_survival_report("mcmc_out/ich_survival.csv",ios::app);
+    ofstream ich_infection_report("mcmc_out/ich_infection.csv",ios::app);
+    ofstream ich_prev_report("mcmc_out/ich_prev.csv",ios::app);
+    ofstream ich_fatality_report("mcmc_out/ich_fatality.csv",ios::app);
+    ofstream ich_age3_infection_report("mcmc_out/ich_infection_age3.csv",ios::app);
+    ofstream ich_age3_prev_report("mcmc_out/ich_prev_age3.csv",ios::app);
+    ofstream ich_age3_fatality_report("mcmc_out/ich_fatality_age3.csv",ios::app);
 
-    MCMCreport1 << milt_add_var << "," << eggdep_add_var << "," << ADFG_hydro_add_var << ","  <<  PWSSC_hydro_add_var << endl;
+    VarsReport << milt_add_var << "," << eggdep_add_var << "," << ADFG_hydro_add_var << ","  <<  PWSSC_hydro_add_var << endl;
     
     // These files have values written by year across columns (and age in some cases)
     for (int i=1; i<nyr_tobefit; i++){
-        MCMCreport2 << N_y_a(i,4) << ",";
-        MCMCreport3 << ADFG_HYDRO_est(i) << ",";
-        MCMCreport4 << PWSSC_HYDRO_est(i) << ",";
-        MCMCreport5 << EGG_est(i) << ",";
-        MCMCreport6 << MDM_est(i) << ",";
-        MCMCreport7 << post_fish_spawn_biomass(i) << ",";
+        Age3Report << N_y_a(i,4) << ",";
+        ADFGHydroReport << ADFG_HYDRO_est(i) << ",";
+        PWSSCHydroReport << PWSSC_HYDRO_est(i) << ",";
+        EggDepReport << EGG_est(i) << ",";
+        MDMReport << MDM_est(i) << ",";
+        PostFRBiomassReport << post_fish_spawn_biomass(i) << ",";
 
         for (int j=1; j<=nage; j++){
-            MCMCreport8 << seine_age_comp(i,j) << ",";
-            MCMCreport9 << spawn_age_comp(i,j) << ",";
-            MCMCreport11 << N_y_a(i,j) << ",";
+            SeineAgeCompReport << seine_age_comp(i,j) << ",";
+            SpawnAgeCompReport << spawn_age_comp(i,j) << ",";
+            NumAtAgeReport << N_y_a(i,j) << ",";
         }
-        MCMCreport10 << juvenile_pred(i) << ",";
+        JuvenileSchoolsReport << juvenile_pred(i) << ",";
 
         for (int k=1; k<=n_age2; k++){
-            MCMCreport12 << vhsv_pred(i,k) << ",";
-            MCMCreport13 << ich_pred(i,k) << ",";
+            SeroPredReport << vhsv_pred(i,k) << ",";
+            IchPredReport << ich_pred(i,k) << ",";
         }
 
         recruit_effect_report << exp(age0_effect(i))*Mean_Age0(i) << ",";
@@ -2436,31 +2461,31 @@ FUNCTION write_chain_results
     }
 
     // File in final year separately with 'endl' so next MCMC sample is written on the next line
-    MCMCreport2 << N_y_a(nyr_tobefit,4) << endl; // this is the projected recruitment for the latest year
-    MCMCreport3 << ADFG_HYDRO_est(nyr_tobefit) << endl;
-    MCMCreport4 << PWSSC_HYDRO_est(nyr_tobefit) << endl;
-    MCMCreport5 << EGG_est(nyr_tobefit) << endl;
-    MCMCreport6 << MDM_est(nyr_tobefit) << endl;
-    MCMCreport7 << post_fish_spawn_biomass(nyr_tobefit) << endl;
+    Age3Report << N_y_a(nyr_tobefit,4) << endl; // this is the projected recruitment for the latest year
+    ADFGHydroReport << ADFG_HYDRO_est(nyr_tobefit) << endl;
+    PWSSCHydroReport << PWSSC_HYDRO_est(nyr_tobefit) << endl;
+    EggDepReport << EGG_est(nyr_tobefit) << endl;
+    MDMReport << MDM_est(nyr_tobefit) << endl;
+    PostFRBiomassReport << post_fish_spawn_biomass(nyr_tobefit) << endl;
 
     for (int j=1; j<nage; j++){
-        MCMCreport8 << seine_age_comp(nyr_tobefit,j) << ",";
-        MCMCreport9 << spawn_age_comp(nyr_tobefit,j) << ",";
-        MCMCreport11 << N_y_a(nyr_tobefit,j) << ","; 
+        SeineAgeCompReport << seine_age_comp(nyr_tobefit,j) << ",";
+        SpawnAgeCompReport << spawn_age_comp(nyr_tobefit,j) << ",";
+        NumAtAgeReport << N_y_a(nyr_tobefit,j) << ","; 
     }
 
-    MCMCreport8 << seine_age_comp(nyr_tobefit,nage) << endl;
-    MCMCreport9 << spawn_age_comp(nyr_tobefit,nage) << endl;
-    MCMCreport10 << juvenile_pred(nyr_tobefit) << endl;
-    MCMCreport11 << N_y_a(nyr_tobefit,nage) << endl;
+    SeineAgeCompReport << seine_age_comp(nyr_tobefit,nage) << endl;
+    SpawnAgeCompReport << spawn_age_comp(nyr_tobefit,nage) << endl;
+    JuvenileSchoolsReport << juvenile_pred(nyr_tobefit) << endl;
+    NumAtAgeReport << N_y_a(nyr_tobefit,nage) << endl;
 
     for (int k=1; k<n_age2; k++){
-        MCMCreport12 << vhsv_pred(nyr_tobefit,k) << ",";
-        MCMCreport13 << ich_pred(nyr_tobefit,k) << ",";
+        SeroPredReport << vhsv_pred(nyr_tobefit,k) << ",";
+        IchPredReport << ich_pred(nyr_tobefit,k) << ",";
     }
     
-    MCMCreport12 << vhsv_pred(nyr_tobefit,n_age2) << endl;
-    MCMCreport13 << ich_pred(nyr_tobefit,n_age2) << endl;
+    SeroPredReport << vhsv_pred(nyr_tobefit,n_age2) << endl;
+    IchPredReport << ich_pred(nyr_tobefit,n_age2) << endl;
 
     recruit_effect_report << exp(age0_effect(nyr_tobefit))*Mean_Age0(nyr_tobefit) << endl;
     for (int j=1; j<=nage-1; j++){
@@ -2513,48 +2538,48 @@ FUNCTION write_chain_results
     // Disease outputs: Disease survival probs, infection indicences, fatality rates
     for (int i=1; i<=nyr_tobefit-1; i++){
         for (int j=1; j<=nage; j++){
-            vhs_report1 << vhsv_survival(i,j) << ",";
+            vhs_survival_report << vhsv_survival(i,j) << ",";
         }
 
-        vhs_report2 << inf_inc_sp(i) << ",";
-        vhs_report3 << vhsprev_sp(i) << ",";
-        vhs_report4 << fatal_sp(i) << ",";
-        vhs_report5 << inf_inc_age3(i) << ",";
-        vhs_report6 << vhsprev_age3(i) << ",";
-        vhs_report7 << fatal_age3(i) << ",";
+        vhs_infection_report << inf_inc_sp(i) << ",";
+        vhs_prev_report << vhsprev_sp(i) << ",";
+        vhs_fatality_report << fatal_sp(i) << ",";
+        vhs_ag3_infection_report << inf_inc_age3(i) << ",";
+        vhs_ag3_prev_report << vhsprev_age3(i) << ",";
+        vhs_ag3_fatality_report << fatal_age3(i) << ",";
 
         for (int j=1; j<=nage; j++){
-            ich_report1 << ich_survival(i,j) << ",";
+            ich_survival_report << ich_survival(i,j) << ",";
         }
-        ich_report2 << inf_inc_sp_ich(i) << ",";
-        ich_report3 << ichprev_sp(i) << ",";
-        ich_report4 << fatal_sp_ich(i) << ",";
-        ich_report5 << inf_inc_age3_ich(i) << ",";
-        ich_report6 << ichprev_age3(i) << ",";
-        ich_report7 << fatal_age3_ich(i) << ",";
+        ich_infection_report << inf_inc_sp_ich(i) << ",";
+        ich_prev_report << ichprev_sp(i) << ",";
+        ich_fatality_report << fatal_sp_ich(i) << ",";
+        ich_age3_infection_report << inf_inc_age3_ich(i) << ",";
+        ich_age3_prev_report << ichprev_age3(i) << ",";
+        ich_age3_fatality_report << fatal_age3_ich(i) << ",";
     }
 
     for (int j=1; j<=nage-1; j++){
-        vhs_report1 << vhsv_survival(nyr_tobefit,j) << ","; 
+        vhs_survival_report << vhsv_survival(nyr_tobefit,j) << ","; 
     }
-    vhs_report1 << vhsv_survival(nyr_tobefit,nage) << endl;
-    vhs_report2 << inf_inc_sp(nyr_tobefit) << endl;
-    vhs_report3 << vhsprev_sp(nyr_tobefit) << endl;
-    vhs_report4 << fatal_sp(nyr_tobefit) << endl;
-    vhs_report5 << inf_inc_age3(nyr_tobefit) << endl;
-    vhs_report6 << vhsprev_age3(nyr_tobefit) << endl;
-    vhs_report7 << fatal_age3(nyr_tobefit) << endl;
+    vhs_survival_report << vhsv_survival(nyr_tobefit,nage) << endl;
+    vhs_infection_report << inf_inc_sp(nyr_tobefit) << endl;
+    vhs_prev_report << vhsprev_sp(nyr_tobefit) << endl;
+    vhs_fatality_report << fatal_sp(nyr_tobefit) << endl;
+    vhs_ag3_infection_report << inf_inc_age3(nyr_tobefit) << endl;
+    vhs_ag3_prev_report << vhsprev_age3(nyr_tobefit) << endl;
+    vhs_ag3_fatality_report << fatal_age3(nyr_tobefit) << endl;
     
     for (int j=1; j<=nage-1; j++){
-        ich_report1 << ich_survival(nyr_tobefit,j) << ","; 
+        ich_survival_report << ich_survival(nyr_tobefit,j) << ","; 
     }
-    ich_report1 << ich_survival(nyr_tobefit,nage) << endl;
-    ich_report2 << inf_inc_sp_ich(nyr_tobefit) << endl;
-    ich_report3 << ichprev_sp(nyr_tobefit) << endl;
-    ich_report4 << fatal_sp_ich(nyr_tobefit) << endl;
-    ich_report5 << inf_inc_age3_ich(nyr_tobefit) << endl;
-    ich_report6 << ichprev_age3(nyr_tobefit) << endl;
-    ich_report7 << fatal_age3_ich(nyr_tobefit) << endl;
+    ich_survival_report << ich_survival(nyr_tobefit,nage) << endl;
+    ich_infection_report << inf_inc_sp_ich(nyr_tobefit) << endl;
+    ich_prev_report << ichprev_sp(nyr_tobefit) << endl;
+    ich_fatality_report << fatal_sp_ich(nyr_tobefit) << endl;
+    ich_age3_infection_report << inf_inc_age3_ich(nyr_tobefit) << endl;
+    ich_age3_prev_report << ichprev_age3(nyr_tobefit) << endl;
+    ich_age3_fatality_report << fatal_age3_ich(nyr_tobefit) << endl;
 
 
     // Output PFRunBiomass for each saved iteration to .csv
