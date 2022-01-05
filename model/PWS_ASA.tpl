@@ -87,8 +87,10 @@ DATA_SECTION
     int rseed;
     int no_estimation;
     int pin_write;
+    
 
  LOCAL_CALCS
+    adstring input_dir=".";     // directory containing input files. Defaults to the same directory as the .TPL file.
     int on = 0;
     rseed  = 0;
     no_estimation = 0;
@@ -103,10 +105,20 @@ DATA_SECTION
         pin_write = 1;
       }
 
+      if ( (on=option_match(ad_comm::argc,ad_comm::argv,"--input_dir")) > -1 ){
+        cout << argc << endl;
+        input_dir = argv[argc-1];
+      }
+
     }
+
+    //cout << ad_comm::argv[2] << endl;
 
  END_CALCS
 
+    !! adstring dat_file = input_dir + "/PWS_ASA.dat";
+    !! ad_comm::change_datafile_name(dat_file); 
+    
     // |---------------------------------------------------------------------------|
     // | Read in data inputs
     // |---------------------------------------------------------------------------|
@@ -179,7 +191,8 @@ DATA_SECTION
     // |---------------------------------------------------------------------------|
     // | Read in VHSV seroprevalence & I. hoferi infection prevalence
     // |---------------------------------------------------------------------------|
-    !! ad_comm::change_datafile_name("PWS_ASA_disease.dat"); 
+    !! adstring disease_dat_file = input_dir + "/PWS_ASA_disease.dat";
+    !! ad_comm::change_datafile_name(disease_dat_file); 
 
     // Seroprevalence: nyr x 2*nage matrix with each column representing # of positive then negative samples in each age (e.g. # positive age 0, # negative age 0, etc.)
     int n_age2
@@ -198,10 +211,14 @@ DATA_SECTION
     // |---------------------------------------------------------------------------|
     // | Read in effective sample sizes for age-composition (calculated reiteratively before running MCMC)
     // |---------------------------------------------------------------------------|
-    !! ad_comm::change_datafile_name("PWS_ASA(ESS).ctl");
+    !! adstring ess_file = input_dir + "/PWS_ASA(ESS).ctl";
+    !! ad_comm::change_datafile_name(ess_file);
     init_int ESS_est
     
-    !! if (ESS_est == 1) {ad_comm::change_datafile_name("PWS_ASA(ESS_estimate).ctl");}
+    !! if (ESS_est == 1) {
+    !!    adstring ess_file = input_dir + "/PWS_ASA(ESS_estimate).ctl";
+    !!    ad_comm::change_datafile_name(ess_file);
+    !! }
 
     // Seine Effective Sample Size - these are filled in by R at the end of the PWS_ASA(Data).ctl
     init_vector seine_ess(1,nyr_tobefit)
@@ -215,7 +232,8 @@ DATA_SECTION
     // |---------------------------------------------------------------------------|
     // | Read in the recruitment and natural mortality deviate information
     // |---------------------------------------------------------------------------|
-    !! ad_comm::change_datafile_name("PWS_ASA(covariate).ctl");  
+    !! adstring covariate_file = input_dir + "/PWS_ASA(covariate).ctl";
+    !! ad_comm::change_datafile_name(covariate_file);  
 
     init_int standardize_covariates
   	init_int n_age0_covs
@@ -236,7 +254,8 @@ DATA_SECTION
     // |---------------------------------------------------------------------------|
     // | Read in parameter ctl (inits,bounds,phases,priors)
     // |---------------------------------------------------------------------------|
-    !! ad_comm::change_datafile_name("PWS_ASA(par).ctl");
+    !! adstring par_file = input_dir + "/PWS_ASA(par).ctl";
+    !! ad_comm::change_datafile_name(par_file);
 
     // Single value parameters
     init_int npar
