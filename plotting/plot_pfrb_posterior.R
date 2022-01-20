@@ -38,7 +38,7 @@ pfrb_posterior <- function(PFRB, years, nyr, myMGP, xlim, ylabel, xlabel, labels
       ylabel <- NA
     }
     
-    font.size <- 1.8
+    font.size <- 1
 
     plot(
         h,
@@ -50,8 +50,8 @@ pfrb_posterior <- function(PFRB, years, nyr, myMGP, xlim, ylabel, xlabel, labels
         cex.lab=font.size, freq=F, border="grey70", xpd=NA
     )
     
-    axis(1, at=seq(0, xlim, by=10), mgp=myMGP, cex.axis=font.size-0.6, pos=0, col="grey60", labels=labels.x) 
-    axis(2, at=c(0, ylim), las=2, mgp=myMGP, cex.axis=font.size-0.6, pos=0, col="grey60", labels=labels.y)
+    axis(1, at=seq(0, xlim, by=10), mgp=myMGP, cex.axis=font.size-0.2, pos=0, col="grey60", labels=labels.x) 
+    axis(2, at=c(0, ylim), las=2, mgp=myMGP, cex.axis=font.size-0.2, pos=0, col="grey60", labels=labels.y)
     segments(x0=PFRB.quantiles[nyr, ], x1=PFRB.quantiles[nyr, ],
             y0=c(0, 0, 0), y1=c(ylim*0.5, ylim, ylim*0.5), 
             lty=c(2, 1, 2), lwd=c(2, 3.5, 2))
@@ -76,7 +76,7 @@ pfrb_posterior <- function(PFRB, years, nyr, myMGP, xlim, ylabel, xlabel, labels
     text(0.85*xlim, ylim*0.94, 
         paste0("Median: ", PFRB.quantiles[nyr, 2], "\n\n",
                "95% interval:\n(", PFRB.quantiles[nyr, 1], ", ", PFRB.quantiles[nyr, 3], ")", "\n\n",
-               "Probability below\nthreshold: ", format(prob_below_threshold, digits=3)), cex=font.size-0.5, pos=1)
+               "Probability below\nthreshold: ", format(prob_below_threshold, digits=3)), cex=font.size-0.2, pos=1)
     #text(0.98*x.limit,y.limit*0.69,paste0("Probability below\nthreshold: ",format(prob_below_threshold,digits=3)), cex=font.size-0.4,pos=2)
     #text(0.98*x.limit,y.limit*0.63,paste0("threshold: ",format(prob_below_threshold,digits=3)), cex=font.size-0.4,pos=2)
     #dev.off()

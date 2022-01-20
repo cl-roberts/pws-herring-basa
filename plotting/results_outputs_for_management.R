@@ -8,7 +8,7 @@
 ###################################
 
 model.path <- here::here("model/")
-functions.path <- here::here("functions/")
+rfunctions.path <- here::here("functions/")
 source(file=here::here("functions/data_reader.R"))
 source(file=here::here("functions/data_header_reader.R"))
 
@@ -120,8 +120,8 @@ source(file=here::here("plotting/plot_exploitation_rate.R"))
 setwd(model.path)
 data <- read.in.files(model.path, n.burn, nYr)
 
-pdf(here::here("figures/outputs-for-management.pdf"), height=8, width=12)
-par(mfcol=c(2, 2), mar=c(4, 5, 2, 2), oma=c(1, 1, 0, 3))
+#pdf(here::here("figures/outputs-for-management.pdf"), height=8, width=12)
+#par(mfcol=c(2, 2), mar=c(4, 5, 2, 2), oma=c(1, 1, 0, 3))
 
 ylabel <- TRUE
 labels.y <- TRUE
@@ -135,21 +135,31 @@ projected.recruit <- apply(data$Age3, 1, FUN=function(x) sum(x[(length(x)-9):len
 ylim <- 2000
 myMGP=c(3, 0.8, 0) 
 
-rec_posterior(years=years, nYr-1, data$Age3, myMGP=myMGP, modelPath=functions.path, 
-              ylim=ylim, ylabel, xlabel, labels.x, labels.y)
-
-exploit_rate(data$f.median[1:nYr-1], data$exploit.rate.ci[, 1:nYr-1], years=c(years, tail(years,1)), nYr-1, 
-             myMGP=myMGP, ylabel, xlabel, labels.x, labels.y)
+pdf(here::here("figures/recruitment_and_ssb.pdf"), height=4, width=12)
+par(mfcol=c(1, 2), mar=c(4, 5, 2, 2), oma=c(1, 1, 0, 3))
+rec.posterior.figure <- rec_posterior(years=years, nYr-1, data$Age3, myMGP=myMGP, modelPath=rfunctions.path, 
+                                      ylim=ylim, ylabel, xlabel, labels.x, labels.y)
 
 ylim <- 180
-PBT <- ssb_trajectory(data$PFRB, years=c(years, tail(years,1)), nYr-1, myMGP=myMGP, modelPath=functions.path, 
-                      ylim=ylim, ylabel, xlabel, labels.x, labels.y, ylabel.2, labels.y2)
+ssb.traj.figure <- ssb_trajectory(data$PFRB, years=c(years, tail(years,1)), nYr-1, myMGP=myMGP, modelPath=rfunctions.path, 
+                                  ylim=ylim, ylabel, xlabel, labels.x, labels.y, ylabel.2, labels.y2)
+dev.off()
+
+pdf(here::here("figures/exploitation_rate.pdf"), height=4, width=6)
+par(mfcol=c(1, 1), mar=c(4, 5, 2, 2), oma=c(1, 1, 0, 3))
+exploit.rate.figure <- exploit_rate(data$f.median[1:nYr-1], data$exploit.rate.ci[, 1:nYr-1], years=c(years, tail(years,1)), nYr-1, 
+                                    myMGP=myMGP, ylabel, xlabel, labels.x, labels.y)
+dev.off()
+
 
 xlabel <- TRUE
 xlim <- 30
 ylim <- 0.2
 labels.y <- TRUE
-pfrb_posterior(data$PFRB, years, nYr-1, myMGP=myMGP, xlim=xlim, ylim=ylim, ylabel, xlabel, labels.x, labels.y)
+
+pdf(here::here("figures/post_fishery_biomass_posterior.pdf"), height=4, width=6)
+par(mfcol=c(1, 1), mar=c(4, 5, 2, 2), oma=c(1, 1, 0, 3))
+pfrb.posterior.figure <- pfrb_posterior(data$PFRB, years, nYr-1, myMGP=myMGP, xlim=xlim, ylim=ylim, ylabel, xlabel, labels.x, labels.y)
 dev.off()
 
 ###############################################################
@@ -168,7 +178,7 @@ ssb.est <- as.matrix(t(apply(data$PFRB[, 1:(nYr-1)], 2, quantile,
                              probs=c(0.5, 0.025, 0.975), name=F, na.rm=T)))
 exploit.rate.est <- as.matrix(t(apply(data$exploit.rate.mat[1:(nYr-1), ], 1, quantile,
                             probs=c(0.5, 0.025, 0.975), name=F, na.rm=T)))
-final.table <- round.df(data.frame(years, recruitment.est, ssb.est/1000, exploit.rate.est, round.df(PBT, 2)), 2)
+final.table <- round.df(data.frame(years, recruitment.est, ssb.est/1000, exploit.rate.est, round.df(ssb.traj.figure, 2)), 2)
 names(final.table) <- c("Years",
                         "Median Age 3 (in millions)",
                         "Lower 95th Age 3 (in millions)",

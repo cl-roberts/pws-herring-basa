@@ -8,7 +8,7 @@
 rec_posterior <- function(years, nYr, Age3, myMGP, modelPath, ylim, ylabel, xlabel, labels.x, labels.y) {
     source(file=paste0(modelPath, "function_add.polygon2.R"))
 
-    font.size <- 1.8
+    font.size <- 1.5
     
     if(xlabel){
         xlabel <- "Year"

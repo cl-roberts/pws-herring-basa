@@ -8,7 +8,7 @@
 
 ## Plot biomass
 ssb_trajectory <- function(PFRB,years,nYr,myMGP,modelPath,ylabel,xlabel,labels.x,labels.y,ylabel.2,labels.y2,ylim) {
-    font.size <- 1.8
+    font.size <- 1.5
     #par(mar=c(3,3.5,1,3.5))
     finalPFRB<-PFRB[,nYr] # year 2015
     allIts<-length(finalPFRB) # number of thinned iterations after burn-in
