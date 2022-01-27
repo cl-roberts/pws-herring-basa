@@ -3,7 +3,7 @@
 //       Bayesian age-structured model for Prince William Sound herring       //
 //                                                                            //
 //                               VERSION 1.0                                  //
-//                                Jan  2022                                   //
+//                                Jan  2020                                   //
 //                                                                            //
 //                                 AUTHORS                                    //
 //                               John Trochta                                 //                                 
@@ -13,7 +13,7 @@
 //                              tbranch@uw.edu                                //
 //                                                                            //
 //                               Joshua Zahner                                //
-//                              jzahner@uw.edu                                //
+//                              jzahner @uw.edu                               //
 //                                                                            //
 //                Built on code developed by Melissa Muradian                 //
 //           Adapted from Excel-based model by Steven Moffitt (ADF&G)         //
@@ -40,37 +40,37 @@
 
 
 GLOBALS_SECTION
-  #include <admodel.h>
-  #include <string.h>
-  #include <time.h>
-  #include <statsLib.h>
+    #include <admodel.h>
+    #include <string.h>
+    #include <time.h>
+    #include <statsLib.h>
 
-  // Following adapted from thread on ADMB users Google Group
-  // https://groups.google.com/forum/#!topic/admb-users/WcrSmZc_igw
-  dvector rmultinom(const int& seed, const int& size,const dvector& prob){  
-    //Returns a multinomial sample, of size n, based on sampling probabilities p.
-    //p is normalized internally, based on the same method employed in R
-    random_number_generator rng(seed);
-    int i,n,lb,ub;
-    float p;
-    lb=prob.indexmin(); ub=prob.indexmax();
-    dvector freq(lb,ub); freq.initialize();
-    dvector P=prob;
-    P/=sum(P);
-    dvector bisamp(1,size); bisamp.fill_randbi(P[lb],rng);
-    freq[lb]=sum(bisamp);
-    for(i=lb+1;i<=ub;i++){
-        n=size-sum(freq);
-        p=P[i]/(1.-sum(P(lb,i-1)));
-        //Corrected version
-
-        //cout<<ub-i<<endl;
-        dvector bisamp(1,n); bisamp.fill_randbi(p,rng);
-        freq[i]=sum(bisamp);
-        if(sum(freq)==size) break;
+    // Following adapted from thread on ADMB users Google Group
+    // https://groups.google.com/forum/#!topic/admb-users/WcrSmZc_igw
+    dvector rmultinom(const int& seed, const int& size, const dvector& prob)
+    {  
+        //Returns a multinomial sample, of size n, based on sampling probabilities p.
+        //p is normalized internally, based on the same method employed in R
+        random_number_generator rng(seed);
+        int i,n,lb,ub;
+        float p;
+        lb=prob.indexmin(); ub=prob.indexmax();
+        dvector freq(lb,ub); freq.initialize();
+        dvector P=prob;
+        P/=sum(P);
+        dvector bisamp(1,size); bisamp.fill_randbi(P[lb],rng);
+        freq[lb]=sum(bisamp);
+        for(i=lb+1;i<=ub;i++){
+            n=size-sum(freq);
+            p=P[i]/(1.-sum(P(lb,i-1)));
+            //Corrected version
+            //cout<<ub-i<<endl;
+            dvector bisamp(1,n); bisamp.fill_randbi(p,rng);
+            freq[i]=sum(bisamp);
+            if(sum(freq)==size) break;
+        }
+        return (freq);
     }
-    return (freq);
-  }
 
 
 DATA_SECTION
@@ -97,36 +97,33 @@ DATA_SECTION
     clean = 0;                  // Flag to delete intermediate files from output directory after run is complete.
 
     if (ad_comm::argc > 1){
-      int on = 0;
+        int on = 0;
 
-      if ( (on=option_match(ad_comm::argc,ad_comm::argv,"-noest")) > -1 ){
-        no_estimation = 1;
-      }
+        if((on=option_match(ad_comm::argc,ad_comm::argv,"-noest")) > -1){
+            no_estimation = 1;
+        }
 
-      if ( (on=option_match(ad_comm::argc,ad_comm::argv,"-pinwrite")) > -1 ){
-        pin_write = 1;
-      }
+        if((on=option_match(ad_comm::argc,ad_comm::argv,"-pinwrite")) > -1){
+            pin_write = 1;
+        }
 
-      if ( (on=option_match(ad_comm::argc,ad_comm::argv,"--input_dir")) > -1 ){
-        input_dir = argv[on+1];
-      }
+        if ( (on=option_match(ad_comm::argc,ad_comm::argv,"--input_dir")) > -1 ){
+            input_dir = argv[on+1];
+        }
 
-      if ( (on=option_match(ad_comm::argc,ad_comm::argv,"--clean")) > -1 ){
-        clean = 1;
-      }
-
+        if ( (on=option_match(ad_comm::argc,ad_comm::argv,"--clean")) > -1 ){
+            clean = 1;
+        }
     }
-
-    //cout << ad_comm::argv[2] << endl;
 
  END_CALCS
 
-    !! adstring dat_file = input_dir + "/PWS_ASA.dat";
-    !! ad_comm::change_datafile_name(dat_file); 
-    
     // |---------------------------------------------------------------------------|
     // | Read in data inputs
     // |---------------------------------------------------------------------------|
+    !! adstring dat_file = input_dir + "/PWS_ASA.dat";
+    !! ad_comm::change_datafile_name(dat_file); 
+
     //Number of years - nyr
     init_int nrow
     int nyr
@@ -134,7 +131,7 @@ DATA_SECTION
 
     // Number of years to be fit in the model
     init_int nyr_tobefit
- 
+    
     //Number of age classes - 7
     init_int ncol
     int nage
@@ -142,45 +139,45 @@ DATA_SECTION
 
     //Weight-at-age
     init_matrix weight_at_age(1,nyr,1,nage)
-  
+    
     //Fecundity-at-age
     init_matrix fecundity(1,nyr,1,nage)
-  
+    
     //Pound Catch
     init_matrix pound_catch(1,nyr,1,nage)
-  
+    
     //Proportion of pound fish killed
     init_number pk
-  
+    
     //Food/Bait Catch
     init_matrix food_bait_catch(1,nyr,1,nage)
-  
+    
     //Gillnet catch
     init_matrix gillnet_catch(1,nyr,1,nage)
-  
+    
     //Total seine yield
     init_vector seine_yield(1,nyr)
-  
+    
     //% Female Spawners
     init_vector female_spawners(1,nyr)
-  
+    
     //MDM
     init_vector mile_days_milt(1,nyr)
-    
+        
     //Egg Deposition
     init_vector egg_dep(1,nyr)
-    
+        
     //Standard errors derived from confidence intervals given for Egg Deposition ln(s.e.)
     init_vector cv_egg(1,nyr)       
-    
+        
     //ADFG Hydroacoustic Survey data - is a combination of ADFG and PWSSC estimates until 1994, from '95 onward are only ADFG survey data
     init_number hydADFG_start //read in year from the data file as first year of the survey: 1995
     init_vector ADFG_hydro(1,nyr)
-    
+        
     //PWSSC Hydroacoustic Survey data 
     init_number hydPWSSC_start //read in year  from the data file as first year of the survey: 1993
     init_vector PWSSC_hydro(1,nyr)
-    
+        
     //Standard errors derived from confidence intervals given for PWSSC hydroacoustic biomass ln(s.e.)
     init_vector PWSSC_hydro_cv(1,nyr)
 
@@ -188,29 +185,29 @@ DATA_SECTION
     init_matrix purse_seine_age_comp(1,nyr,1,nage)
 
     //Spawning age composition
-    init_matrix spawning_age_comp(1,nyr,1,nage)
+    init_matrix spawner_age_comp(1,nyr,1,nage)
 
     // Aerial juvenile survey (incorporated 12/2019)
-    init_vector juvenile_survey(1,nyr)
+    init_vector juvenile_survey_index(1,nyr)
 
     // |---------------------------------------------------------------------------|
     // | Read in VHSV seroprevalence & I. hoferi infection prevalence
     // |---------------------------------------------------------------------------|
     !! adstring disease_dat_file = input_dir + "/PWS_ASA_disease.dat";
-    !! ad_comm::change_datafile_name(disease_dat_file); 
+    !! ad_comm::change_datafile_name(disease_dat_file);  
 
     // Seroprevalence: nyr x 2*nage matrix with each column representing # of positive then negative samples in each age (e.g. # positive age 0, # negative age 0, etc.)
     int n_age2
     !! n_age2=2*nage;
     init_matrix vhs_obs(1,nyr,1,n_age2)  
-    init_number vhs_start    //start year of observations for fitting
-    init_number vhs_start_est    //start year for estimating infection (can be earlier than vhs_start)
-    init_int vhs_rec_cotv	// Recovery Constant Or Time-Varing (cotv)
+    init_number vhs_start           //start year of observations for fitting
+    init_number vhs_start_est       //start year for estimating infection (can be earlier than vhs_start)
+    init_int vhs_rec_cotv	        // Recovery Constant Or Time-Varing (cotv)
 
     // Ichthy. infection: nyr x 2*nage matrix with each column representing # of positive then negative samples in each age (e.g. # positive age 0, # negative age 0, etc.)
     init_matrix ich_obs(1,nyr,1,n_age2)  
-    init_number ich_start    //start year of observations for fitting
-    init_number ich_start_est    //start year for estimating infection (can be earlier than vhs_start)
+    init_number ich_start           //start year of observations for fitting
+    init_number ich_start_est       //start year for estimating infection (can be earlier than vhs_start)
     init_int ich_rec_cotv
 
     // |---------------------------------------------------------------------------|
@@ -225,20 +222,16 @@ DATA_SECTION
     !!    ad_comm::change_datafile_name(ess_file);
     !! }
 
-    // Seine Effective Sample Size - these are filled in by R at the end of the PWS_ASA(Data).ctl
-    init_vector seine_ess(1,nyr_tobefit)
-    // Spawing Effective Sample Size
-    init_vector spawning_ess(1,nyr_tobefit)
-    // Antibody sample size
-    init_vector antibody_ess(1,nyr_tobefit)
-    // Ichthyophonus sample size
-    init_vector ich_ess(1,nyr_tobefit)
+    init_vector seine_ess(1,nyr_tobefit)            // Seine Effective Sample Size
+    init_vector spawner_ess(1,nyr_tobefit)          // Spawing Effective Sample Size
+    init_vector vhsv_antibody_ess(1,nyr_tobefit)    // Antibody sample size
+    init_vector ich_ess(1,nyr_tobefit)              // Ichthyophonus sample size
 
     // |---------------------------------------------------------------------------|
     // | Read in the recruitment and natural mortality deviate information
     // |---------------------------------------------------------------------------|
     !! adstring covariate_file = input_dir + "/PWS_ASA(covariate).ctl";
-    !! ad_comm::change_datafile_name(covariate_file);  
+    !! ad_comm::change_datafile_name(covariate_file);   
 
     init_int standardize_covariates
   	init_int n_age0_covs
@@ -287,8 +280,8 @@ DATA_SECTION
     int mortality_covariate_counter
     int mortality_covariate_model
 
-    int recruit_covariate_counter
-    int recruit_covariate_model
+    int recruitment_covariate_counter
+    int recruitment_covariate_model
     int rec_cov_counter_age0devs
 
     int nyr_recdevs
@@ -334,8 +327,8 @@ DATA_SECTION
     // This sets up the estimable recruit and mortality covariate parameters
     // If mortality covariates are not included, counter is set to one so program does not crash (used for specifying size of estimable vector)
     // If mortality covariates are included, beta and/or deviate parameters on mortality are turned ON
-    // mortality_covariate_model default is 1, whether or not covariates are included in the model
-    // mortality_covariate_model changes to 2 if even just one of the covariates is being modeled as
+    // M_cov_model default is 1, whether or not covariates are included in the model
+    // M_cov_model changes to 2 if even just one of the covariates is being modeled as
     // an index that is a prior in the model
     mortality_covariate_model=1;
     for(int i=1; i<=n_mor_covs; i++){
@@ -356,41 +349,41 @@ DATA_SECTION
         }
     }
 
-    // recruit_covariate_model default is 1, whether or not covariates are included in the model
-    // recruit_covariate_model changes to 2 if even just one of the covariates is being modeled as
+    // recruitment_covariate_model default is 1, whether or not covariates are included in the model
+    // recruitment_covariate_model changes to 2 if even just one of the covariates is being modeled as
     // an index that is a prior in the model
-    recruit_covariate_model=1;
+    recruitment_covariate_model=1;
     for(int i=1; i<=n_age0_covs; i++){
         if(R_fixed_or_est(i)*age0_turn_on(i)==2){
-            recruit_covariate_model=2;
+            recruitment_covariate_model=2;
         }
     }
 
-    recruit_covariate_counter=sum(age0_turn_on);
-    if(recruit_covariate_counter==0){
-        recruit_covariate_counter=1;
+    recruitment_covariate_counter=sum(age0_turn_on);
+    if(recruitment_covariate_counter==0){
+        recruitment_covariate_counter=1;
     }else{
         pars_2_ctl(3,4)=2;
         // ph_betaage0=2;
     }
 
-    if(recruit_covariate_model==1){
+    if(recruitment_covariate_model==1){
         rec_cov_counter_age0devs=1;
-    }else if(recruit_covariate_model==2){
-        rec_cov_counter_age0devs=recruit_covariate_counter;
+    }else if(recruitment_covariate_model==2){
+        rec_cov_counter_age0devs=recruitment_covariate_counter;
     }
 
 
-    // Adjust maxind for parameters that are determined internally here (e.g. by nyr_tobeit,recruit_covariate_counter, etc.)
+    // Adjust maxind for parameters that are determined internally here (e.g. by nyr_tobeit,recruitment_covariate_counter, etc.)
     // This probably could be improved...
     nyr_recdevs = nyr_tobefit-1;
     maxind2(2) = rec_cov_counter_age0devs;  
     maxind3(2) = nyr_recdevs;
-    maxind2(3) = recruit_covariate_counter;
+    maxind2(3) = recruitment_covariate_counter;
     maxind2(4) = mortality_covariate_counter;
     maxind2(5) = mortality_covariate_counter;  
     maxind3(5) = nyr_tobefit;
-    maxind2(6) = recruit_covariate_counter;
+    maxind2(6) = recruitment_covariate_counter;
     maxind2(7) = mortality_covariate_counter;
     maxind2(8) = rec_cov_counter_age0devs;
     maxind2(9) = mortality_covariate_counter;
@@ -400,9 +393,9 @@ DATA_SECTION
         maxind2(11) = nyr_tobefit-1; // For time-varying - multiple recovery probabilities are estimated
     }  
     nyr_vhs = maxind2(11);
-    
+
     maxind2(12) = nyr_tobefit-1;
-    if(ich_rec_cotv==2){
+    if(ich_rec_cotv==2){ 
         maxind2(13) = nyr_tobefit-1; // For time-varying - multiple recovery probabilities are estimated
     }  
     nyr_ich = maxind2(13);
@@ -411,7 +404,7 @@ DATA_SECTION
 
     // Containers for indicator on covariate variables
     vector beta_mortality_ind(1,mortality_covariate_counter)
-    vector beta_recruit_ind(1,recruit_covariate_counter)
+    vector beta_recruit_ind(1,recruitment_covariate_counter)
 
     // Containers for array (vector and matrix) parameters
     3darray pars_2_init(1,npar2,minind2,maxind2,minind3,maxind3);
@@ -430,7 +423,9 @@ DATA_SECTION
         for(int k=minind2(i); k<=maxind2(i); k++){
             for(int m=minind3(i); m<=maxind3(i); m++){
                 pars_2_init(i,k,m) = pars_2(j(4),itemp);
-                if(pars_2(j(4)).indexmax()>1){itemp+=1;};
+                if(pars_2(j(4)).indexmax()>1){
+                    itemp+=1;
+                };
             }
         }
         // cout << "Filling 3D array " << i << endl << pars_2_init(i) << endl << endl;
@@ -453,12 +448,12 @@ DATA_SECTION
             // If parameter is a number...
             if(par_type(i)==1){
                 write_pin << pars_1(itemp,1) << endl;
-            }else if(par_type(i)==2){ 
+            }else if(par_type(i)==2){
                 // If parameter is a vector, write columnwise in .PIN
-                if(pars_2_dim(itemp)==1){
+                if(pars_2_dim(itemp)==1){ 
                     write_pin << column(pars_2_init(itemp),1) << endl;
                 // If parameter is a matrix, columns go columnwise, and rows rowwise
-                }else if(pars_2_dim(itemp)==2){
+                }else if(pars_2_dim(itemp)==2){ 
                     dmatrix temp(minind2(itemp),maxind2(itemp),minind3(itemp),maxind3(itemp));
                     temp =  pars_2_init(itemp);
                     for(int k=minind2(itemp); k<=maxind2(itemp); k++){
@@ -479,7 +474,7 @@ DATA_SECTION
             j+=1;
         }
     }
-    
+
     j=1;
     for(int i=1; i<=n_mor_covs; i++){
         if(mor_turn_on(i)==1){
@@ -488,7 +483,7 @@ DATA_SECTION
             j+=1;
         }
     }
-    
+
 
     // Different maturity starting values and bounds by maturity_model_type 
     if(maturity_model_type==1 || maturity_model_type==2){
@@ -570,16 +565,16 @@ PARAMETER_SECTION
     // |---------------------------------------------------------------------------|
     //Seine Vulnerability parameters
     !! lb = pars_1(ii,2); ub = pars_1(ii,3); ph = pars_1(ii,4); ii++;
-    init_bounded_number seine_vul_alpha(lb,ub,ph)
+    init_bounded_number seine_vuln_alpha(lb,ub,ph)
     !! lb = pars_1(ii,2); ub = pars_1(ii,3); ph = pars_1(ii,4); ii++;
-    init_bounded_number seine_vul_beta(lb,ub,ph)
+    init_bounded_number seine_vuln_beta(lb,ub,ph)
 
     //Survey Vulnerability parameters
     !! lb = pars_1(ii,2); ub = pars_1(ii,3); ph = pars_1(ii,4); ii++;
-    init_bounded_number survey_vul_alpha(lb,ub,ph)
+    init_bounded_number survey_vuln_alpha(lb,ub,ph)
     !! lb = pars_1(ii,2); ub = pars_1(ii,3); ph = pars_1(ii,4); ii++;
-    init_bounded_number survey_vul_beta(lb,ub,ph)
-    
+    init_bounded_number survey_vuln_beta(lb,ub,ph)
+
     //Initial abundance parameters (age-3 for all yrs, 1980 ages 4 and 5+)
     !! lb = pars_2_ctl(jj,2); ub = pars_2_ctl(jj,3); ph = pars_2_ctl(jj,4); jj++;
     init_bounded_vector loginit_pop(1,5,lb,ub,ph)
@@ -613,7 +608,7 @@ PARAMETER_SECTION
     !! lb = pars_1(ii,2); ub = pars_1(ii,3); ph = pars_1(ii,4); ii++;
     init_bounded_number log_juvenile_q(lb,ub,ph)
     !! lb = pars_1(ii,2); ub = pars_1(ii,3); ph = pars_1(ii,4); ii++;
-    init_bounded_number juvenile_overdisp(lb,ub,ph)
+    init_bounded_number juvenile_overdispersion(lb,ub,ph)
  
     // |---------------------------------------------------------------------------|
     // | REC DEVIATES & COVARIATE EFFECTS ON MORTALITY
@@ -626,7 +621,8 @@ PARAMETER_SECTION
     !! lb = pars_1(ii,2); ub = pars_1(ii,3); ph = pars_1(ii,4); ii++;
     init_bounded_number sigma_age0devs(lb,ub,ph)
     !! lb = pars_2_ctl(jj,2); ub = pars_2_ctl(jj,3); ph = pars_2_ctl(jj,4); jj++;
-    init_bounded_vector beta_age0(1,recruit_covariate_counter,lb,ub,ph)
+    init_bounded_vector beta_age0(1,recruitment_covariate_counter,lb,ub,ph)
+
     !! lb = pars_2_ctl(jj,2); ub = pars_2_ctl(jj,3); ph = pars_2_ctl(jj,4); jj++;
     init_bounded_vector beta_mortality(1,mortality_covariate_counter,lb,ub,ph)
     !! lb = pars_2_ctl(jj,2); ub = pars_2_ctl(jj,3); ph = pars_2_ctl(jj,4); jj++;
@@ -636,7 +632,7 @@ PARAMETER_SECTION
 
     // Basically sets 2nd time block for different effect estimate on covariates - need to improve....
     !! lb = pars_2_ctl(jj,2); ub = pars_2_ctl(jj,3); ph = pars_2_ctl(jj,4); jj++;
-    init_bounded_vector beta_age0_offset(1,recruit_covariate_counter,lb,ub,ph)
+    init_bounded_vector beta_age0_offset(1,recruitment_covariate_counter,lb,ub,ph)
     !! lb = pars_2_ctl(jj,2); ub = pars_2_ctl(jj,3); ph = pars_2_ctl(jj,4); jj++;
     init_bounded_vector beta_mortality_offset(1,mortality_covariate_counter,lb,ub,ph)
     !! lb = pars_2_ctl(jj,2); ub = pars_2_ctl(jj,3); ph = pars_2_ctl(jj,4); jj++;
@@ -652,38 +648,38 @@ PARAMETER_SECTION
     !! lb = pars_2_ctl(jj,2); ub = pars_2_ctl(jj,3); ph = pars_2_ctl(jj,4); jj++;
     init_bounded_vector vhsv_recovery_prob(vhs_start_est,nyr_vhs,lb,ub,ph)
     !! lb = pars_1(ii,2); ub = pars_1(ii,3); ph = pars_1(ii,4); ii++;
-    init_bounded_number vhsv_infection_vul_a50(lb,ub,ph)
+    init_bounded_number vhsv_infection_vuln_a50(lb,ub,ph)
     !! lb = pars_1(ii,2); ub = pars_1(ii,3); ph = pars_1(ii,4); ii++;
-    init_bounded_number vhsv_infection_vul_a95(lb,ub,ph)
+    init_bounded_number vhsv_infection_vuln_a95(lb,ub,ph)
     !! lb = pars_1(ii,2); ub = pars_1(ii,3); ph = pars_1(ii,4); ii++;
-    init_bounded_number vhsv_sample_vul_a50(lb,ub,ph)
+    init_bounded_number vhsv_sample_vuln_a50(lb,ub,ph)
     !! lb = pars_1(ii,2); ub = pars_1(ii,3); ph = pars_1(ii,4); ii++;
-    init_bounded_number vhsv_sample_vul_a95(lb,ub,ph)
+    init_bounded_number vhsv_sample_vuln_a95(lb,ub,ph)
 
     !! lb = pars_2_ctl(jj,2); ub = pars_2_ctl(jj,3); ph = pars_2_ctl(jj,4); jj++;
     init_bounded_vector ich_infection_prob(ich_start_est,nyr_tobefit-1,lb,ub,ph)
     !! lb = pars_2_ctl(jj,2); ub = pars_2_ctl(jj,3); ph = pars_2_ctl(jj,4); jj++;
     init_bounded_vector ich_recovery_prob(ich_start_est,nyr_ich,lb,ub,ph)
     !! lb = pars_1(ii,2); ub = pars_1(ii,3); ph = pars_1(ii,4); ii++;
-    init_bounded_number ich_infection_vul_a50(lb,ub,ph)
+    init_bounded_number ich_infection_vuln_a50(lb,ub,ph)
     !! lb = pars_1(ii,2); ub = pars_1(ii,3); ph = pars_1(ii,4); ii++; 
-    init_bounded_number ich_infection_vul_a95(lb,ub,ph)
+    init_bounded_number ich_infection_vuln_a95(lb,ub,ph)
     !! lb = pars_1(ii,2); ub = pars_1(ii,3); ph = pars_1(ii,4); ii++;
-    init_bounded_number ich_sample_vul_a50(lb,ub,ph)
+    init_bounded_number ich_sample_vuln_a50(lb,ub,ph)
     !! lb = pars_1(ii,2); ub = pars_1(ii,3); ph = pars_1(ii,4); ii++;
-    init_bounded_number ich_sample_vul_a95(lb,ub,ph)
+    init_bounded_number ich_sample_vuln_a95(lb,ub,ph)
 
 
     // |---------------------------------------------------------------------------|
     // | NUMERIC VARIABLES
     // |---------------------------------------------------------------------------|
-    number S_0_2 						  // Survival rate of ages 0-2
-    number S_3_8						  // Survival rate of ages 3-8
-    number S_9							  // Survival rate of 9+ age group
+    number S_0_2 			// Survival rate of ages 0-2
+    number S_3_8			// Survival rate of ages 3-8
+    number S_9			    // Survival rate of 9+ age group
 
     number mdm_c 
-    number mdm_resids_ss
-    number ADFG_hydro_resids_ss
+    number MDMtemp_2
+    number HtempADFG_num
 
     number not_below_this
 
@@ -691,13 +687,13 @@ PARAMETER_SECTION
     number penCount
 
     number seine_llk        // purse-seine survey likelihood
-    number spawn_llk        // spawning survey likelihood
+    number spawner_llk      // spawning survey likelihood
     number mdm_llk          // mdm survey likelihood
     number eggdep_llk       // egg deposition survey likelihood
     number ADFG_hydro_llk   // ADFG hydroacoustic survey likelihood
     number PWSSC_hydro_llk  // PWSSC hydroacoustic survey likelihood
     number juvenile_llk     // Aerial juvenile survey likelihood (incorporated 12/2019)
-    number vhs_llk          // Seroprevalence likelihood
+    number vhsv_llk         // Seroprevalence likelihood
     number ich_llk          // Ichthyphonus infection likelihood
 
     number age0_devs_penllk
@@ -708,11 +704,11 @@ PARAMETER_SECTION
     //number mean_log_recruitment
     //number temp2MeanLgRec
     //number mean_log_recruitment
-    number projected_pre_fish_biomass //is an sdreport variable
-    number temp1MeanLgRec
+    number mean_log_rec
     number temp2MeanLgRec
     number meanLgRec
-    //number projected_PFRB //is an sdreport variable
+    number projected_prefishery_biomass //is an sdreport variable
+
 
     // Scalar for seroprevalence - scales down total immunity to account for
     // likely underestimation of immunity by current serological assays
@@ -728,18 +724,18 @@ PARAMETER_SECTION
     vector forecast_survival_winter(1,nage)
     vector age0_effect(1,nyr_tobefit)
 
-    vector seine_vul(1,nage)                          // Vulnerability of fish to seine commercial fishery
-    vector survey_vul(1,nage)                         // Vulnerability of fish to seine gear used for surveys
-    vector seine_available_pop(1,nyr_tobefit)         // Total Available population for Seine catch for each year
-    vector seine_catch(1,nyr_tobefit)                 // Seine-Catch, Estimated total catch
-    vector pre_fish_biomass(1,nyr_tobefit)            // Pre-Fishery Run Biomass, mt
-    vector pre_fish_biomass_TONS(1,nyr_tobefit)       // Management reference point - is SSB (pre-fishery run biomass) in tons
-    vector post_fish_spawn_biomass(1,nyr_tobefit)     // Total Post-Fishery Spawning Biomass
-    vector pre_fish_spawn_pop(1,nyr_tobefit)          // Total Pre-fishery spawning pop (mil)
-    vector seine_biomass(1,nyr_tobefit)               // Sum(Weight-at-age*Seine age comp) is like Seine biomass per year
+    vector seine_vuln(1,nage)                           //Vulnerability of fish to seine commercial fishery
+    vector survey_vuln(1,nage)                          //Vulnerability of fish to seine gear used for surveys
+    vector seine_avilable_pop(1,nyr_tobefit)            //Total Available population for Seine catch for each year
+    vector seine_catch(1,nyr_tobefit)                   //Seine-Catch, Estimated total catch
+    vector prefishery_biomass(1,nyr_tobefit)           //Pre-Fishery Run Biomass, mt
+    vector prefishery_biomass_TONS(1,nyr_tobefit)      //Management reference point - is prefishery_biomass  (pre-fishery run biomass) in tons
+    vector postfishery_spawn_biomass(1,nyr_tobefit)     //Total Post-Fishery Spawning Biomass
+    vector prefishery_spawn_pop(1,nyr_tobefit)          //Total Pre-fishery spawning pop (mil)
+    vector seine_biomass(1,nyr_tobefit)                 //Sum(Weight-at-age*Seine age comp) is like Seine biomass per year
     
     // TODO: What is this and how does it differ from pre_fish_biomass (mt)
-    vector Early_biomass(1,nyr_tobefit)               // Pre-Fishery Biomass by year
+    vector Early_biomass(1,nyr_tobefit)                 //Pre-Fishery Biomass by year
 
     // Aerial juvenile survey (incorporated 12/2019)
     vector juvenile_pred(1,nyr_tobefit)
@@ -747,34 +743,34 @@ PARAMETER_SECTION
     // These are model estimates for each of these survey values for each year
     // Difference between these estimated values and observed values constitutes
     // likelihood calculations. 
-    vector MDM_est(1,nyr_tobefit)               // Mile-days of milt Estimates --> `miles_days_milt`
-    vector EGG_est(1,nyr_tobefit)               // Egg Deposition Estimates (rowsums of eggdep_age_comp) --> `egg_dep`
-    vector EggAC_sum(1,nyr_tobefit)             // totol egg dep (both male and female) by year
-    vector ADFG_HYDRO_est(1,nyr_tobefit)        // ADFG Hydroacoustic Estimates --> `ADFG_hydro`
-    vector PWSSC_HYDRO_est(1,nyr_tobefit)       // PWSSC Hydroacoustics Estimates --> `PWSSC_hydro`
-    
-    vector mdm_residuals(1,nyr_tobefit)         // Mile-days of milt
-    vector eggdep_residuals(1,nyr_tobefit)      // Egg deposition
-    vector ADFG_hydro_residuals(1,nyr_tobefit)  // ADFG Hydroacoustics
-    vector PWSSC_hydro_residuals(1,nyr_tobefit) // PWSSC Hydroacoustics
+    vector MDM_est(1,nyr_tobefit)                   //Mile-days of milt
+    vector EGG_est(1,nyr_tobefit)                   //Egg Deposition - rowsums of eggdep_age_comp
+    vector EggAC_sum(1,nyr_tobefit)                 //totol egg dep (both male and female) by year
+    vector ADFG_HYDRO_est(1,nyr_tobefit)              //ADFG Hydroacoustic Estimates
+    vector PWSSC_HYDRO_est(1,nyr_tobefit)             //PWSSC Hydroacoustics Estimates
+
+    vector mdm_residuals(1,nyr_tobefit)             //Mile-days of milt
+    vector eggdep_residuals(1,nyr_tobefit)          //Egg deposition
+    vector ADFG_hydro_residuals(1,nyr_tobefit)      // ADFG Hydroacoustics
+    vector PWSSC_hydro_residuals(1,nyr_tobefit)     // PWSSC Hydroacoustics
 
     // Extra temporary variables for likelihood calculations.
     vector seine_temp2(1,nyr_tobefit)
     vector spawn_temp2(1,nyr_tobefit)
     vector seine_temp3(1,nyr_tobefit)
     vector spawn_temp3(1,nyr_tobefit)
-  
+
     //Analytical Sigmas
     vector egg_sd(1,nyr_tobefit)
     vector PWSSC_sd(1,nyr_tobefit)
- 
+
     //Likelihood components 
     vector mdm_llk_ind(1,nyr_tobefit)
-    vector eggdep_llk_ind(1,nyr_tobefit)
+    vector egg_llk_ind(1,nyr_tobefit)
     vector ADFG_hydro_llk_ind(1,nyr_tobefit)
     vector PWSSC_hydro_llk_ind(1,nyr_tobefit)
     vector juvenile_llk_ind(1,nyr_tobefit) // Aerial juvenile survey (incorporated 12/2019)
-
+    
     // Variables and vectors for calculating projected final year biomass
     // vector tempWgt(1,nage)
     // vector avgWgt5Yr(1,nage)
@@ -784,7 +780,7 @@ PARAMETER_SECTION
     vector Mean_Age0(1,nyr_tobefit) 
     vector init_pop(1,5)
     vector agggregate_annual_age0devs(1,nyr_tobefit)
-    vector temp_age0(1,recruit_covariate_counter)
+    vector temp_age0(1,recruitment_covariate_counter)
 
     // Age-specific vulnerability to VHSV transmission (i.e. proportion mixing with sympatric pop)
     vector Vul_sympat(1,nage)
@@ -818,51 +814,51 @@ PARAMETER_SECTION
     // | CALCULATED MATRICES
     // |---------------------------------------------------------------------------|
     //Mortality and survival rates
-    matrix summer_survival_effect(1,nyr_tobefit,1,nage)
-    matrix winter_survival_effect(1,nyr_tobefit,1,nage)
-    matrix survival_summer(1,nyr_tobefit,1,nage)     //Half-year Survival between spring and fall
-    matrix survival_winter(1,nyr_tobefit,1,nage)     //Half-year Survival between fall and spring
+    matrix summer_mortality_effect(1,nyr_tobefit,1,nage)
+    matrix winter_mortality_effect(1,nyr_tobefit,1,nage)
+    matrix summer_survival(1,nyr_tobefit,1,nage)     //Half-year Survival between spring and fall
+    matrix winter_survival(1,nyr_tobefit,1,nage)     //Half-year Survival between fall and spring
 
     //Age matrices
-    matrix maturity(1,nyr_tobefit,1,nage)                   //Maturity 
-    matrix N_y_a(1,nyr_tobefit,1,nage)                      //Pre-Fishery Abundance (millions)
-    matrix vul_pop_age(1,nyr_tobefit,1,nage)                //Vulnerability_Seine*N_y_a, avail pop at age
-    matrix seine_age_comp(1,nyr_tobefit,1,nage)             //Seine Age Composition
-    matrix N_spawn_age(1,nyr_tobefit,1,nage)                //Spawning Population (millions)
-    matrix prefish_spawn_biomass_age(1,nyr_tobefit,1,nage)
-    matrix spawn_biomass_age(1,nyr_tobefit,1,nage)          //Spawning Biomass at age
-    matrix prefish_spawning_pop_age(1,nyr_tobefit,1,nage)   //Pre-Fishery spawning population (millions)
-    matrix spawn_age_comp(1,nyr_tobefit,1,nage)             //Spawning Age Composition
-    matrix seine_biomass_age(1,nyr_tobefit,1,nage)          //Weight-at-age*Seine age comp, is like Seine biomass-at-age
-    matrix eggdep_age_comp(1,nyr_tobefit,1,nage)            //Egg dep by age, like Egg deposition Age-Comp  
-    matrix prefish_biomass_age(1,nyr_tobefit,1,nage)        //N_y_a*weight_at_age, Pre-Fishery biomass-at-age
+    matrix maturity(1,nyr_tobefit,1,nage)                           //Maturity 
+    matrix N_y_a(1,nyr_tobefit,1,nage)                              //Pre-Fishery Abundance (millions)
+    matrix vuln_pop_age(1,nyr_tobefit,1,nage)                       //Vulnerability_Seine*N_y_a, avail pop at age
+    matrix seine_age_comp(1,nyr_tobefit,1,nage)                     //Seine Age Composition
+    matrix N_spawners_age(1,nyr_tobefit,1,nage)                     //Spawning Population (millions)
+    matrix prefishery_spawning_biomass_age(1,nyr_tobefit,1,nage)
+    matrix spawning_biomass_age(1,nyr_tobefit,1,nage)               //Spawning Biomass at age
+    matrix prefishery_spawning_pop_age(1,nyr_tobefit,1,nage)        //Pre-Fishery spawning population (millions)
+    matrix spawning_age_comp(1,nyr_tobefit,1,nage)                  //Spawning Age Composition
+    matrix seine_biomass_age(1,nyr_tobefit,1,nage)                  //Weight-at-age*Seine age comp, is like Seine biomass-at-age
+    matrix eggdep_age_comp(1,nyr_tobefit,1,nage)                    //Egg dep by age, like Egg deposition Age-Comp  
+    matrix prefishery_biomass_age(1,nyr_tobefit,1,nage)             //N_y_a*weight_at_age, Pre-Fishery biomass-at-age
 
     //Temporary matrices/vectors for calculating likelihood components
     //matrix SeACR(1,nyr_tobefit,1,nage)      //Seine age comp
     //matrix SpACR(1,nyr_tobefit,1,nage)      //Spawning age comp
     matrix seine_comp_residuals(1,nyr_tobefit,1,nage)
-    matrix spawn_comp_residuals(1,nyr_tobefit,1,nage)
+    matrix spawner_comp_residuals(1,nyr_tobefit,1,nage)
 
     matrix annual_mortdevs_byage(1,nyr_tobefit,1,nage)
 
     matrix maturity_unobs(1,nyr_tobefit,1,nage)      //Maturity of unobserved population
 
     // Age-specific matrices related to epidemiological stages
-    matrix vhsv_susceptibility(1,nyr_tobefit,1,nage)
-    matrix vhsv_immunity(1,nyr_tobefit,1,nage)
-    matrix vhsv_survival(1,nyr_tobefit,1,nage)
+    matrix vhsv_susceptibility_age(1,nyr_tobefit,1,nage)
+    matrix vhsv_immunity_age(1,nyr_tobefit,1,nage)
+    matrix vhsv_survival_age(1,nyr_tobefit,1,nage)
     matrix vhsv_pred(1,nyr_tobefit,1,n_age2)
 
-    matrix ich_susceptibility(1,nyr_tobefit,1,nage)
-    matrix ich_chronic_infection(1,nyr_tobefit,1,nage)
-    matrix ich_survival(1,nyr_tobefit,1,nage)
+    matrix ich_susceptibility_age(1,nyr_tobefit,1,nage)
+    matrix ich_chronic_infection_age(1,nyr_tobefit,1,nage)
+    matrix ich_survival_age(1,nyr_tobefit,1,nage)
     matrix ich_pred(1,nyr_tobefit,1,n_age2)
 
     // |---------------------------------------------------------------------------|
     // | OBJECTIVE FUNCTION
     // |---------------------------------------------------------------------------|
     objective_function_value full_llk
-    
+
     sdreport_number SSB_final_year
     //sdreport_vector init_pop(1,5)         
   
@@ -940,7 +936,7 @@ PRELIMINARY_CALCS_SECTION
         init_pop = exp(loginit_pop);
 
         calc_naturalmortality();
-        // cout << summer_survival_effect_tofit << endl;
+        // cout << summer_effect_tofit << endl;
 
         if(DD_Mat==0){
             calc_maturity();
@@ -958,20 +954,20 @@ PRELIMINARY_CALCS_SECTION
         }
 
         ofstream deterministic_run("rep_out/deterministic_run.rep",ios::trunc);
-        
+
         // Aerial juvenile survey (incorporated 12/2019)
         deterministic_run << "# Posterior Probability" << endl;
-        deterministic_run << seine_llk +spawn_llk +eggdep_llk +ADFG_hydro_llk +PWSSC_hydro_llk +mdm_llk +age0_devs_penllk +mort_devs_penllk +priors +juvenile_llk +vhs_llk +ich_llk << endl << endl;
+        deterministic_run << seine_llk +spawner_llk +eggdep_llk +ADFG_hydro_llk +PWSSC_hydro_llk +mdm_llk +age0_devs_penllk +mort_devs_penllk +priors +juvenile_llk +vhsv_llk +ich_llk << endl << endl;
 
         // Aerial juvenile survey (incorporated 12/2019)
         deterministic_run << "# Likelihood Components & Priors" << endl;
-        deterministic_run << "# seine_llk  spawn_llk  eggdep_llk  ADFG_hydro_llk  PWSSC_hydro_llk  mdm_llk  age0_devs_penllk  mort_devs_penllk  juvenile_llk  vhs_llk  ich_llk" << endl;
-        deterministic_run << seine_llk << "  " << spawn_llk << "  " << eggdep_llk << "  " << ADFG_hydro_llk << "  " << PWSSC_hydro_llk << "  " << mdm_llk << "  " << age0_devs_penllk << "  " << mort_devs_penllk << "  " << juvenile_llk <<  " " <<  vhs_llk << " " <<  ich_llk << endl << endl;
+        deterministic_run << "# seine_llk  spawner_llk  eggdep_llk  ADFG_hydro_llk  PWSSC_hydro_llk  mdm_llk  age0_devs_penllk  mort_devs_penllk  juvenile_llk  vhsv_llk  ich_llk" << endl;
+        deterministic_run << seine_llk << "  " << spawner_llk << "  " << eggdep_llk << "  " << ADFG_hydro_llk << "  " << PWSSC_hydro_llk << "  " << mdm_llk << "  " << age0_devs_penllk << "  " << mort_devs_penllk << "  " << juvenile_llk <<  " " <<  vhsv_llk << " " <<  ich_llk << endl << endl;
 
         deterministic_run << "# Pre-fishery Spawning Biomass (metric tons)" << endl;
-        deterministic_run << pre_fish_biomass << endl << endl;
+        deterministic_run << prefishery_biomass  << endl << endl;
         deterministic_run << "# Post-fishery Spawning Biomass (metric tons)" << endl;
-        deterministic_run << post_fish_spawn_biomass << endl << endl;
+        deterministic_run << postfishery_spawn_biomass << endl << endl;
         deterministic_run << "# Recruitment (millions of Age 3 herring)" << endl;
         for(int i=1; i<=nyr_tobefit; i++){
             deterministic_run << N_y_a(i,4) << " ";
@@ -997,7 +993,7 @@ PROCEDURE_SECTION
     // | - calculate objective function value
     // | - evaluate additional functions in mceval_phase (biomass forecase & writing result files)
     // |---------------------------------------------------------------------------|
-  
+
     Mean_Age0 = exp(log_MeanAge0);
     mdm_c = exp(logmdm_c);
     init_pop = exp(loginit_pop);
@@ -1013,7 +1009,7 @@ PROCEDURE_SECTION
 
     calc_selectivity();
     calc_statevariables();
-    
+
     calc_surveyvalues();
     calc_nll_components();
     calc_priors();
@@ -1021,7 +1017,7 @@ PROCEDURE_SECTION
     // Objective function ADMB will minimize
     // Aerial juvenile survey (incorporated 12/2019)
     full_llk = seine_llk +
-               spawn_llk +
+               spawner_llk +
                eggdep_llk +
                ADFG_hydro_llk +
                PWSSC_hydro_llk +
@@ -1031,19 +1027,19 @@ PROCEDURE_SECTION
                age0_covar_prior +
                mort_covar_prior +
                juvenile_llk +
-               vhs_llk +
+               vhsv_llk +
                ich_llk +
                priors;
 
-    SSB_final_year = pre_fish_biomass(nyr_tobefit); // is projected year's Pre-fishery Run Biomass in metric tons
+    SSB_final_year = prefishery_biomass(nyr_tobefit); // is projected year's Pre-fishery Run Biomass in metric tons
 
+    // "ifMCEvalPhase" goes inside the PROCEDURE_SECTION,
     if(mceval_phase()){
         project_biomass(); // Project current year biomass using last year's data
         write_chain_results();
     }
 
     if(clean != 0){
-        remove("admodel.cov");
         remove("fmin.log");
         remove("PWS_ASA.b01");
         remove("PWS_ASA.b02");
@@ -1064,10 +1060,10 @@ PROCEDURE_SECTION
 
 
 FUNCTION void calc_naturalmortality()
-    summer_survival_effect.initialize();
-    winter_survival_effect.initialize();
-    survival_summer.initialize();
-    survival_winter.initialize();
+    summer_mortality_effect.initialize();
+    winter_mortality_effect.initialize();
+    summer_survival.initialize();
+    winter_survival.initialize();
     annual_mortdevs_byage.initialize();
     
     //Half-Year Survival (Matches Excel version - uses desease data and only estimates plus group mortality)
@@ -1075,7 +1071,7 @@ FUNCTION void calc_naturalmortality()
     
     // below should be added to sdreport? Nah, but should look at aspects the survival matrix as sdreport candidates.
     S_9=exp(-0.5*Z_9); // Z_9 is estimated
-    
+ 
     // This sets up the survival matrix
     // I only go up to i<nyr_tobefit because the model's calendar is different from the normal one
     // Every new model year starts at time of spawn (spring), so first half-year survival is summer,
@@ -1087,27 +1083,27 @@ FUNCTION void calc_naturalmortality()
     // ----------
     //Half-Year Survival (Matches Excel version - uses desease data and only estimates plus group mortality)
     //S_3_8=exp(-0.5*Z_0_8); //Z_0_8 is a read-in param 
-    
+  
     for (int i=1;i<=nyr_tobefit;i++){
         // Z_annual(i)=(M_change(i)*beta_mortality_offset(k)+beta_mortality(k))*mor_turn_on(k)*mor_covariates(i,k)*covariate_effect_byage(j,k);
         for(int j=1;j<=nage;j++){
             for(int k=1;k<=mortality_covariate_counter;k++){
                 if(beta_mortality_ind(k)==0){
                 }else if(mor_covariates(i,beta_mortality_ind(k))==-9){
-                    summer_survival_effect(i,j) += 0;
-                    winter_survival_effect(i,j) += 0;
+                    summer_mortality_effect(i,j) += 0;
+                    winter_mortality_effect(i,j) += 0;
                 }else if(mor_season(beta_mortality_ind(k))==1){
-                    summer_survival_effect(i,j) += (M_change(i)*beta_mortality_offset(k)+beta_mortality(k))*mor_turn_on(beta_mortality_ind(k))*mor_covariates(i,beta_mortality_ind(k))*covariate_effect_byage(j,beta_mortality_ind(k));
+                    summer_mortality_effect(i,j) += (M_change(i)*beta_mortality_offset(k)+beta_mortality(k))*mor_turn_on(beta_mortality_ind(k))*mor_covariates(i,beta_mortality_ind(k))*covariate_effect_byage(j,beta_mortality_ind(k));
                 }else if(mor_season(beta_mortality_ind(k))==2){
-                    winter_survival_effect(i,j) += (M_change(i)*beta_mortality_offset(k)+beta_mortality(k))*mor_turn_on(beta_mortality_ind(k))*mor_covariates(i,beta_mortality_ind(k))*covariate_effect_byage(j,beta_mortality_ind(k));
+                    winter_mortality_effect(i,j) += (M_change(i)*beta_mortality_offset(k)+beta_mortality(k))*mor_turn_on(beta_mortality_ind(k))*mor_covariates(i,beta_mortality_ind(k))*covariate_effect_byage(j,beta_mortality_ind(k));
                 }else if(mor_season(beta_mortality_ind(k))==3){
                     // Additional conditional because each model year starts with summer, ends with winter even though 
                     // data are input for the calendar year
                     if(i==nyr_tobefit){
-                        summer_survival_effect(i,j) += (M_change(i)*beta_mortality_offset(k)+beta_mortality(k))*mor_turn_on(beta_mortality_ind(k))*mor_covariates(i,beta_mortality_ind(k))*covariate_effect_byage(j,beta_mortality_ind(k));
+                        summer_mortality_effect(i,j) += (M_change(i)*beta_mortality_offset(k)+beta_mortality(k))*mor_turn_on(beta_mortality_ind(k))*mor_covariates(i,beta_mortality_ind(k))*covariate_effect_byage(j,beta_mortality_ind(k));
                     }else{
-                        summer_survival_effect(i,j) += (M_change(i)*beta_mortality_offset(k)+beta_mortality(k))*mor_turn_on(beta_mortality_ind(k))*mor_covariates(i,beta_mortality_ind(k))*covariate_effect_byage(j,beta_mortality_ind(k));
-                        winter_survival_effect(i+1,j) += (M_change(i)*beta_mortality_offset(k)+beta_mortality(k))*mor_turn_on(beta_mortality_ind(k))*mor_covariates(i,beta_mortality_ind(k))*covariate_effect_byage(j,beta_mortality_ind(k));
+                        summer_mortality_effect(i,j) += (M_change(i)*beta_mortality_offset(k)+beta_mortality(k))*mor_turn_on(beta_mortality_ind(k))*mor_covariates(i,beta_mortality_ind(k))*covariate_effect_byage(j,beta_mortality_ind(k));
+                        winter_mortality_effect(i+1,j) += (M_change(i)*beta_mortality_offset(k)+beta_mortality(k))*mor_turn_on(beta_mortality_ind(k))*mor_covariates(i,beta_mortality_ind(k))*covariate_effect_byage(j,beta_mortality_ind(k));
                     } 
                 }
             }
@@ -1129,91 +1125,91 @@ FUNCTION void calc_naturalmortality()
             }
         }
     }
-    
-    
+  
+  
     if(mortality_covariate_model==1){
         // Previous form where covariates are incoporated as fixed variables - changed 07/05/2019
         for (int i=1;i<=nyr_tobefit;i++){
             for (int j=1;j<=(nage-1);j++){
                 if(i==13){
                     if((j>=4) && (j<=5)){
-                        survival_summer(i,j)=exp(-(0.5*Z_0_8+summer_survival_effect(i,j)+VHSV_age3_4_mort_93));
-                        survival_winter(i,j)=exp(-(0.5*Z_0_8+winter_survival_effect(i,j)));
+                        summer_survival(i,j)=exp(-(0.5*Z_0_8+summer_mortality_effect(i,j)+VHSV_age3_4_mort_93));
+                        winter_survival(i,j)=exp(-(0.5*Z_0_8+winter_mortality_effect(i,j)));
 
                     }else if(j>=6){
-                        survival_summer(i,j)=exp(-(0.5*Z_0_8+summer_survival_effect(i,j)+ICH_age5_8_mort_93));
-                        survival_winter(i,j)=exp(-(0.5*Z_0_8+winter_survival_effect(i,j)));
+                        summer_survival(i,j)=exp(-(0.5*Z_0_8+summer_mortality_effect(i,j)+ICH_age5_8_mort_93));
+                        winter_survival(i,j)=exp(-(0.5*Z_0_8+winter_mortality_effect(i,j)));
                     }else{
-                        survival_summer(i,j)=exp(-(0.5*Z_0_8+summer_survival_effect(i,j)));
-                        survival_winter(i,j)=exp(-(0.5*Z_0_8+winter_survival_effect(i,j)));
+                        summer_survival(i,j)=exp(-(0.5*Z_0_8+summer_mortality_effect(i,j)));
+                        winter_survival(i,j)=exp(-(0.5*Z_0_8+winter_mortality_effect(i,j)));
                     }
                 }else if(i==14){
                     if((j>=4) && (j<=5)){
-                        survival_summer(i,j)=exp(-(0.5*Z_0_8+summer_survival_effect(i,j)+VHSV_age3_4_mort_93));
-                        survival_winter(i,j)=exp(-(0.5*Z_0_8+winter_survival_effect(i,j)+VHSV_age3_4_mort_93));
+                        summer_survival(i,j)=exp(-(0.5*Z_0_8+summer_mortality_effect(i,j)+VHSV_age3_4_mort_93));
+                        winter_survival(i,j)=exp(-(0.5*Z_0_8+winter_mortality_effect(i,j)+VHSV_age3_4_mort_93));
                     }else if(j>=6){
-                        survival_summer(i,j)=exp(-(0.5*Z_0_8+summer_survival_effect(i,j)+ICH_age5_8_mort_93));
-                        survival_winter(i,j)=exp(-(0.5*Z_0_8+winter_survival_effect(i,j)+ICH_age5_8_mort_93));
+                        summer_survival(i,j)=exp(-(0.5*Z_0_8+summer_mortality_effect(i,j)+ICH_age5_8_mort_93));
+                        winter_survival(i,j)=exp(-(0.5*Z_0_8+winter_mortality_effect(i,j)+ICH_age5_8_mort_93));
                     }else{
-                        survival_summer(i,j)=exp(-(0.5*Z_0_8+summer_survival_effect(i,j)));
-                        survival_winter(i,j)=exp(-(0.5*Z_0_8+winter_survival_effect(i,j)));
+                        summer_survival(i,j)=exp(-(0.5*Z_0_8+summer_mortality_effect(i,j)));
+                        winter_survival(i,j)=exp(-(0.5*Z_0_8+winter_mortality_effect(i,j)));
                     }
                 }else if(i==15){
                     if((j>=4) && (j<=5)){
-                        survival_summer(i,j)=exp(-(0.5*Z_0_8+summer_survival_effect(i,j)));
-                        survival_winter(i,j)=exp(-(0.5*Z_0_8+winter_survival_effect(i,j)+VHSV_age3_4_mort_93));
+                        summer_survival(i,j)=exp(-(0.5*Z_0_8+summer_mortality_effect(i,j)));
+                        winter_survival(i,j)=exp(-(0.5*Z_0_8+winter_mortality_effect(i,j)+VHSV_age3_4_mort_93));
                     }else if(j>=6){
-                        survival_summer(i,j)=exp(-(0.5*Z_0_8+summer_survival_effect(i,j)));
-                        survival_winter(i,j)=exp(-(0.5*Z_0_8+winter_survival_effect(i,j)+ICH_age5_8_mort_93));
+                        summer_survival(i,j)=exp(-(0.5*Z_0_8+summer_mortality_effect(i,j)));
+                        winter_survival(i,j)=exp(-(0.5*Z_0_8+winter_mortality_effect(i,j)+ICH_age5_8_mort_93));
                     }else{
-                        survival_summer(i,j)=exp(-(0.5*Z_0_8+summer_survival_effect(i,j)));
-                        survival_winter(i,j)=exp(-(0.5*Z_0_8+winter_survival_effect(i,j)));
+                        summer_survival(i,j)=exp(-(0.5*Z_0_8+summer_mortality_effect(i,j)));
+                        winter_survival(i,j)=exp(-(0.5*Z_0_8+winter_mortality_effect(i,j)));
                     }
                 }else{
-                    survival_summer(i,j)=exp(-(0.5*Z_0_8+summer_survival_effect(i,j)));
-                    survival_winter(i,j)=exp(-(0.5*Z_0_8+winter_survival_effect(i,j)));
+                    summer_survival(i,j)=exp(-(0.5*Z_0_8+summer_mortality_effect(i,j)));
+                    winter_survival(i,j)=exp(-(0.5*Z_0_8+winter_mortality_effect(i,j)));
                 }
                 
                 // Calculate survival for ages 3-8 for years 1981 and above  
                 dvariable pen_Sur_1=0.0;
-                dvariable high_survival_penalty_1=1-survival_summer(i,j);
-                survival_summer(i,j)=1-posfun(high_survival_penalty_1, 0.01, pen_Sur_1);
-                if(survival_summer(i,j)>=1){
+                dvariable high_survival_penalty_1=1-summer_survival(i,j);
+                summer_survival(i,j)=1-posfun(high_survival_penalty_1, 0.01, pen_Sur_1);
+                if(summer_survival(i,j)>=1){
                     penCount+=1;
                 }
                 full_llk+=1000*pen_Sur_1;
 
                 dvariable pen_Sur_2=0.0;
-                dvariable high_survival_penalty_2=1-survival_winter(i,j);
-                survival_winter(i,j)=1-posfun(high_survival_penalty_2, 0.01, pen_Sur_2);
-                if(survival_winter(i,j)>=1){
+                dvariable high_survival_penalty_2=1-winter_survival(i,j);
+                winter_survival(i,j)=1-posfun(high_survival_penalty_2, 0.01, pen_Sur_2);
+                if(winter_survival(i,j)>=1){
                     penCount+=1;
                 }
                 full_llk+=1000*pen_Sur_2;
             }
 
             if(i==1){
-                survival_summer(i,nage)=exp(-(0.5*Z_9+summer_survival_effect(i,nage)));
-                survival_winter(i,nage)=exp(-(0.5*Z_9+winter_survival_effect(i,nage)));
+                summer_survival(i,nage)=exp(-(0.5*Z_9+summer_mortality_effect(i,nage)));
+                winter_survival(i,nage)=exp(-(0.5*Z_9+winter_mortality_effect(i,nage)));
 
                 dvariable pen_Sur_3=0.0;
-                dvariable high_survival_penalty_3=1-survival_summer(i,nage);
-                survival_summer(i,nage)=1-posfun(high_survival_penalty_3, 0.01, pen_Sur_3);
-                if(survival_summer(i,nage)>=1){
+                dvariable high_survival_penalty_3=1-summer_survival(i,nage);
+                summer_survival(i,nage)=1-posfun(high_survival_penalty_3, 0.01, pen_Sur_3);
+                if(summer_survival(i,nage)>=1){
                     penCount+=1;
                 }
                 full_llk+=1000*pen_Sur_3;
 
                 dvariable pen_Sur_4=0.0;
-                dvariable high_survival_penalty_4=1-survival_winter(i,nage);
-                survival_winter(i,nage)=1-posfun(high_survival_penalty_4, 0.01, pen_Sur_4);
-                if(survival_winter(i,nage)>=1){
-                penCount+=1;
+                dvariable high_survival_penalty_4=1-winter_survival(i,nage);
+                winter_survival(i,nage)=1-posfun(high_survival_penalty_4, 0.01, pen_Sur_4);
+                if(winter_survival(i,nage)>=1){
+                    penCount+=1;
                 }
                 full_llk+=1000*pen_Sur_4;
             }else {
-                survival_summer(i,nage)=survival_summer(i,nage-1)*survival_summer(i-1,nage)/survival_summer(i-1,nage-1); // Plus age group
-                survival_winter(i,nage)=survival_winter(i,nage-1)*survival_winter(i-1,nage)/survival_winter(i-1,nage-1); // Plus age group
+                summer_survival(i,nage)=summer_survival(i,nage-1)*summer_survival(i-1,nage)/summer_survival(i-1,nage-1); // Plus age group
+                winter_survival(i,nage)=winter_survival(i,nage-1)*winter_survival(i-1,nage)/winter_survival(i-1,nage-1); // Plus age group
             }
         }
 
@@ -1227,22 +1223,22 @@ FUNCTION void calc_naturalmortality()
                         annual_mortdevs_byage(i,j)+=(M_change(i)*beta_mortality_offset(k)+beta_mortality(k))*covariate_effect_byage(j,beta_mortality_ind(k))*annual_mortdevs(k,i);
                     }
                 }
-                survival_summer(i,j)=exp(-(0.5*Z_0_8+annual_mortdevs_byage(i,j)));
-                survival_winter(i,j)=exp(-(0.5*Z_0_8+annual_mortdevs_byage(i,j)));
+                summer_survival(i,j)=exp(-(0.5*Z_0_8+annual_mortdevs_byage(i,j)));
+                winter_survival(i,j)=exp(-(0.5*Z_0_8+annual_mortdevs_byage(i,j)));
 
                 // Calculate survival for ages 3-8 for years 1981 and above  
                 dvariable pen_Sur_1=0.0;
-                dvariable high_survival_penalty_1=1-survival_summer(i,j);
-                survival_summer(i,j)=1-posfun(high_survival_penalty_1, 0.01, pen_Sur_1);
-                if(survival_summer(i,j)>=1){
+                dvariable high_survival_penalty_1=1-summer_survival(i,j);
+                summer_survival(i,j)=1-posfun(high_survival_penalty_1, 0.01, pen_Sur_1);
+                if(summer_survival(i,j)>=1){
                     penCount+=1;
                 }
                 full_llk+=1000*pen_Sur_1;
 
                 dvariable pen_Sur_2=0.0;
-                dvariable high_survival_penalty_2=1-survival_winter(i,j);
-                survival_winter(i,j)=1-posfun(high_survival_penalty_2, 0.01, pen_Sur_2);
-                if(survival_winter(i,j)>=1){
+                dvariable high_survival_penalty_2=1-winter_survival(i,j);
+                winter_survival(i,j)=1-posfun(high_survival_penalty_2, 0.01, pen_Sur_2);
+                if(winter_survival(i,j)>=1){
                     penCount+=1;
                 }
                 full_llk+=1000*pen_Sur_2;
@@ -1250,27 +1246,27 @@ FUNCTION void calc_naturalmortality()
 
             if(i==1){
 
-                survival_summer(i,nage)=exp(-(0.5*Z_9+annual_mortdevs_byage(i,nage)));
-                survival_winter(i,nage)=exp(-(0.5*Z_9+annual_mortdevs_byage(i,nage)));
+                summer_survival(i,nage)=exp(-(0.5*Z_9+annual_mortdevs_byage(i,nage)));
+                winter_survival(i,nage)=exp(-(0.5*Z_9+annual_mortdevs_byage(i,nage)));
 
                 dvariable pen_Sur_3=0.0;
-                dvariable high_survival_penalty_3=1-survival_summer(i,nage);
-                survival_summer(i,nage)=1-posfun(high_survival_penalty_3, 0.01, pen_Sur_3);
-                if(survival_summer(i,nage)>=1){
+                dvariable high_survival_penalty_3=1-summer_survival(i,nage);
+                summer_survival(i,nage)=1-posfun(high_survival_penalty_3, 0.01, pen_Sur_3);
+                if(summer_survival(i,nage)>=1){
                     penCount+=1;
                 }
                 full_llk+=1000*pen_Sur_3;
 
                 dvariable pen_Sur_4=0.0;
-                dvariable high_survival_penalty_4=1-survival_winter(i,nage);
-                survival_winter(i,nage)=1-posfun(high_survival_penalty_4, 0.01, pen_Sur_4);
-                if(survival_winter(i,nage)>=1){
+                dvariable high_survival_penalty_4=1-winter_survival(i,nage);
+                winter_survival(i,nage)=1-posfun(high_survival_penalty_4, 0.01, pen_Sur_4);
+                if(winter_survival(i,nage)>=1){
                     penCount+=1;
                 }
                 full_llk+=1000*pen_Sur_4;
             }else {
-                survival_summer(i,nage)=survival_summer(i,nage-1)*survival_summer(i-1,nage)/survival_summer(i-1,nage-1); // Plus age group
-                survival_winter(i,nage)=survival_winter(i,nage-1)*survival_winter(i-1,nage)/survival_winter(i-1,nage-1); // Plus age group
+                summer_survival(i,nage)=summer_survival(i,nage-1)*summer_survival(i-1,nage)/summer_survival(i-1,nage-1); // Plus age group
+                winter_survival(i,nage)=winter_survival(i,nage-1)*winter_survival(i-1,nage)/winter_survival(i-1,nage-1); // Plus age group
             }
         }     
     }
@@ -1282,13 +1278,13 @@ FUNCTION void calc_maturity()
     
     if(maturity_model_type<=1){
         for (int i=1;i<=nyr_tobefit;i++){
-            maturity(i)(1,3)=0;                 // Ages 0-2 are fully immature (0% maturity)
+            maturity(i)(1,3)=0; 
             
-            maturity(i,4)=mat_par_1*mat_par_2;  // Age 3 are partially mature
-            maturity(i,5)=mat_par_2;            // Age 4 are mostly mature
+            maturity(i,4)=mat_par_1*mat_par_2;
+            maturity(i,5)=mat_par_2;
 
-            //maturity(i,6)=1;                    
-            maturity(i)(6,nage)=1;              // Ages 5-9+ are fully mature
+            maturity(i,6)=1;
+            maturity(i)(7,nage)=1;
         }
     }else if(maturity_model_type==2){
         // Maturity values before 1997 - parameterization in Muradian et al. 2017
@@ -1298,7 +1294,7 @@ FUNCTION void calc_maturity()
         for (int i=1;i<=nyr_tobefit;i++){
             maturity(i)(1,3)=0; // Ages 0-2 fully immature
 
-            // Maturity levels switch after yr_mat_change (1997)
+            // Maturity levels switch after yr_mat_change (1997) 
             if(i<=yr_mat_change){
                 maturity(i,4)=mat_par_1*mat_par_2;
                 maturity(i,5)=mat_par_2;
@@ -1306,8 +1302,8 @@ FUNCTION void calc_maturity()
                 maturity(i,4)=mat_par_3*mat_par_4;
                 maturity(i,5)=mat_par_4;
             }
-            //maturity(i,6)=1;
-            maturity(i)(6,nage)=1; // Ages 5-9+ fully mature
+            maturity(i,6)=1;
+            maturity(i)(7,nage)=1;
         }
     }else if(maturity_model_type==3){
         for (int i=1;i<=nyr_tobefit;i++){
@@ -1317,11 +1313,10 @@ FUNCTION void calc_maturity()
             // mat_par_1 = age @ 50% mature
             // mat_par_2 = age @ 95% mature
             
-            // TODO: Should these 19s be hardcoded in?
             maturity(i,4)=1/(1+exp(-log(19)*(3-mat_par_1)/(mat_par_2)));
             maturity(i,5)=1/(1+exp(-log(19)*(4-mat_par_1)/(mat_par_2)));
-            //maturity(i,6)=1;
-            maturity(i)(6,nage)=1;
+            maturity(i,6)=1;
+            maturity(i)(7,nage)=1;
         }
     }else if(maturity_model_type==4){
         for (int i=1;i<=nyr_tobefit;i++){
@@ -1336,41 +1331,42 @@ FUNCTION void calc_maturity()
             maturity_unobs(i)(6,nage)=1;
         }
     }
+  
 
 FUNCTION void calc_selectivity()
   
     //Gear Selectivity
-    seine_vul.initialize();
-    seine_vul(1,3)=0;   // Ages 0-2 aren't caught by the seine fishery 
+    seine_vuln.initialize();
+    seine_vuln(1,3)=0; 
     for (int j=4;j<=nage;j++) {
-        seine_vul(j)=1/(1+exp(-1.0*seine_vul_beta*(j-1-seine_vul_alpha)));
+        seine_vuln(j)=1/(1+exp(-1.0*seine_vuln_beta*(j-1-seine_vuln_alpha)));
     }
 
     //Survey Selectivity
-    survey_vul.initialize();
-    survey_vul(1,3)=0;  // Ages 0-2 aren't caught by the survey
+    survey_vuln.initialize();
+    survey_vuln(1,3)=0; 
     for (int j=4;j<=nage;j++) {
-        survey_vul(j)=1/(1+exp(-1.0*survey_vul_beta*(j-1-survey_vul_alpha)));
+        survey_vuln(j)=1/(1+exp(-1.0*survey_vuln_beta*(j-1-survey_vuln_alpha)));
     }
 
 FUNCTION void calc_statevariables()
     N_y_a.initialize();
-    vul_pop_age.initialize();
-    seine_available_pop.initialize();
+    vuln_pop_age.initialize();
+    seine_avilable_pop.initialize();
     seine_age_comp.initialize();
     seine_biomass_age.initialize();
     seine_biomass.initialize();
     seine_catch.initialize();
-    N_spawn_age.initialize();
-    prefish_spawn_biomass_age.initialize();
-    pre_fish_biomass.initialize();
-    pre_fish_biomass_TONS.initialize();
-    spawn_biomass_age.initialize();
-    post_fish_spawn_biomass.initialize();
-    prefish_spawning_pop_age.initialize();
-    pre_fish_spawn_pop.initialize();
-    spawn_age_comp.initialize();
-    prefish_biomass_age.initialize();
+    N_spawners_age.initialize();
+    prefishery_spawning_biomass_age.initialize();
+    prefishery_biomass .initialize();
+    prefishery_biomass_TONS .initialize();
+    spawning_biomass_age.initialize();
+    postfishery_spawn_biomass.initialize();
+    prefishery_spawning_pop_age.initialize();
+    prefishery_spawn_pop.initialize();
+    spawning_age_comp.initialize();
+    prefishery_biomass_age.initialize();
     Early_biomass.initialize();
     age0_effect.initialize();
     init_age_0.initialize();
@@ -1382,21 +1378,21 @@ FUNCTION void calc_statevariables()
     Vul_sympat.initialize();
     Vul_ich_sympat.initialize();
     for (int a=1;a<=nage;a++){
-        // Vul_sympat(a) = 1/(1+exp(-log(19)*((a-1)-vhsv_infection_vul_a50)/(vhsv_infection_vul_a95-vhsv_infection_vul_a50)));
+        // Vul_sympat(a) = 1/(1+exp(-log(19)*((a-1)-vhsv_infection_vuln_a50)/(vhsv_infection_vuln_a95-vhsv_infection_vuln_a50)));
         Vul_ich_sympat(a) = 1.0;
         Vul_sympat(a) = 1.0;
     }
 
     // All new born fish are 100% susceptible - COME BACK
-    // vhsv_susceptibility.colfill(1,1.0);
-    vhsv_susceptibility.initialize();
-    vhsv_immunity.initialize();
-    ich_susceptibility.initialize();
-    ich_chronic_infection.initialize();
-    vhsv_susceptibility = 1.0;
-    vhsv_survival = 1.0;
-    ich_susceptibility = 1.0;
-    ich_survival = 1.0;
+    // vhsv_susceptibility_age.colfill(1,1.0);
+    vhsv_susceptibility_age.initialize();
+    vhsv_immunity_age.initialize();
+    ich_susceptibility_age.initialize();
+    ich_chronic_infection_age.initialize();
+    vhsv_susceptibility_age = 1.0;
+    vhsv_survival_age = 1.0;
+    ich_susceptibility_age = 1.0;
+    ich_survival_age = 1.0;
 
     // Time-varying OR constant recovery probability
     dvar_vector rec_prob_vhs2(vhs_start_est,nyr_tobefit-1);
@@ -1417,24 +1413,24 @@ FUNCTION void calc_statevariables()
     // init_age_0 is the number of recruits in year i
     // Sur_age0_2 is the survival rate experienced by init_age_0(i) from age 0.
     // In other words, the mortality the larvae in year i had undergone. Referred to as recruit because previous model started at age 3
-    for(int k=1;k<=recruit_covariate_counter;k++){
-        if(beta_recruit_ind(k)==0){continue;}
+    for(int k=1;k<=recruitment_covariate_counter;k++){
+      if(beta_recruit_ind(k)==0){continue;}
+
+      if(age0_covariates(1,beta_recruit_ind(k))==-9){
+        age0_effect(1) += 0;
+      }else{
+        age0_effect(1) += age0_turn_on(beta_recruit_ind(k))*(R_change(1)*beta_age0_offset(k)+beta_age0(k))*age0_covariates(1,beta_recruit_ind(k));
         
-        if(age0_covariates(1,beta_recruit_ind(k))==-9){
-            age0_effect(1) += 0;
-        }else{
-            age0_effect(1) += age0_turn_on(beta_recruit_ind(k))*(R_change(1)*beta_age0_offset(k)+beta_age0(k))*age0_covariates(1,beta_recruit_ind(k));
-            
-            // This is only used if recruit_covariate_model==2
-            agggregate_annual_age0devs(1) += (R_change(1)*beta_age0_offset(k)+beta_age0(k))*annual_age0devs(k,1);
-        }
+        // This is only used if recruitment_covariate_model==2
+        agggregate_annual_age0devs(1) += (R_change(1)*beta_age0_offset(k)+beta_age0(k))*annual_age0devs(k,1);
+      }
     }
 
-    if(recruit_covariate_model==1){
-        // Form below for effects incorporated as fixed variables
-        init_age_0(1) = Mean_Age0(1)*exp((age0_effect(1)+annual_age0devs(1,1)-0.5*square(sigma_age0devs))); 
-    }else if(recruit_covariate_model==2){
-        init_age_0(1) = Mean_Age0(1)*exp(agggregate_annual_age0devs(1)-0.5*square(sigma_age0devs)); 
+    if(recruitment_covariate_model==1){
+      // Form below for effects incorporated as fixed variables
+      init_age_0(1) = Mean_Age0(1)*exp((age0_effect(1)+annual_age0devs(1,1)-0.5*square(sigma_age0devs))); 
+    }else if(recruitment_covariate_model==2){
+      init_age_0(1) = Mean_Age0(1)*exp(agggregate_annual_age0devs(1)-0.5*square(sigma_age0devs)); 
     }
 
     //Fills in row 1 of pre-fishery abundance
@@ -1451,67 +1447,66 @@ FUNCTION void calc_statevariables()
     }
     // Calculate pre-fishery spawning biomass - nest elem_prod because function only accepts 2 args
     if(maturity_model_type!=4){
-        prefish_spawn_biomass_age(1)(1,nage)=elem_prod(elem_prod(maturity(1)(1,nage),N_y_a(1)(1,nage)),weight_at_age(1)(1,nage));
+        prefishery_spawning_biomass_age(1)(1,nage)=elem_prod(elem_prod(maturity(1)(1,nage),N_y_a(1)(1,nage)),weight_at_age(1)(1,nage));
     }else{
         for(int j=1;j<=nage;j++){
-            prefish_spawn_biomass_age(1,j)=(survey_vul(j)*maturity(1,j)+(1-survey_vul(j))*maturity_unobs(1,j))*N_y_a(1,j)*weight_at_age(1,j);
+            prefishery_spawning_biomass_age(1,j)=(survey_vuln(j)*maturity(1,j)+(1-survey_vuln(j))*maturity_unobs(1,j))*N_y_a(1,j)*weight_at_age(1,j);
         }
     }
 
-    
-    pre_fish_biomass(1)=sum(prefish_spawn_biomass_age(1)(1,nage));
-    pre_fish_biomass_TONS[1]=pre_fish_biomass[1]*2204.62/2000; // pre-fishery run biomass in TONS
+  
+    prefishery_biomass (1)=sum(prefishery_spawning_biomass_age(1)(1,nage));
+
+    prefishery_biomass_TONS [1]=prefishery_biomass [1]*2204.62/2000; // pre-fishery run biomass in TONS
     
     //Fills in row 1 of Catch Age-Composition from Purse-Seine
-    vul_pop_age(1)(1,nage)=elem_prod(seine_vul,N_y_a(1)(1,nage));
-    seine_available_pop(1)=sum(vul_pop_age(1)(1,nage)); 
+    vuln_pop_age(1)(1,nage)=elem_prod(seine_vuln,N_y_a(1)(1,nage));
+    seine_avilable_pop(1)=sum(vuln_pop_age(1)(1,nage)); 
 
-    seine_age_comp(1)(1,nage)=vul_pop_age(1)(1,nage)/seine_available_pop(1);
+    seine_age_comp(1)(1,nage)=vuln_pop_age(1)(1,nage)/seine_avilable_pop(1);
     seine_biomass_age(1)(1,nage)=elem_prod(seine_age_comp(1)(1,nage),weight_at_age(1)(1,nage));
     seine_biomass=sum(seine_biomass_age(1));
 
     if(maturity_model_type!=4){
-        prefish_spawning_pop_age(1)(1,nage)=elem_prod(maturity(1)(1,nage),N_y_a(1)(1,nage)); //numerator of Spawning Age-Comp(spawn_age_comp)
+        prefishery_spawning_pop_age(1)(1,nage)=elem_prod(maturity(1)(1,nage),N_y_a(1)(1,nage)); //numerator of Spawning Age-Comp(spawning_age_comp)
     }else{
-        prefish_spawning_pop_age(1)(1,nage)=elem_prod(survey_vul(1,nage),N_y_a(1)(1,nage)); //numerator of Spawning Age-Comp(spawn_age_comp)
+        prefishery_spawning_pop_age(1)(1,nage)=elem_prod(survey_vuln(1,nage),N_y_a(1)(1,nage)); //numerator of Spawning Age-Comp(spawning_age_comp)
     }
-    pre_fish_spawn_pop(1)=sum(prefish_spawning_pop_age(1)(1,nage));
-    spawn_age_comp(1)(1,nage)=prefish_spawning_pop_age(1)(1,nage)/pre_fish_spawn_pop(1);  //fills in Spawning Age-Comp
+    prefishery_spawn_pop(1)=sum(prefishery_spawning_pop_age(1)(1,nage));
+    spawning_age_comp(1)(1,nage)=prefishery_spawning_pop_age(1)(1,nage)/prefishery_spawn_pop(1);  //fills in Spawning Age-Comp
 
     //Row 1 of total Seine catch in millions 
     seine_catch(1)=seine_yield(1)/seine_biomass(1);
 
     int count = 7;
-    double gc_sum;
-    double pc_sum;
-    double fbc_sum;
+    double gillnet_catch_sum;
+    double pound_catch_sum;
+    double food_bait_catch_sum;
         
     // Now generate naturally spawning pop as correct structure for first four years
-    N_spawn_age(1)(1,nage)=0;
-    spawn_biomass_age(1)(1,nage)=0;
+    N_spawners_age(1)(1,nage)=0;
+    spawning_biomass_age(1)(1,nage)=0;
 
-    post_fish_spawn_biomass(1)=0;
-
+    postfishery_spawn_biomass(1)=0;
     dvar_vector total_catch = seine_age_comp(1)(4,6)*seine_catch(1)+
                               gillnet_catch(1)(4,6)+
                               pk*pound_catch(1)(4,6);
-    N_spawn_age(1)(4,6)=elem_prod(maturity(1)(4,6),N_y_a(1)(4,6)-total_catch);
+
+    N_spawners_age(1)(4,6)=elem_prod(maturity(1)(4,6),N_y_a(1)(4,6)-total_catch);
 
     for(int j=4;j<=6;j++){
         dvariable pen4=0.0;
-        N_spawn_age(1,j)=posfun(N_spawn_age(1,j), .01, pen4);
-        if(N_spawn_age(1,j) <= not_below_this){
+        N_spawners_age(1,j)=posfun(N_spawners_age(1,j), .01, pen4);
+        if(N_spawners_age(1,j) <= not_below_this){
             penCount+=1;
         }
         full_llk+=1000*pen4;
     } 
+  
+    //spawning_biomass_age(1)(4,6)=elem_prod(elem_prod(N_spawners_age(1)(4,6),weight_at_age(1)(4,6)),1/maturity(1)(4,6));
+    spawning_biomass_age(1)(4,6)=elem_prod(N_spawners_age(1)(4,6),weight_at_age(1)(4,6));
     
-    //spawn_biomass_age(1)(4,6)=elem_prod(elem_prod(N_spawn_age(1)(4,6),weight_at_age(1)(4,6)),1/maturity(1)(4,6));
-    spawn_biomass_age(1)(4,6)=elem_prod(N_spawn_age(1)(4,6),weight_at_age(1)(4,6));
-    
-    //Total naturally spawning biomass
-    post_fish_spawn_biomass(1)=sum(spawn_biomass_age(1)(4,6)); 
-    // post_fish_spawn_biomass=rowsum(spawn_biomass_age); 
+    postfishery_spawn_biomass(1)=sum(spawning_biomass_age(1)(4,6)); // postfishery_spawn_biomass=rowsum(spawning_biomass_age); //Total naturally spawning biomass
     int m=7;
 
     // FILL IN THE REMAINING YEARS
@@ -1536,34 +1531,34 @@ FUNCTION void calc_statevariables()
             }
         }
 
-        if(recruit_covariate_model==1){
+        if(recruitment_covariate_model==1){
             init_age_0(i) = Mean_Age0(i)*exp((age0_effect(i)+temp_age0(1)-0.5*square((sigma_age0devs))));
-        }else if(recruit_covariate_model==2){
+        }else if(recruitment_covariate_model==2){
             init_age_0(i) = Mean_Age0(i)*exp(agggregate_annual_age0devs(i)-0.5*square(sigma_age0devs)); 
         }
 
         if(i<=5){                     //Fill in years 2:5 as plus group advances from 6+ to 9+
             N_y_a(i,1)=init_age_0(i);
             for(int j=2;j<=count-1;j++){
-                N_y_a(i,j)=((N_y_a(i-1,j-1)-(seine_age_comp(i-1,j-1)*seine_catch(i-1)+gillnet_catch(i-1,j-1)+pk*pound_catch(i-1,j-1)))*survival_summer(i-1,j-1)-food_bait_catch(i-1,j-1))*survival_winter(i,j-1);
+                N_y_a(i,j)=((N_y_a(i-1,j-1)-(seine_age_comp(i-1,j-1)*seine_catch(i-1)+gillnet_catch(i-1,j-1)+pk*pound_catch(i-1,j-1)))*summer_survival(i-1,j-1)-food_bait_catch(i-1,j-1))*winter_survival(i,j-1);
             }
-
+            
             //The last age-class each year (incrementally by year beginning with age 6 in 1981) is a plus group
-            gc_sum = gillnet_catch(i-1,count-1);
-            pc_sum = pound_catch(i-1,count-1);
-            fbc_sum = food_bait_catch(i-1,count-1);
+            gillnet_catch_sum = gillnet_catch(i-1,count-1);
+            pound_catch_sum = pound_catch(i-1,count-1);
+            food_bait_catch_sum = food_bait_catch(i-1,count-1);
             for(int k=count;k<=nage;k++){
-                gc_sum += gillnet_catch(i-1,k);
-                pc_sum += pound_catch(i-1,k);  
-                fbc_sum += food_bait_catch(i-1,k); 
+                gillnet_catch_sum += gillnet_catch(i-1,k);
+                pound_catch_sum += pound_catch(i-1,k);  
+                food_bait_catch_sum += food_bait_catch(i-1,k); 
             }
             int j=count;
 
-            dvariable sc_sum = seine_age_comp(i-1,j-1)*seine_catch(i-1);
-            total_spring_catch = sc_sum+gc_sum+pk*pc_sum;
+            dvariable seine_catch_sum = seine_age_comp(i-1,j-1)*seine_catch(i-1);
+            total_spring_catch = seine_catch_sum+gillnet_catch_sum+pk*pound_catch_sum;
 
             // Ignore disease survival here because no disease data
-            N_y_a(i,j)=(((N_y_a(i-1,j-1)-(total_spring_catch))*survival_summer(i-1,j-1))-fbc_sum)*survival_winter(i,j-1); 
+            N_y_a(i,j)=(((N_y_a(i-1,j-1)-(total_spring_catch))*summer_survival(i-1,j-1))-food_bait_catch_sum)*winter_survival(i,j-1); 
 
             for(int j=1;j<=count;j++){
                 dvariable pen1=0.0;
@@ -1572,16 +1567,16 @@ FUNCTION void calc_statevariables()
                     penCount+=1;
                 }       
                 full_llk+=1000*pen1;
-                vul_pop_age(i,j)=N_y_a(i,j)*seine_vul(j);
+                vuln_pop_age(i,j)=N_y_a(i,j)*seine_vuln(j);
             }
 
-            seine_available_pop=rowsum(vul_pop_age); 
+            seine_avilable_pop=rowsum(vuln_pop_age); 
             for(int j=1;j<=count;j++){
-                seine_age_comp(i,j)=vul_pop_age(i,j)/seine_available_pop(i);
+                seine_age_comp(i,j)=vuln_pop_age(i,j)/seine_avilable_pop(i);
                 seine_biomass_age(i,j)=seine_age_comp(i,j)*weight_at_age(i,j); 
             }
-
-            seine_biomass=rowsum(seine_biomass_age);            
+            seine_biomass=rowsum(seine_biomass_age);
+                        
             seine_catch(i)=seine_yield(i)/seine_biomass(i);
             count+=1;
 
@@ -1591,17 +1586,17 @@ FUNCTION void calc_statevariables()
             N_y_a(i,1)=init_age_0(i);
             for(int j=2;j<=nage-1;j++){
                 // Still no disease data, so no disease survival component (11/15/2020)
-                dvariable total_spring_catch = seine_age_comp(i-1,j-1)*seine_catch(i-1)+
+                total_spring_catch = seine_age_comp(i-1,j-1)*seine_catch(i-1)+
                                                gillnet_catch(i-1,j-1)+
                                                pk*pound_catch(i-1,j-1);
-                N_y_a(i,j) = ((N_y_a(i-1,j-1)-(total_spring_catch))*survival_summer(i-1,j-1)-food_bait_catch(i-1,j-1))*survival_winter(i,j-1);
+                N_y_a(i,j) = ((N_y_a(i-1,j-1)-(total_spring_catch))*summer_survival(i-1,j-1)-food_bait_catch(i-1,j-1))*winter_survival(i,j-1);
             }
             // Plus group
             int j=nage;
             total_spring_catch = seine_age_comp(i-1,j-1)*seine_catch(i-1)+
-                                 gillnet_catch(i-1,j-1)+
-                                 pk*pound_catch(i-1,j-1);
-            N_y_a(i,j)=((N_y_a(i-1,j-1)-(total_spring_catch))*survival_summer(i-1,j-1)-food_bait_catch(i-1,j-1))*survival_winter(i,j-1) + ((N_y_a(i-1,j)-(seine_age_comp(i-1,j)*seine_catch(i-1)+gillnet_catch(i-1,j)+pk*pound_catch(i-1,j)))*survival_summer(i-1,j)-food_bait_catch(i-1,j))*survival_winter(i,j);
+                                            gillnet_catch(i-1,j-1)+
+                                            pk*pound_catch(i-1,j-1);
+            N_y_a(i,j)=((N_y_a(i-1,j-1)-(total_spring_catch))*summer_survival(i-1,j-1)-food_bait_catch(i-1,j-1))*winter_survival(i,j-1) + ((N_y_a(i-1,j)-(seine_age_comp(i-1,j)*seine_catch(i-1)+gillnet_catch(i-1,j)+pk*pound_catch(i-1,j)))*summer_survival(i-1,j)-food_bait_catch(i-1,j))*winter_survival(i,j);
             
             for(int j=1;j<=nage;j++){
                 dvariable pen2=0.0;
@@ -1610,68 +1605,68 @@ FUNCTION void calc_statevariables()
                     penCount+=1;
                 }
                 full_llk+=1000*pen2;
-                vul_pop_age(i,j)=N_y_a(i,j)*seine_vul(j);
+                vuln_pop_age(i,j)=N_y_a(i,j)*seine_vuln(j);
             } 
 
-            seine_available_pop=rowsum(vul_pop_age); 
+            seine_avilable_pop=rowsum(vuln_pop_age); 
             for(int j=1;j<=nage;j++){
-                seine_age_comp(i,j)=vul_pop_age(i,j)/seine_available_pop(i);
+                seine_age_comp(i,j)=vuln_pop_age(i,j)/seine_avilable_pop(i);
                 seine_biomass_age(i,j)=seine_age_comp(i,j)*weight_at_age(i,j);
             }
             seine_biomass=rowsum(seine_biomass_age);
 
             seine_catch(i)=seine_yield(i)/seine_biomass(i);
 
-        } else if(i>13){
+        }else if(i>13){
             //Below fills from 1993 to nyr_tobefit - matches ADF&G Excel matrix exactly
             N_y_a(i,1)=init_age_0(i);
             for(int j=2;j<=nage-1;j++){
 
                 if((i-1)>=vhs_start_est){
-                    vhsv_survival(i-1,j-1) = (1 - Vul_sympat(j-1)*vhsv_susceptibility(i-1,j-1)*vhsv_infection_prob(i-1)) + Vul_sympat(j-1)*vhsv_susceptibility(i-1,j-1)*vhsv_infection_prob(i-1)*rec_prob_vhs2(i-1);
-                    vhsv_immunity(i,j) = ( vhsv_immunity(i-1,j-1)+Vul_sympat(j-1)*vhsv_susceptibility(i-1,j-1)*vhsv_infection_prob(i-1)*rec_prob_vhs2(i-1) ) / ( (1 - Vul_sympat(j-1)*vhsv_susceptibility(i-1,j-1)*vhsv_infection_prob(i-1))+Vul_sympat(j-1)*vhsv_susceptibility(i-1,j-1)*vhsv_infection_prob(i-1)*rec_prob_vhs2(i-1) );
-                    vhsv_susceptibility(i,j) = 1 - vhsv_immunity(i,j);
+                    vhsv_survival_age(i-1,j-1) = (1 - Vul_sympat(j-1)*vhsv_susceptibility_age(i-1,j-1)*vhsv_infection_prob(i-1)) + Vul_sympat(j-1)*vhsv_susceptibility_age(i-1,j-1)*vhsv_infection_prob(i-1)*rec_prob_vhs2(i-1);
+                    vhsv_immunity_age(i,j) = ( vhsv_immunity_age(i-1,j-1)+Vul_sympat(j-1)*vhsv_susceptibility_age(i-1,j-1)*vhsv_infection_prob(i-1)*rec_prob_vhs2(i-1) ) / ( (1 - Vul_sympat(j-1)*vhsv_susceptibility_age(i-1,j-1)*vhsv_infection_prob(i-1))+Vul_sympat(j-1)*vhsv_susceptibility_age(i-1,j-1)*vhsv_infection_prob(i-1)*rec_prob_vhs2(i-1) );
+                    vhsv_susceptibility_age(i,j) = 1 - vhsv_immunity_age(i,j);
                 }
 
                 if((i-1)>=ich_start_est){
-                    ich_survival(i-1,j-1) = (1 - Vul_ich_sympat(j-1)*ich_susceptibility(i-1,j-1)*ich_infection_prob(i-1)) + Vul_ich_sympat(j-1)*ich_susceptibility(i-1,j-1)*ich_infection_prob(i-1)*rec_prob_ich2(i-1);
-                    ich_chronic_infection(i,j) = ( ich_chronic_infection(i-1,j-1)+Vul_ich_sympat(j-1)*ich_susceptibility(i-1,j-1)*ich_infection_prob(i-1)*rec_prob_ich2(i-1) ) / ( (1 - Vul_ich_sympat(j-1)*ich_susceptibility(i-1,j-1)*ich_infection_prob(i-1))+Vul_ich_sympat(j-1)*ich_susceptibility(i-1,j-1)*ich_infection_prob(i-1)*rec_prob_ich2(i-1) );
-                    ich_susceptibility(i,j) = 1 - ich_chronic_infection(i,j);
+                    ich_survival_age(i-1,j-1) = (1 - Vul_ich_sympat(j-1)*ich_susceptibility_age(i-1,j-1)*ich_infection_prob(i-1)) + Vul_ich_sympat(j-1)*ich_susceptibility_age(i-1,j-1)*ich_infection_prob(i-1)*rec_prob_ich2(i-1);
+                    ich_chronic_infection_age(i,j) = ( ich_chronic_infection_age(i-1,j-1)+Vul_ich_sympat(j-1)*ich_susceptibility_age(i-1,j-1)*ich_infection_prob(i-1)*rec_prob_ich2(i-1) ) / ( (1 - Vul_ich_sympat(j-1)*ich_susceptibility_age(i-1,j-1)*ich_infection_prob(i-1))+Vul_ich_sympat(j-1)*ich_susceptibility_age(i-1,j-1)*ich_infection_prob(i-1)*rec_prob_ich2(i-1) );
+                    ich_susceptibility_age(i,j) = 1 - ich_chronic_infection_age(i,j);
                 }
                 total_spring_catch = seine_age_comp(i-1,j-1)*seine_catch(i-1)+
                                      gillnet_catch(i-1,j-1)+
                                      pk*pound_catch(i-1,j-1);
-                N_y_a(i,j)=((N_y_a(i-1,j-1)-total_spring_catch)*survival_summer(i-1,j-1)-food_bait_catch(i-1,j-1))*survival_winter(i,j-1) * vhsv_survival(i-1,j-1) * ich_survival(i-1,j-1);
+                N_y_a(i,j)=((N_y_a(i-1,j-1)-(total_spring_catch))*summer_survival(i-1,j-1)-food_bait_catch(i-1,j-1))*winter_survival(i,j-1) * vhsv_survival_age(i-1,j-1) * ich_survival_age(i-1,j-1);
 
             }
             
             // Plus group
             int j=nage;
             
-            dvariable Nya_0_8 = ((N_y_a(i-1,j-1)-(seine_age_comp(i-1,j-1)*seine_catch(i-1)+gillnet_catch(i-1,j-1)+pk*pound_catch(i-1,j-1)))*survival_summer(i-1,j-1)-food_bait_catch(i-1,j-1))*survival_winter(i,j-1);
-            dvariable Nya_9 = ((N_y_a(i-1,j)-(seine_age_comp(i-1,j)*seine_catch(i-1)+gillnet_catch(i-1,j)+pk*pound_catch(i-1,j)))*survival_summer(i-1,j)-food_bait_catch(i-1,j))*survival_winter(i,j);
+            dvariable Nya_0_8 = ((N_y_a(i-1,j-1)-(seine_age_comp(i-1,j-1)*seine_catch(i-1)+gillnet_catch(i-1,j-1)+pk*pound_catch(i-1,j-1)))*summer_survival(i-1,j-1)-food_bait_catch(i-1,j-1))*winter_survival(i,j-1);
+            dvariable Nya_9 = ((N_y_a(i-1,j)-(seine_age_comp(i-1,j)*seine_catch(i-1)+gillnet_catch(i-1,j)+pk*pound_catch(i-1,j)))*summer_survival(i-1,j)-food_bait_catch(i-1,j))*winter_survival(i,j);
 
             if((i-1)>=vhs_start_est){
-                vhsv_survival(i-1,j-1) = (1 - Vul_sympat(j-1)*vhsv_susceptibility(i-1,j-1)*vhsv_infection_prob(i-1)) + Vul_sympat(j-1)*vhsv_susceptibility(i-1,j-1)*vhsv_infection_prob(i-1)*rec_prob_vhs2(i-1);
-                vhsv_survival(i-1,j) = (1 - Vul_sympat(j)*vhsv_susceptibility(i-1,j)*vhsv_infection_prob(i-1)) + Vul_sympat(j)*vhsv_susceptibility(i-1,j)*vhsv_infection_prob(i-1)*rec_prob_vhs2(i-1);
+                vhsv_survival_age(i-1,j-1) = (1 - Vul_sympat(j-1)*vhsv_susceptibility_age(i-1,j-1)*vhsv_infection_prob(i-1)) + Vul_sympat(j-1)*vhsv_susceptibility_age(i-1,j-1)*vhsv_infection_prob(i-1)*rec_prob_vhs2(i-1);
+                vhsv_survival_age(i-1,j) = (1 - Vul_sympat(j)*vhsv_susceptibility_age(i-1,j)*vhsv_infection_prob(i-1)) + Vul_sympat(j)*vhsv_susceptibility_age(i-1,j)*vhsv_infection_prob(i-1)*rec_prob_vhs2(i-1);
 
-                dvariable immune_vhs_prenage = ( vhsv_immunity(i-1,j-1)+Vul_sympat(j-1)*vhsv_susceptibility(i-1,j-1)*vhsv_infection_prob(i-1)*rec_prob_vhs2(i-1) ) / ( (1 - Vul_sympat(j-1)*vhsv_susceptibility(i-1,j-1)*vhsv_infection_prob(i-1))+Vul_sympat(j-1)*vhsv_susceptibility(i-1,j-1)*vhsv_infection_prob(i-1)*rec_prob_vhs2(i-1) );
-                dvariable immune_vhs_curnage = ( vhsv_immunity(i-1,j)+Vul_sympat(j)*vhsv_susceptibility(i-1,j)*vhsv_infection_prob(i-1)*rec_prob_vhs2(i-1) ) / ( (1 - Vul_sympat(j)*vhsv_susceptibility(i-1,j)*vhsv_infection_prob(i-1))+Vul_sympat(j)*vhsv_susceptibility(i-1,j)*vhsv_infection_prob(i-1)*rec_prob_vhs2(i-1) );
-                vhsv_immunity(i,j) = (immune_vhs_prenage * Nya_0_8 + immune_vhs_curnage * Nya_9)/(Nya_0_8 + Nya_9);
-                vhsv_susceptibility(i,j) = 1 - vhsv_immunity(i,j);
+                dvariable immune_vhs_prenage = ( vhsv_immunity_age(i-1,j-1)+Vul_sympat(j-1)*vhsv_susceptibility_age(i-1,j-1)*vhsv_infection_prob(i-1)*rec_prob_vhs2(i-1) ) / ( (1 - Vul_sympat(j-1)*vhsv_susceptibility_age(i-1,j-1)*vhsv_infection_prob(i-1))+Vul_sympat(j-1)*vhsv_susceptibility_age(i-1,j-1)*vhsv_infection_prob(i-1)*rec_prob_vhs2(i-1) );
+                dvariable immune_vhs_curnage = ( vhsv_immunity_age(i-1,j)+Vul_sympat(j)*vhsv_susceptibility_age(i-1,j)*vhsv_infection_prob(i-1)*rec_prob_vhs2(i-1) ) / ( (1 - Vul_sympat(j)*vhsv_susceptibility_age(i-1,j)*vhsv_infection_prob(i-1))+Vul_sympat(j)*vhsv_susceptibility_age(i-1,j)*vhsv_infection_prob(i-1)*rec_prob_vhs2(i-1) );
+                vhsv_immunity_age(i,j) = (immune_vhs_prenage * Nya_0_8 + immune_vhs_curnage * Nya_9)/(Nya_0_8 + Nya_9);
+                vhsv_susceptibility_age(i,j) = 1 - vhsv_immunity_age(i,j);
             }
 
             if((i-1)>=ich_start_est){
-                ich_survival(i-1,j-1) = (1 - Vul_ich_sympat(j-1)*ich_susceptibility(i-1,j-1)*ich_infection_prob(i-1)) + Vul_ich_sympat(j-1)*ich_susceptibility(i-1,j-1)*ich_infection_prob(i-1)*rec_prob_ich2(i-1);
-                ich_survival(i-1,j) = (1 - Vul_ich_sympat(j)*ich_susceptibility(i-1,j)*ich_infection_prob(i-1)) + Vul_ich_sympat(j)*ich_susceptibility(i-1,j)*ich_infection_prob(i-1)*rec_prob_ich2(i-1);
+                ich_survival_age(i-1,j-1) = (1 - Vul_ich_sympat(j-1)*ich_susceptibility_age(i-1,j-1)*ich_infection_prob(i-1)) + Vul_ich_sympat(j-1)*ich_susceptibility_age(i-1,j-1)*ich_infection_prob(i-1)*rec_prob_ich2(i-1);
+                ich_survival_age(i-1,j) = (1 - Vul_ich_sympat(j)*ich_susceptibility_age(i-1,j)*ich_infection_prob(i-1)) + Vul_ich_sympat(j)*ich_susceptibility_age(i-1,j)*ich_infection_prob(i-1)*rec_prob_ich2(i-1);
 
-                dvariable chrinf_ich_prenage = ( ich_chronic_infection(i-1,j-1)+Vul_ich_sympat(j-1)*ich_susceptibility(i-1,j-1)*ich_infection_prob(i-1)*rec_prob_ich2(i-1) ) / ( (1 - Vul_ich_sympat(j-1)*ich_susceptibility(i-1,j-1)*ich_infection_prob(i-1))+Vul_ich_sympat(j-1)*ich_susceptibility(i-1,j-1)*ich_infection_prob(i-1)*rec_prob_ich2(i-1) );
-                dvariable chrinf_ich_curnage = ( ich_chronic_infection(i-1,j)+Vul_ich_sympat(j)*ich_susceptibility(i-1,j)*ich_infection_prob(i-1)*rec_prob_ich2(i-1) ) / ( (1 - Vul_ich_sympat(j)*ich_susceptibility(i-1,j)*ich_infection_prob(i-1))+Vul_ich_sympat(j)*ich_susceptibility(i-1,j)*ich_infection_prob(i-1)*rec_prob_ich2(i-1) );
-                ich_chronic_infection(i,j) = (chrinf_ich_prenage * Nya_0_8 + chrinf_ich_curnage * Nya_9)/(Nya_0_8 + Nya_9);
-                ich_susceptibility(i,j) = 1 - ich_chronic_infection(i,j);
+                dvariable chrinf_ich_prenage = ( ich_chronic_infection_age(i-1,j-1)+Vul_ich_sympat(j-1)*ich_susceptibility_age(i-1,j-1)*ich_infection_prob(i-1)*rec_prob_ich2(i-1) ) / ( (1 - Vul_ich_sympat(j-1)*ich_susceptibility_age(i-1,j-1)*ich_infection_prob(i-1))+Vul_ich_sympat(j-1)*ich_susceptibility_age(i-1,j-1)*ich_infection_prob(i-1)*rec_prob_ich2(i-1) );
+                dvariable chrinf_ich_curnage = ( ich_chronic_infection_age(i-1,j)+Vul_ich_sympat(j)*ich_susceptibility_age(i-1,j)*ich_infection_prob(i-1)*rec_prob_ich2(i-1) ) / ( (1 - Vul_ich_sympat(j)*ich_susceptibility_age(i-1,j)*ich_infection_prob(i-1))+Vul_ich_sympat(j)*ich_susceptibility_age(i-1,j)*ich_infection_prob(i-1)*rec_prob_ich2(i-1) );
+                ich_chronic_infection_age(i,j) = (chrinf_ich_prenage * Nya_0_8 + chrinf_ich_curnage * Nya_9)/(Nya_0_8 + Nya_9);
+                ich_susceptibility_age(i,j) = 1 - ich_chronic_infection_age(i,j);
             }
 
-            N_y_a(i,j) = Nya_0_8 * vhsv_survival(i-1,j-1) * ich_survival(i-1,j-1) + Nya_9 * vhsv_survival(i-1,j) * ich_survival(i-1,j);
+            N_y_a(i,j) = Nya_0_8 * vhsv_survival_age(i-1,j-1) * ich_survival_age(i-1,j-1) +  Nya_9 * vhsv_survival_age(i-1,j) * ich_survival_age(i-1,j);
 
             // Check for impossible values (negative numbers) & blow up likelihood if present
             for(int j=1;j<=nage;j++){
@@ -1681,18 +1676,18 @@ FUNCTION void calc_statevariables()
                     penCount+=1;
                 }
                 full_llk+=1000*pen3;
-                vul_pop_age(i,j)=N_y_a(i,j)*seine_vul(j);
+                vuln_pop_age(i,j)=N_y_a(i,j)*seine_vuln(j);
             }
 
-            seine_available_pop=rowsum(vul_pop_age); 
+            seine_avilable_pop=rowsum(vuln_pop_age); 
             for(int j=1;j<=nage;j++){
-                seine_age_comp(i,j)=vul_pop_age(i,j)/seine_available_pop(i);
+                seine_age_comp(i,j)=vuln_pop_age(i,j)/seine_avilable_pop(i);
                 seine_biomass_age(i,j)=seine_age_comp(i,j)*weight_at_age(i,j);
             }
             seine_biomass=rowsum(seine_biomass_age);
+
             seine_catch(i)=seine_yield(i)/seine_biomass(i);
         }
-
 
         //Pre-Fishery Spawning Biomass or Pre-Fishery Run Biomass, mt
         if(DD_Mat==1){
@@ -1702,34 +1697,34 @@ FUNCTION void calc_statevariables()
             maturity(i)(6,nage)=1;
         }
 
-        //Pre-Fishery Spawning Age-Composition and Biomass
-        pre_fish_spawn_pop(i) = 0;
-        pre_fish_biomass(i) = 0;
+        //Pre-Fishery Spawning Age-Composition
+        prefishery_biomass (i) = 0;
+        prefishery_spawn_pop(i) = 0;
         for(int j=1;j<=nage;j++){
-          if(maturity_model_type!=4){
-              prefish_spawning_pop_age(i,j)=maturity(i,j)*N_y_a(i,j); //numerator of Spawning Age-Comp(spawn_age_comp)
-              prefish_spawn_biomass_age(i,j)=maturity(i,j)*N_y_a(i,j)*weight_at_age(i,j);
-          }else{
-              prefish_spawning_pop_age(i,j)=survey_vul(j)*N_y_a(i,j); //numerator of Spawning Age-Comp(spawn_age_comp)
-              prefish_spawn_biomass_age(i,j)=(survey_vul(j)*maturity(i,j)+(1-survey_vul(j))*maturity_unobs(i,j))*N_y_a(i,j)*weight_at_age(i,j);
-          }
-          pre_fish_spawn_pop(i)+=prefish_spawning_pop_age(i,j);
-          pre_fish_biomass(i)+= prefish_spawn_biomass_age(i,j);
+            if(maturity_model_type!=4){
+                prefishery_spawning_biomass_age(i,j)=maturity(i,j)*N_y_a(i,j)*weight_at_age(i,j);
+                prefishery_spawning_pop_age(i,j)=maturity(i,j)*N_y_a(i,j); //numerator of Spawning Age-Comp(spawning_age_comp)
+            }else{
+                prefishery_spawning_biomass_age(i,j)=(survey_vuln(j)*maturity(i,j)+(1-survey_vuln(j))*maturity_unobs(i,j))*N_y_a(i,j)*weight_at_age(i,j);
+                prefishery_spawning_pop_age(i,j)=survey_vuln(j)*N_y_a(i,j); //numerator of Spawning Age-Comp(spawning_age_comp)
+            }
+            prefishery_biomass (i)+= prefishery_spawning_biomass_age(i,j); //Spawning Stock Biomass; sum over ages the pre-fishery spawning biomass by year
+            prefishery_spawn_pop(i)+=prefishery_spawning_pop_age(i,j);
         }
-
-        pre_fish_biomass_TONS[i]=pre_fish_biomass[i]*2204.62/2000; // pre-fishery run biomass in TONS
+    
+        prefishery_biomass_TONS[i]=prefishery_biomass [i]*2204.62/2000; // pre-fishery run biomass in TONS
         for(int j=1;j<=nage;j++){
-            spawn_age_comp(i,j)=prefish_spawning_pop_age(i,j)/pre_fish_spawn_pop(i);  //fills in Spawning Age-Comp
+            spawning_age_comp(i,j)=prefishery_spawning_pop_age(i,j)/prefishery_spawn_pop(i);  //fills in Spawning Age-Comp
         }
 
         // Post-First half year Fisheries Spawning Population Estimates, called Naturally Spawning Pop in Excel model
-        // N_spawn_age Spawning Population (in millions) - mature abundance with spring catch and impound removed
+        // N_spawners_age Spawning Population (in millions) - mature abundance with spring catch and impound removed
         // Set up the remaining age-classes each year (incrementally by year beginning with age 5 in 1980) are zero
         // First set first 4 rows all to zero
         if(i<=4){
             for(int j=1;j<=nage;j++){
-                N_spawn_age(i,j)=0;
-                spawn_biomass_age(i,j)=0;
+                N_spawners_age(i,j)=0;
+                spawning_biomass_age(i,j)=0;
             }
             //m++;
         }else if(i>=5){
@@ -1737,23 +1732,23 @@ FUNCTION void calc_statevariables()
             m=nage;
         }
 
-        post_fish_spawn_biomass(i)=0;
+        postfishery_spawn_biomass(i)=0;
         for(int j=4;j<=m;j++){
             dvariable total_catch = seine_age_comp(i,j)*seine_catch(i)+gillnet_catch(i,j)+pound_catch(i,j);
-            N_spawn_age(i,j)=maturity(i,j)*(N_y_a(i,j)-total_catch);
-
-            dvariable pen5=0.0;
-            N_spawn_age(i,j)=posfun(N_spawn_age(i,j), .01, pen5);
-            if(N_spawn_age(i,j)<=not_below_this){
+            N_spawners_age(i,j)=maturity(i,j)*(N_y_a(i,j)-(total_catch));
+            
+            dvariable pen4=0.0;
+            N_spawners_age(i,j)=posfun(N_spawners_age(i,j), .01, pen4);
+            if(N_spawners_age(i,j)<=not_below_this){
                 penCount+=1;
             }
-            full_llk+=1000*pen5;
+            full_llk+=1000*pen4;
+
+            spawning_biomass_age(i,j)=N_spawners_age(i,j)*weight_at_age(i,j);
+            //spawning_biomass_age(i,j)=N_spawners_age(i,j)*weight_at_age(i,j)/maturity(i,j);
             
-            spawn_biomass_age(i,j)=N_spawn_age(i,j)*weight_at_age(i,j);
-            //spawn_biomass_age(i,j)=N_spawn_age(i,j)*weight_at_age(i,j)/maturity(i,j);
-            
-            post_fish_spawn_biomass(i)+=spawn_biomass_age(i,j);
-        }
+            postfishery_spawn_biomass(i)+=spawning_biomass_age(i,j); // postfishery_spawn_biomass=rowsum(spawning_biomass_age); //Total naturally spawning biomass
+        } 
         m++;
         
     }
@@ -1772,17 +1767,17 @@ FUNCTION void calc_statevariables()
 
     for(int i=vhs_start_est;i<nyr_tobefit;i++){
         for(int j=1;j<=nage;j++){
-            temp_inc(j) = maturity(i,j)*N_y_a(i,j)*Vul_sympat(j)*vhsv_susceptibility(i,j)*vhsv_infection_prob(i);
-            temp_fat(j) = maturity(i,j)*N_y_a(i,j)*Vul_sympat(j)*vhsv_susceptibility(i,j)*vhsv_infection_prob(i)*(1-rec_prob_vhs2(i));
-            temp_imm(j) = maturity(i,j)*N_y_a(i,j)*vhsv_immunity(i,j);
+            temp_inc(j) = maturity(i,j)*N_y_a(i,j)*Vul_sympat(j)*vhsv_susceptibility_age(i,j)*vhsv_infection_prob(i);
+            temp_fat(j) = maturity(i,j)*N_y_a(i,j)*Vul_sympat(j)*vhsv_susceptibility_age(i,j)*vhsv_infection_prob(i)*(1-rec_prob_vhs2(i));
+            temp_imm(j) = maturity(i,j)*N_y_a(i,j)*vhsv_immunity_age(i,j);
         }
-        inf_inc_sp(i) = sum(temp_inc)/sum(N_spawn_age(i)(1,nage));
-        fatal_sp(i) = sum(temp_fat)/sum(N_spawn_age(i)(1,nage));
-        vhsprev_sp(i) = sum(temp_imm)/sum(N_spawn_age(i)(1,nage));
+        inf_inc_sp(i) = sum(temp_inc)/sum(N_spawners_age(i)(1,nage));
+        fatal_sp(i) = sum(temp_fat)/sum(N_spawners_age(i)(1,nage));
+        vhsprev_sp(i) = sum(temp_imm)/sum(N_spawners_age(i)(1,nage));
 
-        inf_inc_age3(i) = (maturity(i,4)*N_y_a(i,4)*Vul_sympat(4)*vhsv_susceptibility(i,4)*vhsv_infection_prob(i))/N_spawn_age(i,4);
-        fatal_age3(i) = (maturity(i,4)*N_y_a(i,4)*Vul_sympat(4)*vhsv_susceptibility(i,4)*vhsv_infection_prob(i)*(1-rec_prob_vhs2(i)))/N_spawn_age(i,4);
-        vhsprev_age3(i) = (maturity(i,4)*N_y_a(i,4)*vhsv_immunity(i,4))/N_spawn_age(i,4);
+        inf_inc_age3(i) = (maturity(i,4)*N_y_a(i,4)*Vul_sympat(4)*vhsv_susceptibility_age(i,4)*vhsv_infection_prob(i))/N_spawners_age(i,4);
+        fatal_age3(i) = (maturity(i,4)*N_y_a(i,4)*Vul_sympat(4)*vhsv_susceptibility_age(i,4)*vhsv_infection_prob(i)*(1-rec_prob_vhs2(i)))/N_spawners_age(i,4);
+        vhsprev_age3(i) = (maturity(i,4)*N_y_a(i,4)*vhsv_immunity_age(i,4))/N_spawners_age(i,4);
     }
 
 
@@ -1795,17 +1790,17 @@ FUNCTION void calc_statevariables()
 
     for(int i=ich_start_est;i<nyr_tobefit;i++){
         for(int j=1;j<=nage;j++){
-            temp_inc(j) = maturity(i,j)*N_y_a(i,j)*Vul_ich_sympat(j)*ich_susceptibility(i,j)*ich_infection_prob(i);
-            temp_fat(j) = maturity(i,j)*N_y_a(i,j)*Vul_ich_sympat(j)*ich_susceptibility(i,j)*ich_infection_prob(i)*(1-rec_prob_ich2(i));
-            temp_imm(j) = maturity(i,j)*N_y_a(i,j)*ich_chronic_infection(i,j);
+            temp_inc(j) = maturity(i,j)*N_y_a(i,j)*Vul_ich_sympat(j)*ich_susceptibility_age(i,j)*ich_infection_prob(i);
+            temp_fat(j) = maturity(i,j)*N_y_a(i,j)*Vul_ich_sympat(j)*ich_susceptibility_age(i,j)*ich_infection_prob(i)*(1-rec_prob_ich2(i));
+            temp_imm(j) = maturity(i,j)*N_y_a(i,j)*ich_chronic_infection_age(i,j);
         }
-        inf_inc_sp_ich(i) = sum(temp_inc)/sum(N_spawn_age(i)(1,nage));
-        fatal_sp_ich(i) = sum(temp_fat)/sum(N_spawn_age(i)(1,nage));
-        ichprev_sp(i) = sum(temp_imm)/sum(N_spawn_age(i)(1,nage));
+        inf_inc_sp_ich(i) = sum(temp_inc)/sum(N_spawners_age(i)(1,nage));
+        fatal_sp_ich(i) = sum(temp_fat)/sum(N_spawners_age(i)(1,nage));
+        ichprev_sp(i) = sum(temp_imm)/sum(N_spawners_age(i)(1,nage));
 
-        inf_inc_age3_ich(i) = (maturity(i,4)*N_y_a(i,4)*Vul_ich_sympat(4)*ich_susceptibility(i,4)*ich_infection_prob(i))/N_spawn_age(i,4);
-        fatal_age3_ich(i) = (maturity(i,4)*N_y_a(i,4)*Vul_ich_sympat(4)*ich_susceptibility(i,4)*ich_infection_prob(i)*(1-rec_prob_ich2(i)))/N_spawn_age(i,4);
-        ichprev_age3(i) = (maturity(i,4)*N_y_a(i,4)*ich_chronic_infection(i,4))/N_spawn_age(i,4);
+        inf_inc_age3_ich(i) = (maturity(i,4)*N_y_a(i,4)*Vul_ich_sympat(4)*ich_susceptibility_age(i,4)*ich_infection_prob(i))/N_spawners_age(i,4);
+        fatal_age3_ich(i) = (maturity(i,4)*N_y_a(i,4)*Vul_ich_sympat(4)*ich_susceptibility_age(i,4)*ich_infection_prob(i)*(1-rec_prob_ich2(i)))/N_spawners_age(i,4);
+        ichprev_age3(i) = (maturity(i,4)*N_y_a(i,4)*ich_chronic_infection_age(i,4))/N_spawners_age(i,4);
     }
 
 FUNCTION void calc_surveyvalues()
@@ -1813,7 +1808,7 @@ FUNCTION void calc_surveyvalues()
     eggdep_age_comp.initialize();
     EggAC_sum.initialize();
     EGG_est.initialize();
-    prefish_biomass_age.initialize();
+    prefishery_biomass_age.initialize();
     Early_biomass.initialize();  
     ADFG_HYDRO_est.initialize();
     PWSSC_HYDRO_est.initialize();
@@ -1821,38 +1816,36 @@ FUNCTION void calc_surveyvalues()
     vhsv_pred.initialize();
     ich_pred.initialize();
 
-    //Egg deposition age comp - this data set patchily exists for 10 out of the nyr_tobefit years
+    //Egg deposition - this data set patchily exists for 10 out of the nyr_tobefit years
     for(int i=1;i<=nyr_tobefit;i++){
         for(int j=1;j<=nage;j++){
             dvariable eac = 0;
-            if(egg_dep(i)!=-9){ // When the egg dep data exists, compute it as such
-                eac = N_spawn_age(i,j)*fecundity(i,j);
+            if(egg_dep(i)!=-9){
+                eac=N_spawners_age(i,j)*fecundity(i,j);
             }
             eggdep_age_comp(i,j)=eac;
         }
     }
 
-    // Compute egg deposition survey, MDM survey, and aerial juvenile survey (12/2019) data   
+    // Compute egg deposition survey, MDM survey, and aerial juvenile survey (12/2019) data  
     EggAC_sum=rowsum(eggdep_age_comp);
     for(int i=1;i<=nyr_tobefit;i++){
         EGG_est(i)=0.000001*female_spawners(i)*EggAC_sum(i);
-        MDM_est(i)=(1-female_spawners(i))*post_fish_spawn_biomass(i)/mdm_c;
-        juvenile_pred(i)=N_y_a(i,2)*exp(log_juvenile_q);
+        MDM_est(i)=(1-female_spawners(i))*postfishery_spawn_biomass(i)/mdm_c;
+        juvenile_pred(i)=N_y_a(i,2)*exp(log_juvenile_q); 
     }
-
-   
 
     // ADFG & PWSSC Hydroacoustic Survey Biomass 
     for(int i=1;i<=nyr_tobefit;i++){
         for(int j=1;j<=nage;j++){
             if(maturity_model_type!=4){
-                //prefish_biomass_age(i,j)=N_y_a(i,j)*weight_at_age(i,j);
-                prefish_biomass_age(i,j)=maturity(i,j)*N_y_a(i,j)*weight_at_age(i,j);
+                //prefishery_biomass_age(i,j)=N_y_a(i,j)*weight_at_age(i,j);
+                prefishery_biomass_age(i,j)=maturity(i,j)*N_y_a(i,j)*weight_at_age(i,j);
             }else{
-                prefish_biomass_age(i,j)=(survey_vul(j)*maturity(i,j)+(1-survey_vul(j))*maturity_unobs(i,j))*N_y_a(i,j)*weight_at_age(i,j);
+                prefishery_biomass_age(i,j)=(survey_vuln(j)*maturity(i,j)+(1-survey_vuln(j))*maturity_unobs(i,j))*N_y_a(i,j)*weight_at_age(i,j);
             }
         }
-        Early_biomass=rowsum(prefish_biomass_age); // includes mature and non-mature fish
+        Early_biomass=rowsum(prefishery_biomass_age); // includes mature and non-mature fish
         ADFG_HYDRO_est(i)=Early_biomass(i)*exp(ADFG_hydro_q);
         PWSSC_HYDRO_est(i)=Early_biomass(i)*exp(PWSSC_hydro_q);
     }
@@ -1861,7 +1854,7 @@ FUNCTION void calc_surveyvalues()
     Vul_vhs_survey.initialize();
     Vul_vhs_survey(1, nage) = 1.0;
     // for (int a=1;a<=nage;a++){
-    //     // Vul_vhs_survey(a) = 1/(1+exp(-log(19)*((a-1)-vhsv_sample_vul_a50)/(vhsv_sample_vul_a95-vhsv_sample_vul_a50)));
+    //     // Vul_vhs_survey(a) = 1/(1+exp(-log(19)*((a-1)-vhsv_sample_vuln_a50)/(vhsv_sample_vuln_a95-vhsv_sample_vuln_a50)));
     //     // Vul_vhs_survey(a) = 1/(1+exp(-log(19)*(3-mat_par_1)/(mat_par_2-mat_par_1)));
     //     Vul_vhs_survey(a) = 1.0;
     // }
@@ -1873,9 +1866,9 @@ FUNCTION void calc_surveyvalues()
 
     for(int i=vhs_start_est;i<=nyr_tobefit;i++){
         for(int j=1;j<=nage;j++){
-            vhsv_pred(i,k) = Vul_vhs_survey(j)*N_y_a(i,j)*vhsv_immunity(i,j)*q_immunity; // This assumes vhsprevalence samples target all mature individuals (i.e. maturity = survey vulnerability)
+            vhsv_pred(i,k) = Vul_vhs_survey(j)*N_y_a(i,j)*vhsv_immunity_age(i,j)*q_immunity; // This assumes vhsprevalence samples target all mature individuals (i.e. maturity = survey vulnerability)
             k+=1;
-            vhsv_pred(i,k) = Vul_vhs_survey(j)*N_y_a(i,j)*(1-vhsv_immunity(i,j)*q_immunity);
+            vhsv_pred(i,k) = Vul_vhs_survey(j)*N_y_a(i,j)*(1-vhsv_immunity_age(i,j)*q_immunity);
             k+=1;
         } 
         k=1;
@@ -1896,13 +1889,13 @@ FUNCTION void calc_surveyvalues()
         for(int j=1;j<=nage;j++){
             // Since ages 7 and older are grouped in Maya's data, group here too
             if(j<8){
-                ich_pred(i,k) = Vul_ich_survey(j)*N_y_a(i,j)*ich_chronic_infection(i,j); // This assumes seroprevalence samples target all mature individuals (i.e. maturity = survey vulnerability)
+                ich_pred(i,k) = Vul_ich_survey(j)*N_y_a(i,j)*ich_chronic_infection_age(i,j); // This assumes seroprevalence samples target all mature individuals (i.e. maturity = survey vulnerability)
                 k+=1;
-                ich_pred(i,k) = Vul_ich_survey(j)*N_y_a(i,j)*(1-ich_chronic_infection(i,j));
+                ich_pred(i,k) = Vul_ich_survey(j)*N_y_a(i,j)*(1-ich_chronic_infection_age(i,j));
                 k+=1;
             }else{
-                ich_pred(i,k) += Vul_ich_survey(j)*N_y_a(i,j)*ich_chronic_infection(i,j);
-                ich_pred(i,k+1) += Vul_ich_survey(j)*N_y_a(i,j)*(1-ich_chronic_infection(i,j));
+                ich_pred(i,k) += Vul_ich_survey(j)*N_y_a(i,j)*ich_chronic_infection_age(i,j);
+                ich_pred(i,k+1) += Vul_ich_survey(j)*N_y_a(i,j)*(1-ich_chronic_infection_age(i,j));
             }
         } 
         k=1;
@@ -1916,21 +1909,21 @@ FUNCTION void calc_nll_components()
     age0_covar_prior.initialize();
     mort_covar_prior.initialize();
     seine_comp_residuals.initialize();
-    spawn_comp_residuals.initialize();
+    spawner_comp_residuals.initialize();
     mdm_llk_ind.initialize();
-    eggdep_llk_ind.initialize();
+    egg_llk_ind.initialize();
     ADFG_hydro_llk_ind.initialize();
     PWSSC_hydro_llk_ind.initialize();
     juvenile_llk_ind.initialize();
 
     seine_llk.initialize();
-    spawn_llk.initialize();
+    spawner_llk.initialize();
     mdm_llk.initialize();
     eggdep_llk.initialize();
     ADFG_hydro_llk.initialize();
     PWSSC_hydro_llk.initialize();
     juvenile_llk.initialize();
-    vhs_llk.initialize();
+    vhsv_llk.initialize();
     ich_llk.initialize();
 
     // Remove penalized lik for unconstrained rec devs - 12/22/2019
@@ -1938,15 +1931,15 @@ FUNCTION void calc_nll_components()
         age0_devs_penllk = 0;
     }else{
         for(int i=1; i<=nyr_recdevs; i++){
-            if(recruit_covariate_model==1){
+            if(recruitment_covariate_model==1){
                 age0_devs_penllk += log(sigma_age0devs)+0.5*square(annual_age0devs(1,i))/square(sigma_age0devs);
-            }else if(recruit_covariate_model==2){
-                for (int k=1;k<=recruit_covariate_counter;k++){
+            }else if(recruitment_covariate_model==2){
+                for (int k=1;k<=recruitment_covariate_counter;k++){
                     if(beta_recruit_ind(k)==0){continue;}
                     
                     if(age0_covariates(i,beta_recruit_ind(k))!=-9){
                         // age0_devs_penllk += log(sigma_age0devs)+0.5*square(annual_age0devs(i))/square(sigma_age0devs);
-                        age0_covar_prior += log(sigma_age0covar(k))+0.5*square(annual_age0devs(k,i)-age0_covariates(i,beta_recruit_ind(k)))/square(sigma_age0covar(k));
+                    age0_covar_prior += log(sigma_age0covar(k))+0.5*square(annual_age0devs(k,i)-age0_covariates(i,beta_recruit_ind(k)))/square(sigma_age0covar(k));
                     }
                 }
                 age0_devs_penllk += log(sigma_age0devs)+0.5*square(colsum(annual_age0devs)(i))/square(sigma_age0devs);
@@ -1957,9 +1950,8 @@ FUNCTION void calc_nll_components()
     if(mortality_covariate_model==2){
         for(int i=1; i<=nyr_tobefit; i++){
             for (int k=1;k<=mortality_covariate_counter;k++){
-                if(beta_mortality_ind(k)==0){continue;}
-                
-                if(mor_covariates(i,beta_mortality_ind(k))!=-9){
+                if(beta_mortality_ind(k)==0){
+                }else if(mor_covariates(i,beta_mortality_ind(k))!=-9){
                     mort_covar_prior += log(sigma_morcovar(k))+0.5*square(annual_mortdevs(k,i)-mor_covariates(i,beta_mortality_ind(k)))/square(sigma_morcovar(k));
                 }
             }
@@ -1970,24 +1962,16 @@ FUNCTION void calc_nll_components()
     }
 
 
-    
+    //Seine Age Composition - this data set is very patchy
     for(int i=1;i<=nyr_tobefit;i++){
         for(int j=1;j<=nage;j++){
-
-            //Seine Age Composition - this data set is very patchy
-            if(purse_seine_age_comp(i,j)<=0 || seine_age_comp(i,j)==0){
+            if(purse_seine_age_comp(i,j)<=0){
+                seine_comp_residuals(i,j)=0;
+            }else if(seine_age_comp(i,j)==0){
                 seine_comp_residuals(i,j)=0;
             }else{
                 seine_comp_residuals(i,j)=purse_seine_age_comp(i,j)*(log(seine_age_comp(i,j))-log(purse_seine_age_comp(i,j)));
             }
-            
-            //Spawning Age Composition
-            if(spawning_age_comp(i,j)<=0 || spawn_age_comp(i,j)==0){
-                spawn_comp_residuals(i,j)=0;
-            }else{
-                spawn_comp_residuals(i,j)=spawning_age_comp(i,j)*(log(spawn_age_comp(i,j))-log(spawning_age_comp(i,j)));
-            }
-
         }
     }
     
@@ -1996,71 +1980,82 @@ FUNCTION void calc_nll_components()
         seine_temp3(i)=seine_ess(i)*seine_temp2(i);
     }
     seine_llk=-sum(seine_temp3);
-
-    spawn_temp2=rowsum(spawn_comp_residuals);
+  
+    //Spawning Age Composition
     for(int i=1;i<=nyr_tobefit;i++){
-        spawn_temp3(i)=spawning_ess(i)*spawn_temp2(i);
+        for(int j=1;j<=nage;j++){
+            if(spawner_age_comp(i,j)<=0){
+                spawner_comp_residuals(i,j)=0;
+            }else if(spawning_age_comp(i,j)==0){
+                spawner_comp_residuals(i,j)=0;
+            }else{
+                spawner_comp_residuals(i,j)=spawner_age_comp(i,j)*(log(spawning_age_comp(i,j))-log(spawner_age_comp(i,j)));
+            }
+        }
     }
-    spawn_llk=-sum(spawn_temp3);
+
+    spawn_temp2=rowsum(spawner_comp_residuals);
+    for(int i=1;i<=nyr_tobefit;i++){
+        spawn_temp3(i)=spawner_ess(i)*spawn_temp2(i);
+    }
+    spawner_llk=-sum(spawn_temp3);
 
     //Mile-days of milt Likelihood component
     for(int i=1;i<=nyr_tobefit;i++) {
         mdm_residuals(i)=log(MDM_est(i))-log(mile_days_milt(i));
         mdm_llk_ind(i)=(mdm_residuals(i)*mdm_residuals(i))/(2*milt_add_var*milt_add_var)+log(milt_add_var);
     }
-    mdm_resids_ss=norm2(mdm_residuals);
-    //M_VAR=mdm_resids_ss/nyr_tobefit+(milt_add_var*milt_add_var);
-    mdm_llk=nyr_tobefit*log(milt_add_var)+(.5*mdm_resids_ss/(milt_add_var*milt_add_var));
+    MDMtemp_2=norm2(mdm_residuals);
+    //M_VAR=MDMtemp_2/nyr_tobefit+(milt_add_var*milt_add_var);
+    mdm_llk=nyr_tobefit*log(milt_add_var)+(.5*MDMtemp_2/(milt_add_var*milt_add_var));
 
     //Egg Deposition Likelihood component
     eggdep_llk=0;
     for(int i=1;i<=nyr_tobefit;i++){
         egg_sd(i)=0;
         eggdep_residuals(i)=0;
-        eggdep_llk_ind(i)=0;
+        egg_llk_ind(i)=0;
     }
-    for(int i=5;i<=18;i++){
-        // Years when egg dep survey did not occur (1986, 1987, 1988, 1994)
-        if(i==6 || i==7 || i==8 || i==14){continue;}
-
+    for(int i=5;i<=5;i++){
         egg_sd(i)=sqrt((cv_egg(i)*cv_egg(i))+(eggdep_add_var*eggdep_add_var));
         eggdep_residuals(i)=(log(EGG_est(i))-log(egg_dep(i)));
-        eggdep_llk_ind(i)=log(egg_sd(i))+(.5*eggdep_residuals(i)*eggdep_residuals(i)/(egg_sd(i)*egg_sd(i)));
-        eggdep_llk+=eggdep_llk_ind(i);
+        egg_llk_ind(i)=log(egg_sd(i))+(.5*eggdep_residuals(i)*eggdep_residuals(i)/(egg_sd(i)*egg_sd(i)));
+        eggdep_llk+=egg_llk_ind(i);
     }
-    // for(int i=9;i<=13;i++){
-    //     egg_sd(i)=sqrt((cv_egg(i)*cv_egg(i))+(eggdep_add_var*eggdep_add_var));
-    //     eggdep_residuals(i)=(log(EGG_est(i))-log(egg_dep(i)));
-    //     eggdep_llk_ind(i)=log(egg_sd(i))+(.5*eggdep_residuals(i)*eggdep_residuals(i)/(egg_sd(i)*egg_sd(i)));
-    //     eggdep_llk+=eggdep_llk_ind(i);
-    // }
-    // for(int i=15;i<=18;i++){
-    //     egg_sd(i)=sqrt((cv_egg(i)*cv_egg(i))+(eggdep_add_var*eggdep_add_var));
-    //     eggdep_residuals(i)=(log(EGG_est(i))-log(egg_dep(i)));
-    //     eggdep_llk_ind(i)=log(egg_sd(i))+(.5*eggdep_residuals(i)*eggdep_residuals(i)/(egg_sd(i)*egg_sd(i)));
-    //     eggdep_llk+=eggdep_llk_ind(i);
-    // }
-    // eggdep_llk_ind = eggdep_llk_ind*10;
+    for(int i=9;i<=13;i++){
+        egg_sd(i)=sqrt((cv_egg(i)*cv_egg(i))+(eggdep_add_var*eggdep_add_var));
+        eggdep_residuals(i)=(log(EGG_est(i))-log(egg_dep(i)));
+        egg_llk_ind(i)=log(egg_sd(i))+(.5*eggdep_residuals(i)*eggdep_residuals(i)/(egg_sd(i)*egg_sd(i)));
+        eggdep_llk+=egg_llk_ind(i);
+    }
+    for(int i=15;i<=18;i++){
+        egg_sd(i)=sqrt((cv_egg(i)*cv_egg(i))+(eggdep_add_var*eggdep_add_var));
+        eggdep_residuals(i)=(log(EGG_est(i))-log(egg_dep(i)));
+        egg_llk_ind(i)=log(egg_sd(i))+(.5*eggdep_residuals(i)*eggdep_residuals(i)/(egg_sd(i)*egg_sd(i)));
+        eggdep_llk+=egg_llk_ind(i);
+    }
+    // egg_llk_ind = egg_llk_ind*10;
 
     //ADFG Hydroacoustic Survey Biomass Likelihood component
-
-    int N_hydADFG=0;
-
-    for(int i=1;i<=nyr_tobefit;i++){
-        if(i <= hydADFG_start-1){   // First several years are missing, dont include in likelihood calculations
-            ADFG_hydro_residuals(i)=0;
-        }else if(i <= hydADFG_start+4){ // Four years where this survey was done
-            ADFG_hydro_residuals(i)=log(ADFG_hydro(i))-log(ADFG_HYDRO_est(i));
-            ADFG_hydro_llk_ind(i)=(ADFG_hydro_residuals(i)*ADFG_hydro_residuals(i))/(ADFG_hydro_add_var*ADFG_hydro_add_var*2)+log(ADFG_hydro_add_var);
-            N_hydADFG+=1;
-        }else{  //missing final 5 years of ADF&G data as of 07/2015
-            ADFG_hydro_residuals(i)=0;    
-            ADFG_hydro_llk_ind(i)=0;
-        }
+    for(int i=1;i<=hydADFG_start-1;i++){
+        ADFG_hydro_residuals(i)=0;
     }
 
-    ADFG_hydro_resids_ss=norm2(ADFG_hydro_residuals);
-    ADFG_hydro_llk=(N_hydADFG)*log(ADFG_hydro_add_var)+(0.5*ADFG_hydro_resids_ss/(ADFG_hydro_add_var*ADFG_hydro_add_var));
+    int N_hydADFG=0;
+    for(int i=hydADFG_start;i<=hydADFG_start+4;i++){ 
+        // hyd~_start variable holds index of first year of
+        // survey depending on data source
+        // UPDATED 07/23/2015 to reflect 2 additional years of missing data
+        ADFG_hydro_residuals(i)=log(ADFG_hydro(i))-log(ADFG_HYDRO_est(i));
+        ADFG_hydro_llk_ind(i)=(ADFG_hydro_residuals(i)*ADFG_hydro_residuals(i))/(ADFG_hydro_add_var*ADFG_hydro_add_var*2)+log(ADFG_hydro_add_var);
+        N_hydADFG+=1;
+    }
+    for(int i=hydADFG_start+4+1;i<=nyr_tobefit;i++){
+        ADFG_hydro_residuals(i)=0;    //missing final 5 years of ADF&G data as of 07/2015
+        ADFG_hydro_llk_ind(i)=0;
+    }
+    HtempADFG_num=norm2(ADFG_hydro_residuals);
+    ADFG_hydro_llk=(N_hydADFG)*log(ADFG_hydro_add_var)+(0.5*HtempADFG_num/(ADFG_hydro_add_var*ADFG_hydro_add_var));
     // minus 5 to account for the missing final 5 years of ADF&G data
 
     //PWSSC Hydroacoustic Survey Biomass Likelihood component
@@ -2072,7 +2067,8 @@ FUNCTION void calc_nll_components()
             PWSSC_sd(i)=0;
             PWSSC_hydro_residuals(i)=0;
             PWSSC_hydro_llk_ind(i)=0;
-        }else{
+        }
+        else{
             PWSSC_sd(i)=sqrt((PWSSC_hydro_cv(i)*PWSSC_hydro_cv(i))+(PWSSC_hydro_add_var*PWSSC_hydro_add_var));
             PWSSC_hydro_residuals(i)=(log(PWSSC_hydro(i))-log(PWSSC_HYDRO_est(i)));
             PWSSC_hydro_llk_ind(i)=log(PWSSC_sd(i))+(.5*PWSSC_hydro_residuals(i)*PWSSC_hydro_residuals(i)/(PWSSC_sd(i)*PWSSC_sd(i)));
@@ -2084,14 +2080,13 @@ FUNCTION void calc_nll_components()
     // Aerial juvenile survey (incorporated 12/2019)
     juvenile_llk=0;
     for(int i=1;i<=nyr_tobefit;i++) {
-        if(juvenile_survey(i)!=-9) {
-            juvenile_llk_ind(i)=dnbinom(juvenile_survey(i),juvenile_pred(i),juvenile_overdisp);
+        if(juvenile_survey_index(i)!=-9) {
+            juvenile_llk_ind(i)=dnbinom(juvenile_survey_index(i),juvenile_pred(i),juvenile_overdispersion);
             juvenile_llk+=juvenile_llk_ind(i);
         }
     }
-    
+  
     // Seroprevalence obs likelihood - binomial (may need to come back to) (01/2021)
-
     dvar_matrix vhs_llk_ind(1,nyr_tobefit,1,n_age2);
     dvar_matrix ich_llk_ind(1,nyr_tobefit,1,n_age2);
 
@@ -2119,8 +2114,8 @@ FUNCTION void calc_nll_components()
                 }
             }else{
                 // Binomial
-                x_bin = vhs_obs_comp(j*2-1)*antibody_ess(i);
-                n_bin = (vhs_obs_comp(j*2-1)+vhs_obs_comp(j*2))*antibody_ess(i);
+                x_bin = vhs_obs_comp(j*2-1)*vhsv_antibody_ess(i);
+                n_bin = (vhs_obs_comp(j*2-1)+vhs_obs_comp(j*2))*vhsv_antibody_ess(i);
                 p_bin = vhs_pred_comp(j*2-1)/(vhs_pred_comp(j*2-1) + vhs_pred_comp(j*2));
                 vhs_llk_ind(i,j) = dbinom(x_bin,n_bin,p_bin);
             }
@@ -2153,9 +2148,8 @@ FUNCTION void calc_nll_components()
     }
 
     // Binomial
-    vhs_llk = sum(rowsum(vhs_llk_ind));
+    vhsv_llk = sum(rowsum(vhs_llk_ind));
     ich_llk = sum(rowsum(ich_llk_ind));
-
 
 FUNCTION void calc_priors()
     priors.initialize();
@@ -2169,36 +2163,36 @@ FUNCTION void calc_priors()
     prior_pars_1(4) = prior_dist(pars_1(4 ,5), Z_9,                 pars_1(4 ,6), pars_1(4 ,7));
     prior_pars_1(5) = prior_dist(pars_1(5 ,5), mat_par_1,           pars_1(5 ,6), pars_1(5 ,7));
     prior_pars_1(6) = prior_dist(pars_1(6 ,5), mat_par_2,           pars_1(6 ,6), pars_1(6 ,7));
-    
+
     if(maturity_model_type==2){
         prior_pars_1(7) = prior_dist(pars_1(7,5), mat_par_3, pars_1(7,6), pars_1(7,7));
         prior_pars_1(8) = prior_dist(pars_1(8,5), mat_par_4, pars_1(8,6), pars_1(8,7));
     }
 
-    prior_pars_1(9)  = prior_dist(pars_1(9 ,5), seine_vul_alpha,        pars_1(9 ,6), pars_1(9 ,7));
-    prior_pars_1(10) = prior_dist(pars_1(10,5), seine_vul_beta,         pars_1(10,6), pars_1(10,7));
-    prior_pars_1(11) = prior_dist(pars_1(11,5), survey_vul_alpha,       pars_1(11,6), pars_1(11,7));
-    prior_pars_1(12) = prior_dist(pars_1(12,5), survey_vul_beta,        pars_1(12,6), pars_1(12,7));
-    prior_pars_1(13) = prior_dist(pars_1(13,5), eggdep_add_var,         pars_1(13,6), pars_1(13,7));
-    prior_pars_1(14) = prior_dist(pars_1(14,5), logmdm_c,               pars_1(14,6), pars_1(14,7));
-    prior_pars_1(15) = prior_dist(pars_1(15,5), milt_add_var,           pars_1(15,6), pars_1(15,7));
-    prior_pars_1(16) = prior_dist(pars_1(16,5), ADFG_hydro_q,           pars_1(16,6), pars_1(16,7));
-    prior_pars_1(17) = prior_dist(pars_1(17,5), ADFG_hydro_add_var,     pars_1(17,6), pars_1(17,7));
-    prior_pars_1(18) = prior_dist(pars_1(18,5), PWSSC_hydro_q,          pars_1(18,6), pars_1(18,7));
-    prior_pars_1(19) = prior_dist(pars_1(19,5), PWSSC_hydro_add_var,    pars_1(19,6), pars_1(19,7));
-    prior_pars_1(20) = prior_dist(pars_1(20,5), log_juvenile_q,         pars_1(20,6), pars_1(20,7));
-    prior_pars_1(21) = prior_dist(pars_1(21,5), juvenile_overdisp,      pars_1(21,6), pars_1(21,7));
-    prior_pars_1(22) = prior_dist(pars_1(22,5), log_MeanAge0,           pars_1(22,6), pars_1(22,7));
-    prior_pars_1(23) = prior_dist(pars_1(23,5), sigma_age0devs,         pars_1(23,6), pars_1(23,7));
-    prior_pars_1(24) = prior_dist(pars_1(24,5), sigma_mortdevs,         pars_1(24,6), pars_1(24,7));
-    prior_pars_1(25) = prior_dist(pars_1(25,5), vhsv_infection_vul_a50, pars_1(25,6), pars_1(25,7));
-    prior_pars_1(26) = prior_dist(pars_1(26,5), vhsv_infection_vul_a95, pars_1(26,6), pars_1(26,7));
-    prior_pars_1(27) = prior_dist(pars_1(27,5), vhsv_sample_vul_a50,    pars_1(27,6), pars_1(27,7));
-    prior_pars_1(28) = prior_dist(pars_1(28,5), vhsv_sample_vul_a95,    pars_1(28,6), pars_1(28,7));
-    prior_pars_1(29) = prior_dist(pars_1(29,5), ich_infection_vul_a50,  pars_1(29,6), pars_1(29,7));
-    prior_pars_1(30) = prior_dist(pars_1(30,5), ich_infection_vul_a95,  pars_1(30,6), pars_1(30,7));
-    prior_pars_1(31) = prior_dist(pars_1(31,5), ich_sample_vul_a50,     pars_1(31,6), pars_1(31,7));
-    prior_pars_1(32) = prior_dist(pars_1(32,5), ich_sample_vul_a95,     pars_1(32,6), pars_1(32,7));
+    prior_pars_1(9)  = prior_dist(pars_1(9 ,5), seine_vuln_alpha,           pars_1(9 ,6), pars_1(9 ,7));
+    prior_pars_1(10) = prior_dist(pars_1(10,5), seine_vuln_beta,            pars_1(10,6), pars_1(10,7));
+    prior_pars_1(11) = prior_dist(pars_1(11,5), survey_vuln_alpha,          pars_1(11,6), pars_1(11,7));
+    prior_pars_1(12) = prior_dist(pars_1(12,5), survey_vuln_beta,           pars_1(12,6), pars_1(12,7));
+    prior_pars_1(13) = prior_dist(pars_1(13,5), eggdep_add_var,             pars_1(13,6), pars_1(13,7));
+    prior_pars_1(14) = prior_dist(pars_1(14,5), logmdm_c,                   pars_1(14,6), pars_1(14,7));
+    prior_pars_1(15) = prior_dist(pars_1(15,5), milt_add_var,               pars_1(15,6), pars_1(15,7));
+    prior_pars_1(16) = prior_dist(pars_1(16,5), ADFG_hydro_q,               pars_1(16,6), pars_1(16,7));
+    prior_pars_1(17) = prior_dist(pars_1(17,5), ADFG_hydro_add_var,         pars_1(17,6), pars_1(17,7));
+    prior_pars_1(18) = prior_dist(pars_1(18,5), PWSSC_hydro_q,              pars_1(18,6), pars_1(18,7));
+    prior_pars_1(19) = prior_dist(pars_1(19,5), PWSSC_hydro_add_var,        pars_1(19,6), pars_1(19,7));
+    prior_pars_1(20) = prior_dist(pars_1(20,5), log_juvenile_q,             pars_1(20,6), pars_1(20,7));
+    prior_pars_1(21) = prior_dist(pars_1(21,5), juvenile_overdispersion,    pars_1(21,6), pars_1(21,7));
+    prior_pars_1(22) = prior_dist(pars_1(22,5), log_MeanAge0,               pars_1(22,6), pars_1(22,7));
+    prior_pars_1(23) = prior_dist(pars_1(23,5), sigma_age0devs,             pars_1(23,6), pars_1(23,7));
+    prior_pars_1(24) = prior_dist(pars_1(24,5), sigma_mortdevs,             pars_1(24,6), pars_1(24,7));
+    prior_pars_1(25) = prior_dist(pars_1(25,5), vhsv_infection_vuln_a50,    pars_1(25,6), pars_1(25,7));
+    prior_pars_1(26) = prior_dist(pars_1(26,5), vhsv_infection_vuln_a95,    pars_1(26,6), pars_1(26,7));
+    prior_pars_1(27) = prior_dist(pars_1(27,5), vhsv_sample_vuln_a50,       pars_1(27,6), pars_1(27,7));
+    prior_pars_1(28) = prior_dist(pars_1(28,5), vhsv_sample_vuln_a95,       pars_1(28,6), pars_1(28,7));
+    prior_pars_1(29) = prior_dist(pars_1(29,5), ich_infection_vuln_a50,     pars_1(29,6), pars_1(29,7));
+    prior_pars_1(30) = prior_dist(pars_1(30,5), ich_infection_vuln_a95,     pars_1(30,6), pars_1(30,7));
+    prior_pars_1(31) = prior_dist(pars_1(31,5), ich_sample_vuln_a50,        pars_1(31,6), pars_1(31,7));
+    prior_pars_1(32) = prior_dist(pars_1(32,5), ich_sample_vuln_a95,        pars_1(32,6), pars_1(32,7));
     
     dvariable partemp;
     partemp.initialize();
@@ -2223,7 +2217,7 @@ FUNCTION void calc_priors()
 
     // beta_age0
     par_i=3;
-    for(int i=1;i<=recruit_covariate_counter;i++){
+    for(int i=1;i<=recruitment_covariate_counter;i++){
         partemp = beta_age0(i);
         prior_pars_2(par_i) += prior_dist(pars_2_ctl(par_i,5), partemp, pars_2_ctl(par_i,6), pars_2_ctl(par_i,7));
     }
@@ -2246,7 +2240,7 @@ FUNCTION void calc_priors()
 
     // beta_age0_offset
     par_i=6;
-    for(int i=1;i<=recruit_covariate_counter;i++){
+    for(int i=1;i<=recruitment_covariate_counter;i++){
         partemp = beta_age0_offset(i);
         prior_pars_2(par_i) += prior_dist(pars_2_ctl(par_i,5), partemp, pars_2_ctl(par_i,6), pars_2_ctl(par_i,7));
     }
@@ -2308,7 +2302,6 @@ FUNCTION void calc_priors()
     
     priors = sum(prior_pars_1) + sum(prior_pars_2);
 
-
   
 FUNCTION dvariable prior_dist(const int& priortype, const prevariable& priorval, const double& priorp1, const double& priorp2)
     dvariable ptmp;
@@ -2333,8 +2326,6 @@ FUNCTION dvariable prior_dist(const int& priortype, const prevariable& priorval,
     }
     return(ptmp);
 
-
-
 FUNCTION project_biomass    
     //Use the average differences across the last 5 years...
     dvector tempWgt(1,nage);
@@ -2349,7 +2340,7 @@ FUNCTION project_biomass
         }
         avgWgt5Yr(a) = tempWgt(a)/5;
     }
-  
+    
     // Now using mean of log-recruits for projection; this should be near the median if the recruits are log-Normally distributed.
     //cout << init_age_0(33)<< endl;
     dvariable mean_log_rec = 1;
@@ -2357,14 +2348,14 @@ FUNCTION project_biomass
         mean_log_rec *= N_y_a(i,4);
     }
     mean_log_rec = log(mean_log_rec)/10;
-    mean_log_rec = exp(mean_log_rec);
+    mean_log_rec = exp(temp2MeanLgRec);
     //cout << endl << "meanLgRec: " << meanLgRec << " "<< endl;
 
     // Plug age-3 biomass into first element of N_y_a vector for troubleshooting and display in report file
-    projected_N_y_a(4) = mean_log_rec;
+    projected_N_y_a(4) = meanLgRec;
     
     // Plug age-3 biomass into first element of vector for calculations
-    projected_Early_Sp_biomass(4) = maturity(nyr_tobefit,4)*mean_log_rec*avgWgt5Yr(4);
+    projected_Early_Sp_biomass(4) = maturity(nyr_tobefit,4)*meanLgRec*avgWgt5Yr(4);
     
     // Fill in half-year survival rates for forecast year
     for(int j=1;j<=nage;j++){
@@ -2373,41 +2364,41 @@ FUNCTION project_biomass
 
     // Call numbers this year using last year's info for ages 4-8
     for(int j=5;j<=nage-1;j++){
-        projected_N_y_a(j)=((N_y_a(nyr_tobefit,j-1)-(seine_age_comp(nyr_tobefit,j-1)*seine_catch(nyr_tobefit)+gillnet_catch(nyr_tobefit,j-1)+pk*pound_catch(nyr_tobefit,j-1)))*survival_summer(nyr_tobefit,j-1)-food_bait_catch(nyr_tobefit,j-1))*forecast_survival_winter(j-1);
+        projected_N_y_a(j)=((N_y_a(nyr_tobefit,j-1)-(seine_age_comp(nyr_tobefit,j-1)*seine_catch(nyr_tobefit)+gillnet_catch(nyr_tobefit,j-1)+pk*pound_catch(nyr_tobefit,j-1)))*summer_survival(nyr_tobefit,j-1)-food_bait_catch(nyr_tobefit,j-1))*forecast_survival_winter(j-1);
     }
     
     // Calc numbers this year using last year's info for plus group
     for(int j=nage;j<=nage;j++){
-        projected_N_y_a(j)=((N_y_a(nyr_tobefit,j-1)-(seine_age_comp(nyr_tobefit,j-1)*seine_catch(nyr_tobefit)+gillnet_catch(nyr_tobefit,j-1)+pk*pound_catch(nyr_tobefit,j-1)))*survival_summer(nyr_tobefit,j-1)-food_bait_catch(nyr_tobefit,j-1))*forecast_survival_winter(j-1)+((N_y_a(nyr_tobefit,j)-(seine_age_comp(nyr_tobefit,j)*seine_catch(nyr_tobefit)+gillnet_catch(nyr_tobefit,j)+pk*pound_catch(nyr_tobefit,j)))*survival_summer(nyr_tobefit,j)-food_bait_catch(nyr_tobefit,j))*forecast_survival_winter(j);
+        projected_N_y_a(j)=((N_y_a(nyr_tobefit,j-1)-(seine_age_comp(nyr_tobefit,j-1)*seine_catch(nyr_tobefit)+gillnet_catch(nyr_tobefit,j-1)+pk*pound_catch(nyr_tobefit,j-1)))*summer_survival(nyr_tobefit,j-1)-food_bait_catch(nyr_tobefit,j-1))*forecast_survival_winter(j-1)+((N_y_a(nyr_tobefit,j)-(seine_age_comp(nyr_tobefit,j)*seine_catch(nyr_tobefit)+gillnet_catch(nyr_tobefit,j)+pk*pound_catch(nyr_tobefit,j)))*summer_survival(nyr_tobefit,j)-food_bait_catch(nyr_tobefit,j))*forecast_survival_winter(j);
     }
     
     // Make it biomass
     for(int j=5;j<=nage;j++){
         projected_Early_Sp_biomass(j) = maturity(nyr_tobefit,j)*projected_N_y_a(j)*avgWgt5Yr(j);
     }
-    
+        
     // Take total pre-fishery biomass for projection year
-    projected_pre_fish_biomass = sum(projected_Early_Sp_biomass);
+    projected_prefishery_biomass = sum(projected_Early_Sp_biomass);
 
 
 FUNCTION write_chain_results
     struct stat buf;
     if(stat("mcmc_out",&buf)!=0){
-        system("mkdir mcmc_out");
+      system("mkdir mcmc_out");
     }
-    ofstream VarsReport("mcmc_out/VarsReport.csv",ios::app);
-    ofstream Age3Report("mcmc_out/Age3.csv",ios::app);
-    ofstream ADFGHydroReport("mcmc_out/HYD_ADFG.csv",ios::app);
-    ofstream PWSSCHydroReport("mcmc_out/HYD_PWSSC.csv",ios::app);
-    ofstream EggDepReport("mcmc_out/EGG.csv",ios::app);
-    ofstream MDMReport("mcmc_out/MDM.csv",ios::app);
-    ofstream PostFRBiomassReport("mcmc_out/PostFRbiomass.csv",ios::app);
-    ofstream SeineAgeCompReport("mcmc_out/SeAC.csv",ios::app); // writes Seine age comps from each iteration to a file
-    ofstream SpawnAgeCompReport("mcmc_out/SpAC.csv",ios::app); // writes spawner age comps from each iteration to a file
-    ofstream JuvenileSchoolsReport("mcmc_out/juv_schools.csv",ios::app); 
-    ofstream NumAtAgeReport("mcmc_out/Num_at_age.csv",ios::app); 
-    ofstream SeroPredReport("mcmc_out/Sero_pred.csv",ios::app);
-    ofstream IchPredReport("mcmc_out/Ich_pred.csv",ios::app); 
+    ofstream MCMCreport1("mcmc_out/VarsReport.csv",ios::app);
+    ofstream MCMCreport2("mcmc_out/Age3.csv",ios::app);
+    ofstream MCMCreport3("mcmc_out/HYD_ADFG.csv",ios::app);
+    ofstream MCMCreport4("mcmc_out/HYD_PWSSC.csv",ios::app);
+    ofstream MCMCreport5("mcmc_out/EGG.csv",ios::app);
+    ofstream MCMCreport6("mcmc_out/MDM.csv",ios::app);
+    ofstream MCMCreport7("mcmc_out/PostFRbiomass.csv",ios::app);
+    ofstream MCMCreport8("mcmc_out/SeAC.csv",ios::app); // writes Seine age comps from each iteration to a file
+    ofstream MCMCreport9("mcmc_out/SpAC.csv",ios::app); // writes spawner age comps from each iteration to a file
+    ofstream MCMCreport10("mcmc_out/juv_schools.csv",ios::app); 
+    ofstream MCMCreport11("mcmc_out/Num_at_age.csv",ios::app); 
+    ofstream MCMCreport12("mcmc_out/Sero_pred.csv",ios::app);
+    ofstream MCMCreport13("mcmc_out/Ich_pred.csv",ios::app); 
     ofstream LLikReport("mcmc_out/llikcomponents.csv",ios::app);
     ofstream PriorReport("mcmc_out/priordensities.csv",ios::app);
     ofstream PFRReport("mcmc_out/PFRBiomass.csv",ios::app);
@@ -2415,99 +2406,99 @@ FUNCTION write_chain_results
     ofstream recruit_effect_report("mcmc_out/recruitment_effects.csv",ios::app);
     ofstream summer_survival_report("mcmc_out/adult_survival_effects_summer.csv",ios::app);
     ofstream winter_survival_report("mcmc_out/adult_survival_effects_winter.csv",ios::app);
-    ofstream vhs_survival_report("mcmc_out/vhs_survival.csv",ios::app);
-    ofstream vhs_infection_report("mcmc_out/vhs_infection.csv",ios::app);
-    ofstream vhs_prev_report("mcmc_out/vhs_prev.csv",ios::app);
-    ofstream vhs_fatality_report("mcmc_out/vhs_fatality.csv",ios::app);
-    ofstream vhs_ag3_infection_report("mcmc_out/vhs_infection_age3.csv",ios::app);
-    ofstream vhs_ag3_prev_report("mcmc_out/vhs_prev_age3.csv",ios::app);
-    ofstream vhs_ag3_fatality_report("mcmc_out/vhs_fatality_age3.csv",ios::app);
-    ofstream ich_survival_report("mcmc_out/ich_survival.csv",ios::app);
-    ofstream ich_infection_report("mcmc_out/ich_infection.csv",ios::app);
-    ofstream ich_prev_report("mcmc_out/ich_prev.csv",ios::app);
-    ofstream ich_fatality_report("mcmc_out/ich_fatality.csv",ios::app);
-    ofstream ich_age3_infection_report("mcmc_out/ich_infection_age3.csv",ios::app);
-    ofstream ich_age3_prev_report("mcmc_out/ich_prev_age3.csv",ios::app);
-    ofstream ich_age3_fatality_report("mcmc_out/ich_fatality_age3.csv",ios::app);
+    ofstream vhs_report1("mcmc_out/vhs_survival.csv",ios::app);
+    ofstream vhs_report2("mcmc_out/vhs_infection.csv",ios::app);
+    ofstream vhs_report3("mcmc_out/vhs_prev.csv",ios::app);
+    ofstream vhs_report4("mcmc_out/vhs_fatality.csv",ios::app);
+    ofstream vhs_report5("mcmc_out/vhs_infection_age3.csv",ios::app);
+    ofstream vhs_report6("mcmc_out/vhs_prev_age3.csv",ios::app);
+    ofstream vhs_report7("mcmc_out/vhs_fatality_age3.csv",ios::app);
+    ofstream ich_report1("mcmc_out/ich_survival.csv",ios::app);
+    ofstream ich_report2("mcmc_out/ich_infection.csv",ios::app);
+    ofstream ich_report3("mcmc_out/ich_prev.csv",ios::app);
+    ofstream ich_report4("mcmc_out/ich_fatality.csv",ios::app);
+    ofstream ich_report5("mcmc_out/ich_infection_age3.csv",ios::app);
+    ofstream ich_report6("mcmc_out/ich_prev_age3.csv",ios::app);
+    ofstream ich_report7("mcmc_out/ich_fatality_age3.csv",ios::app);
 
-    VarsReport << milt_add_var << "," << eggdep_add_var << "," << ADFG_hydro_add_var << ","  <<  PWSSC_hydro_add_var << endl;
+    MCMCreport1 << milt_add_var << "," << eggdep_add_var << "," << ADFG_hydro_add_var << ","  <<  PWSSC_hydro_add_var << endl;
     
     // These files have values written by year across columns (and age in some cases)
     for (int i=1; i<nyr_tobefit; i++){
-        Age3Report << N_y_a(i,4) << ",";
-        ADFGHydroReport << ADFG_HYDRO_est(i) << ",";
-        PWSSCHydroReport << PWSSC_HYDRO_est(i) << ",";
-        EggDepReport << EGG_est(i) << ",";
-        MDMReport << MDM_est(i) << ",";
-        PostFRBiomassReport << post_fish_spawn_biomass(i) << ",";
+      MCMCreport2 << N_y_a(i,4) << ",";
+      MCMCreport3 << ADFG_HYDRO_est(i) << ",";
+      MCMCreport4 << PWSSC_HYDRO_est(i) << ",";
+      MCMCreport5 << EGG_est(i) << ",";
+      MCMCreport6 << MDM_est(i) << ",";
+      MCMCreport7 << postfishery_spawn_biomass(i) << ",";
 
-        for (int j=1; j<=nage; j++){
-            SeineAgeCompReport << seine_age_comp(i,j) << ",";
-            SpawnAgeCompReport << spawn_age_comp(i,j) << ",";
-            NumAtAgeReport << N_y_a(i,j) << ",";
-        }
-        JuvenileSchoolsReport << juvenile_pred(i) << ",";
+      for (int j=1; j<=nage; j++){
+        MCMCreport8 << seine_age_comp(i,j) << ",";
+        MCMCreport9 << spawning_age_comp(i,j) << ",";
+        MCMCreport11 << N_y_a(i,j) << ",";
+      }
+      MCMCreport10 << juvenile_pred(i) << ",";
 
-        for (int k=1; k<=n_age2; k++){
-            SeroPredReport << vhsv_pred(i,k) << ",";
-            IchPredReport << ich_pred(i,k) << ",";
-        }
+      for (int k=1; k<=n_age2; k++){
+          MCMCreport12 << vhsv_pred(i,k) << ",";
+          MCMCreport13 << ich_pred(i,k) << ",";
+      }
 
-        recruit_effect_report << exp(age0_effect(i))*Mean_Age0(i) << ",";
-        for (int j=1; j<=nage; j++){
-            summer_survival_report << survival_summer(i,j) << ",";
-            winter_survival_report << survival_winter(i,j) << ",";
-        }
+      recruit_effect_report << exp(age0_effect(i))*Mean_Age0(i) << ",";
+      for (int j=1; j<=nage; j++){
+        summer_survival_report << summer_survival(i,j) << ",";
+        winter_survival_report << winter_survival(i,j) << ",";
+      }
     }
 
     // File in final year separately with 'endl' so next MCMC sample is written on the next line
-    Age3Report << N_y_a(nyr_tobefit,4) << endl; // this is the projected recruitment for the latest year
-    ADFGHydroReport << ADFG_HYDRO_est(nyr_tobefit) << endl;
-    PWSSCHydroReport << PWSSC_HYDRO_est(nyr_tobefit) << endl;
-    EggDepReport << EGG_est(nyr_tobefit) << endl;
-    MDMReport << MDM_est(nyr_tobefit) << endl;
-    PostFRBiomassReport << post_fish_spawn_biomass(nyr_tobefit) << endl;
+    MCMCreport2 << N_y_a(nyr_tobefit,4) << endl; // this is the projected recruitment for the latest year
+    MCMCreport3 << ADFG_HYDRO_est(nyr_tobefit) << endl;
+    MCMCreport4 << PWSSC_HYDRO_est(nyr_tobefit) << endl;
+    MCMCreport5 << EGG_est(nyr_tobefit) << endl;
+    MCMCreport6 << MDM_est(nyr_tobefit) << endl;
+    MCMCreport7 << postfishery_spawn_biomass(nyr_tobefit) << endl;
 
     for (int j=1; j<nage; j++){
-        SeineAgeCompReport << seine_age_comp(nyr_tobefit,j) << ",";
-        SpawnAgeCompReport << spawn_age_comp(nyr_tobefit,j) << ",";
-        NumAtAgeReport << N_y_a(nyr_tobefit,j) << ","; 
+        MCMCreport8 << seine_age_comp(nyr_tobefit,j) << ",";
+        MCMCreport9 << spawning_age_comp(nyr_tobefit,j) << ",";
+        MCMCreport11 << N_y_a(nyr_tobefit,j) << ","; 
     }
 
-    SeineAgeCompReport << seine_age_comp(nyr_tobefit,nage) << endl;
-    SpawnAgeCompReport << spawn_age_comp(nyr_tobefit,nage) << endl;
-    JuvenileSchoolsReport << juvenile_pred(nyr_tobefit) << endl;
-    NumAtAgeReport << N_y_a(nyr_tobefit,nage) << endl;
+    MCMCreport8 << seine_age_comp(nyr_tobefit,nage) << endl;
+    MCMCreport9 << spawning_age_comp(nyr_tobefit,nage) << endl;
+    MCMCreport10 << juvenile_pred(nyr_tobefit) << endl;
+    MCMCreport11 << N_y_a(nyr_tobefit,nage) << endl;
 
     for (int k=1; k<n_age2; k++){
-        SeroPredReport << vhsv_pred(nyr_tobefit,k) << ",";
-        IchPredReport << ich_pred(nyr_tobefit,k) << ",";
+        MCMCreport12 << vhsv_pred(nyr_tobefit,k) << ",";
+        MCMCreport13 << ich_pred(nyr_tobefit,k) << ",";
     }
     
-    SeroPredReport << vhsv_pred(nyr_tobefit,n_age2) << endl;
-    IchPredReport << ich_pred(nyr_tobefit,n_age2) << endl;
+    MCMCreport12 << vhsv_pred(nyr_tobefit,n_age2) << endl;
+    MCMCreport13 << ich_pred(nyr_tobefit,n_age2) << endl;
 
     recruit_effect_report << exp(age0_effect(nyr_tobefit))*Mean_Age0(nyr_tobefit) << endl;
     for (int j=1; j<=nage-1; j++){
-        summer_survival_report << survival_summer(nyr_tobefit,j) << ",";
-        winter_survival_report << survival_winter(nyr_tobefit,j) << ",";
+      summer_survival_report << summer_survival(nyr_tobefit,j) << ",";
+      winter_survival_report << winter_survival(nyr_tobefit,j) << ",";
     }
-    summer_survival_report << survival_summer(nyr_tobefit,nage) << endl;
-    winter_survival_report << survival_winter(nyr_tobefit,nage) << endl;
+    summer_survival_report << summer_survival(nyr_tobefit,nage) << endl;
+    winter_survival_report << winter_survival(nyr_tobefit,nage) << endl;
 
 
     // Now output the loglikelihood components
-    LLikReport << -seine_llk << "," << -spawn_llk << "," << eggdep_llk << "," << ADFG_hydro_llk << "," << PWSSC_hydro_llk << "," << mdm_llk << ",";
+    LLikReport << -seine_llk << "," << -spawner_llk << "," << eggdep_llk << "," << ADFG_hydro_llk << "," << PWSSC_hydro_llk << "," << mdm_llk << ",";
     // LLikReport << age0_devs_penllk << "," << mort_devs_penllk << ",";
     // Aerial juvenile survey (12/2019) and seroprevalence samples (11/2020)
-    LLikReport << juvenile_llk << "," << vhs_llk << "," << ich_llk << "," << full_llk << endl;
+    LLikReport << juvenile_llk << "," << vhsv_llk << "," << ich_llk << "," << full_llk << endl;
 
     // Prior density reports
     for(int j=1; j<=npar; j++){
-        PriorReport << prior_pars_1(j) << ",";
+      PriorReport << prior_pars_1(j) << ",";
     }
     for(int j=1; j<=npar2; j++){
-        PriorReport << prior_pars_2(j) << ",";
+      PriorReport << prior_pars_2(j) << ",";
     }
 
     //indiv_LLikReport << age0_devs_penllk << "," << mort_devs_penllk << "," << Z_prior << "," << hydADFG_add_prior << "," << hydPWSSC_add_prior << "," << m_add_prior << ",";
@@ -2521,7 +2512,7 @@ FUNCTION write_chain_results
         indiv_LLikReport << mdm_llk_ind(i) << ",";
     }
     for (int i=1; i<=nyr_tobefit; i++){
-        indiv_LLikReport << eggdep_llk_ind(i) << ",";
+        indiv_LLikReport << egg_llk_ind(i) << ",";
     }
     for (int i=1; i<=nyr_tobefit; i++){
         indiv_LLikReport << ADFG_hydro_llk_ind(i) << ",";
@@ -2537,215 +2528,215 @@ FUNCTION write_chain_results
 
     // Disease outputs: Disease survival probs, infection indicences, fatality rates
     for (int i=1; i<=nyr_tobefit-1; i++){
-        for (int j=1; j<=nage; j++){
-            vhs_survival_report << vhsv_survival(i,j) << ",";
-        }
+      for (int j=1; j<=nage; j++){
+        vhs_report1 << vhsv_survival_age(i,j) << ",";
+      }
 
-        vhs_infection_report << inf_inc_sp(i) << ",";
-        vhs_prev_report << vhsprev_sp(i) << ",";
-        vhs_fatality_report << fatal_sp(i) << ",";
-        vhs_ag3_infection_report << inf_inc_age3(i) << ",";
-        vhs_ag3_prev_report << vhsprev_age3(i) << ",";
-        vhs_ag3_fatality_report << fatal_age3(i) << ",";
+      vhs_report2 << inf_inc_sp(i) << ",";
+      vhs_report3 << vhsprev_sp(i) << ",";
+      vhs_report4 << fatal_sp(i) << ",";
+      vhs_report5 << inf_inc_age3(i) << ",";
+      vhs_report6 << vhsprev_age3(i) << ",";
+      vhs_report7 << fatal_age3(i) << ",";
 
-        for (int j=1; j<=nage; j++){
-            ich_survival_report << ich_survival(i,j) << ",";
-        }
-        ich_infection_report << inf_inc_sp_ich(i) << ",";
-        ich_prev_report << ichprev_sp(i) << ",";
-        ich_fatality_report << fatal_sp_ich(i) << ",";
-        ich_age3_infection_report << inf_inc_age3_ich(i) << ",";
-        ich_age3_prev_report << ichprev_age3(i) << ",";
-        ich_age3_fatality_report << fatal_age3_ich(i) << ",";
+      for (int j=1; j<=nage; j++){
+        ich_report1 << ich_survival_age(i,j) << ",";
+      }
+      ich_report2 << inf_inc_sp_ich(i) << ",";
+      ich_report3 << ichprev_sp(i) << ",";
+      ich_report4 << fatal_sp_ich(i) << ",";
+      ich_report5 << inf_inc_age3_ich(i) << ",";
+      ich_report6 << ichprev_age3(i) << ",";
+      ich_report7 << fatal_age3_ich(i) << ",";
     }
 
     for (int j=1; j<=nage-1; j++){
-        vhs_survival_report << vhsv_survival(nyr_tobefit,j) << ","; 
+        vhs_report1 << vhsv_survival_age(nyr_tobefit,j) << ","; 
     }
-    vhs_survival_report << vhsv_survival(nyr_tobefit,nage) << endl;
-    vhs_infection_report << inf_inc_sp(nyr_tobefit) << endl;
-    vhs_prev_report << vhsprev_sp(nyr_tobefit) << endl;
-    vhs_fatality_report << fatal_sp(nyr_tobefit) << endl;
-    vhs_ag3_infection_report << inf_inc_age3(nyr_tobefit) << endl;
-    vhs_ag3_prev_report << vhsprev_age3(nyr_tobefit) << endl;
-    vhs_ag3_fatality_report << fatal_age3(nyr_tobefit) << endl;
+    vhs_report1 << vhsv_survival_age(nyr_tobefit,nage) << endl;
+    vhs_report2 << inf_inc_sp(nyr_tobefit) << endl;
+    vhs_report3 << vhsprev_sp(nyr_tobefit) << endl;
+    vhs_report4 << fatal_sp(nyr_tobefit) << endl;
+    vhs_report5 << inf_inc_age3(nyr_tobefit) << endl;
+    vhs_report6 << vhsprev_age3(nyr_tobefit) << endl;
+    vhs_report7 << fatal_age3(nyr_tobefit) << endl;
     
     for (int j=1; j<=nage-1; j++){
-        ich_survival_report << ich_survival(nyr_tobefit,j) << ","; 
+        ich_report1 << ich_survival_age(nyr_tobefit,j) << ","; 
     }
-    ich_survival_report << ich_survival(nyr_tobefit,nage) << endl;
-    ich_infection_report << inf_inc_sp_ich(nyr_tobefit) << endl;
-    ich_prev_report << ichprev_sp(nyr_tobefit) << endl;
-    ich_fatality_report << fatal_sp_ich(nyr_tobefit) << endl;
-    ich_age3_infection_report << inf_inc_age3_ich(nyr_tobefit) << endl;
-    ich_age3_prev_report << ichprev_age3(nyr_tobefit) << endl;
-    ich_age3_fatality_report << fatal_age3_ich(nyr_tobefit) << endl;
+    ich_report1 << ich_survival_age(nyr_tobefit,nage) << endl;
+    ich_report2 << inf_inc_sp_ich(nyr_tobefit) << endl;
+    ich_report3 << ichprev_sp(nyr_tobefit) << endl;
+    ich_report4 << fatal_sp_ich(nyr_tobefit) << endl;
+    ich_report5 << inf_inc_age3_ich(nyr_tobefit) << endl;
+    ich_report6 << ichprev_age3(nyr_tobefit) << endl;
+    ich_report7 << fatal_age3_ich(nyr_tobefit) << endl;
 
 
     // Output PFRunBiomass for each saved iteration to .csv
     for (int i=1; i<=nyr_tobefit-1; i++){
-        PFRReport << pre_fish_biomass(i) << ","; 
+     PFRReport << prefishery_biomass (i) << ","; 
     }
-    PFRReport << pre_fish_biomass(nyr_tobefit)<< ",";
-    PFRReport << projected_pre_fish_biomass << endl; // Projected pre-fishery run biomass for the upcoming year
+     PFRReport << prefishery_biomass (nyr_tobefit)<< ",";
+     PFRReport << projected_prefishery_biomass << endl; // Projected pre-fishery run biomass for the upcoming year
 
     if(DD_Mat==1){
-        ofstream maturity_report("density_dependent_maturity.csv",ios::app);
-        for (int i=1; i<=nyr_tobefit; i++){
-            for (int j=1; j<=nage; j++){
-                maturity_report << maturity(i,j) << ",";
-            }
-        }
-    }
+    	ofstream maturity_report("density_dependent_maturity.csv",ios::app);
+    	for (int i=1; i<=nyr_tobefit; i++){
+	      for (int j=1; j<=nage; j++){
+	        maturity_report << maturity(i,j) << ",";
+	      }
+    	}
+	}
 
 
 REPORT_SECTION
-    // report << "foo= " << endl << setprecision(10) << foo << endl; // to set precision just for foo OR
-    // report.precision(10); // in first line of report section and to set precision of all report output
-    // In order to get labels at the top of each of the following .csv I open them down here, write it once, 
-    // then use ::app inside the mceval phase ios
+  // report << "foo= " << endl << setprecision(10) << foo << endl; // to set precision just for foo OR
+  // report.precision(10); // in first line of report section and to set precision of all report output
+  // In order to get labels at the top of each of the following .csv I open them down here, write it once, 
+  // then use ::app inside the mceval phase ios
 
-    // Remove default report file output by ADMB because I want to contain everything in the rep_out folder
-    remove("PWS_ASA.rep");
+  // Remove default report file output by ADMB because I want to contain everything in the rep_out folder
+  remove("PWS_ASA.rep");
 
-    struct stat buf;
-    if(stat("rep_out",&buf)!=0){
-        system("mkdir rep_out");
-    }
+  struct stat buf;
+  if(stat("rep_out",&buf)!=0){
+    system("mkdir rep_out");
+  }
 
-    // User defined files
-    ofstream SeACreport("rep_out/SeAC_pd.rep",ios::trunc);
-    SeACreport << seine_age_comp << endl;
-    SeACreport.close();
-    
-    ofstream SpACreport("rep_out/SpAC_pd.rep",ios::trunc);
-    SpACreport << spawn_age_comp << endl;
-    SpACreport.close();
+  // User defined files
+  ofstream SeACreport("rep_out/SeAC_pd.rep",ios::trunc);
+  SeACreport << seine_age_comp << endl;
+  SeACreport.close();
+  
+  ofstream SpACreport("rep_out/SpAC_pd.rep",ios::trunc);
+  SpACreport << spawning_age_comp << endl;
+  SpACreport.close();
 
-    ofstream vhscompreport("rep_out/vhscomp_pd.rep",ios::trunc);
-    vhscompreport << vhsv_pred << endl;
-    vhscompreport.close();
+  ofstream vhscompreport("rep_out/vhscomp_pd.rep",ios::trunc);
+  vhscompreport << vhsv_pred << endl;
+  vhscompreport.close();
 
-    ofstream ichcompreport("rep_out/ichcomp_pd.rep",ios::trunc);
-    ichcompreport << ich_pred << endl;
-    ichcompreport.close();
+  ofstream ichcompreport("rep_out/ichcomp_pd.rep",ios::trunc);
+  ichcompreport << ich_pred << endl;
+  ichcompreport.close();
 
-    ofstream report1("rep_out/PWS_ASA.rep",ios::trunc);
+  ofstream report1("rep_out/PWS_ASA.rep",ios::trunc);
 
-    // the output below is sloppy - I need to display output for pre-1992 mort vectors without the disease index since that part of the vectors are place holders
-    report1 << "LOG-LIKELIHOOD COMPONENTS"    << endl;
-    report1 << "penalty Count"                << endl << penCount<< endl;
-    report1 << "LL OF"                        << endl << full_llk << endl;
-    report1 << "seine_llk"                    << endl << seine_llk <<endl;
-    report1 << "spawn_llk"                    << endl << spawn_llk <<endl;
-    report1 << "eggdep_llk "                  << endl << eggdep_llk <<endl;
-    report1 << "ADFG_hydro_llk "              << endl << ADFG_hydro_llk <<endl;
-    report1 << "PWSSC_hydro_llk "             << endl << PWSSC_hydro_llk <<endl;
-    report1 << "mdm_llk "                     << endl <<mdm_llk<<endl;
-    report1 << "age0_devs_penllk "            << endl << age0_devs_penllk <<endl;
-    report1 << "mort_devs_penllk "            << endl << mort_devs_penllk <<endl;
-    report1 << "age0_covar_prior "            << endl << age0_covar_prior <<endl;
-    report1 << "mort_covar_prior "            << endl << mort_covar_prior <<endl;
+  // the output below is sloppy - I need to display output for pre-1992 mort vectors without the disease index since that part of the vectors are place holders
+  report1<<"LOG-LIKELIHOOD COMPONENTS" << endl;
+  report1<< "penalty Count" << endl << penCount<< endl;
+  report1<<"LL OF" << endl << full_llk << endl;
+  report1<<"seine_llk" << endl << seine_llk <<endl;
+  report1<<"spawner_llk" << endl << spawner_llk <<endl;
+  report1<<"eggdep_llk " << endl << eggdep_llk <<endl;
+  report1<<"ADFG_hydro_llk " << endl << ADFG_hydro_llk <<endl;
+  report1<<"PWSSC_hydro_llk " << endl << PWSSC_hydro_llk <<endl;
+  report1<<"mdm_llk " << endl <<mdm_llk<<endl;
+  report1<<"age0_devs_penllk " << endl << age0_devs_penllk <<endl;
+  report1<<"mort_devs_penllk " << endl << mort_devs_penllk <<endl;
+  report1<<"age0_covar_prior " << endl << age0_covar_prior <<endl;
+  report1<<"mort_covar_prior " << endl << mort_covar_prior <<endl;
 
-    // Aerial juvenile survey (incorporated 12/2019)
-    report1 << "juvenile_llk "  << endl << juvenile_llk <<endl;
+  // Aerial juvenile survey (incorporated 12/2019)
+  report1<<"juvenile_llk " << endl << juvenile_llk <<endl;
 
-    // VHSV seroprevalence (11/2020)
-    report1 << "vhs_llk "       << endl << vhs_llk <<endl;
+  // VHSV seroprevalence (11/2020)
+  report1<<"vhsv_llk " << endl << vhsv_llk <<endl;
 
-    // Ich. hoferi infection prevalence (11/2021)
-    report1 << "ich_llk "       << endl << ich_llk <<endl << endl;
+  // Ich. hoferi infection prevalence (11/2021)
+  report1<<"ich_llk " << endl << ich_llk <<endl << endl;
 
-    // Priors
-    report1 << "Z_prior "                   << endl << prior_pars_1(3) <<endl;
-    report1 << "mat_age3_prior "            << endl << prior_pars_1(5) << endl;
-    report1 << "mat_age4_prior "            << endl << prior_pars_1(6) << endl;
-    report1 << "hydADFG_add_prior "         << endl << prior_pars_1(17) <<endl;
-    report1 << "hydPWSSC_add_prior "        << endl << prior_pars_1(19) <<endl;
-    report1 << "m_add_prior "               << endl << prior_pars_1(15) << endl;
-    report1 << "vhsv_infection_prob prior " << endl << prior_pars_2(10) << endl;
-    report1 << "ich_infection_prob prior "  << endl << prior_pars_2(12) << endl;
-    report1 << "vhsv_recovery_prob prior "  << endl << prior_pars_2(11) << endl;
-    report1 << "ich_recovery_prob prior "   << endl << prior_pars_2(13) << endl << endl;
+  // Priors
+  report1<<"Z_prior " << endl << prior_pars_1(3) <<endl;
+  report1<<"mat_age3_prior " << endl << prior_pars_1(5) << endl;
+  report1<<"mat_age4_prior " << endl << prior_pars_1(6) << endl;
+  report1<<"hydADFG_add_prior " << endl << prior_pars_1(17) <<endl;
+  report1<<"hydPWSSC_add_prior " << endl << prior_pars_1(19) <<endl;
+  report1<<"m_add_prior " << endl << prior_pars_1(15) << endl;
+  report1<<"vhsv_infection_prob prior " << endl << prior_pars_2(10) << endl;
+  report1<<"ich_infection_prob prior " << endl << prior_pars_2(12) << endl;
+  report1<<"vhsv_recovery_prob prior " << endl << prior_pars_2(11) << endl;
+  report1<<"ich_recovery_prob prior " << endl << prior_pars_2(13) << endl << endl;
 
-    report1 << "RESIDUALS"                      << endl;
-    report1 << "Seine comps residuals"          << endl << seine_comp_residuals << endl;
-    report1 << "Spawner comps residuals"        << endl << spawn_comp_residuals << endl;
-    report1 << "Mile-days milt residuals"       << endl << mdm_residuals << endl;
-    report1 << "Egg deposition residuals"       << endl << eggdep_residuals << endl;
-    report1 << "ADFG Hydroacoustic residuals"   << endl << ADFG_hydro_residuals << endl;
-    report1 << "PWSSC Hydroacoustic residuals"  << endl << PWSSC_hydro_residuals << endl << endl;
+  report1<<"RESIDUALS" << endl;
+  report1<<"Seine comps residuals" << endl << seine_comp_residuals << endl;
+  report1<<"Spawner comps residuals" << endl << spawner_comp_residuals << endl;
+  report1<<"Mile-days milt residuals" << endl << mdm_residuals << endl;
+  report1<<"Egg deposition residuals" << endl << eggdep_residuals << endl;
+  report1<<"ADFG Hydroacoustic residuals" << endl << ADFG_hydro_residuals << endl;
+  report1<<"PWSSC Hydroacoustic residuals" << endl << PWSSC_hydro_residuals << endl << endl;
 
-    report1 << "ANALYTICAL SIGMAS"                  << endl;
-    report1 << "Combined Egg SD (egg_sd)"           << endl <<egg_sd <<endl;
-    report1 << "(Annual seine residuals)X(ESS)"     << endl << seine_temp3 <<endl;
-    report1 << "(Annual spawner residuals)X(ESS)"   << endl << spawn_temp3 << endl << endl;
+  report1<<"ANALYTICAL SIGMAS" << endl;
+  report1<<"Combined Egg SD (egg_sd)" << endl <<egg_sd <<endl;
+  report1<<"(Annual seine residuals)X(ESS)" << endl << seine_temp3 <<endl;
+  report1<<"(Annual spawner residuals)X(ESS)" << endl << spawn_temp3 << endl << endl;
 
-    
-    report1 << "DERIVED QUANTITIES"                     << endl;
-    report1 << "Pre-Fishery Run Biomass in mt"          << endl << pre_fish_biomass << endl;
-    report1 << "Pre-Fishery Run Biomass in TONS"        << endl << pre_fish_biomass_TONS << endl;
-    report1 << "Post-Fishery Spawning Biomass"          << endl << post_fish_spawn_biomass << endl;
-    report1 << "Estimated ADFG Hydro-acoustic Biomass"  << endl << ADFG_HYDRO_est << endl;
-    report1 << "Estimated PWSSC Hydro-acoustic Biomass" << endl << PWSSC_HYDRO_est << endl;
-    report1 << "Pre-fishery total abundance (N_y_a)"    << endl << N_y_a << endl;
-    report1 << "Number of spawners (N_spawn_age)"       << endl << N_spawn_age << endl << endl;
+  
+  report1 << "DERIVED QUANTITIES" << endl;
+  report1 << "Pre-Fishery Run Biomass in mt" << endl << prefishery_biomass  << endl;
+  report1 << "Pre-Fishery Run Biomass in TONS" << endl << prefishery_biomass_TONS  << endl;
+  report1 << "Post-Fishery Spawning Biomass" << endl << postfishery_spawn_biomass << endl;
+  report1 << "Estimated ADFG Hydro-acoustic Biomass" << endl << ADFG_HYDRO_est << endl;
+  report1 << "Estimated PWSSC Hydro-acoustic Biomass" << endl << PWSSC_HYDRO_est << endl;
+  report1 << "Pre-fishery total abundance (N_y_a)" << endl << N_y_a << endl;
+  report1 << "Number of spawners (N_spawners_age)" << endl << N_spawners_age << endl << endl;
 
-    report1 << "RECRUITMENT" << endl;
-    report1 << "Recruits age-3" << endl;
-    for (int i=1; i<=nyr_tobefit; i++){
-        report1 << N_y_a(i,4) << endl; 
-    }
-    report1 << endl;
+  report1 << "RECRUITMENT" << endl;
+  report1 << "Recruits age-3" << endl;
+  for (int i=1; i<=nyr_tobefit; i++){
+    report1 << N_y_a(i,4) << endl; 
+  }
+  report1 << endl;
 
-    report1 << "MATURITY"                               << endl;
-    report1 << "Maturity-at-age of observed schools"    << endl << maturity << endl << endl;
-    report1 << "Maturity-at-age of unobserved schools"  << endl << maturity_unobs << endl << endl;
+  report1 << "MATURITY" << endl;
+  report1 << "Maturity-at-age of observed schools" << endl << maturity << endl << endl;
+  report1 << "Maturity-at-age of unobserved schools" << endl << maturity_unobs << endl << endl;
 
-    report1 << "ADULT SURVIVAL OUTPUTS"                  << endl;
-    report1 << "Adult summer survival (survival_summer)" << endl << survival_summer << endl;
-    report1 << "Adult winter survival (survival_winter)" << endl << survival_winter << endl << endl;
-    
-    report1 << "COVARIATE EFFECTS ON SURVIVAL"  << endl;
-    report1 << "Summer mortatlity"              << endl << summer_survival_effect << endl;
-    report1 << "Winter mortality"               << endl << winter_survival_effect << endl << endl;
+  report1 << "ADULT SURVIVAL OUTPUTS" << endl;
+  report1 << "Adult summer survival (summer_survival)" << endl << summer_survival << endl;
+  report1 << "Adult winter survival (winter_survival)" << endl << winter_survival << endl << endl;
+ 
+  report1 << "COVARIATE EFFECTS ON SURVIVAL" << endl;
+  report1 << "Summer mortatlity" << endl << summer_mortality_effect << endl;
+  report1 << "Winter mortality" << endl << winter_mortality_effect << endl << endl;
 
-    report1 << "SUMMED ANNUAL MORTALITY DEVIATES (NON-ZERO IF ESTIMATED)" << endl;
-    report1 << colsum(annual_mortdevs) << endl << endl;
+  report1 << "SUMMED ANNUAL MORTALITY DEVIATES (NON-ZERO IF ESTIMATED)" << endl;
+  report1 << colsum(annual_mortdevs) << endl << endl;
 
-    report1 << "ANNUAL MORTALITY DEVIATES (NON-ZERO IF ESTIMATED) - A MATRIX" << endl;
-    report1 << annual_mortdevs << endl << endl;
+  report1 << "ANNUAL MORTALITY DEVIATES (NON-ZERO IF ESTIMATED) - A MATRIX" << endl;
+  report1 << annual_mortdevs << endl << endl;
 
-    report1 << "VHSV ASSOCIATED SURVIVAL"                       << endl;
-    report1 << "Proportion that avoids or survives infection:"  << endl << vhsv_survival << endl << endl;
+  report1 << "VHSV ASSOCIATED SURVIVAL" << endl;
+  report1 << "Proportion that avoids or survives infection:" << endl << vhsv_survival_age << endl << endl;
 
-    report1 << "VHSV AGE-SPECIFIC IMMUNITY"                  << endl;
-    report1 << "Proportions that are immune to reinfection:" << endl << vhsv_immunity << endl << endl;
+  report1 << "VHSV AGE-SPECIFIC IMMUNITY" << endl;
+  report1 << "Proportions that are immune to reinfection:" << endl << vhsv_immunity_age << endl << endl;
 
-    report1 << "VHSV OUTBREAK CHARACTERISTICS"                                  << endl;
-    report1 << "Incidence rate of infection in spawning population (numbers):"  << endl << inf_inc_sp << endl << endl;
-    report1 << "Fatality rate of infection in spawning population (numbers):"   << endl << fatal_sp << endl << endl;
-    report1 << "VHSV seroprevalence in spawning population (numbers):"          << endl << vhsprev_sp << endl << endl;
+  report1 << "VHSV OUTBREAK CHARACTERISTICS" << endl;
+  report1 << "Incidence rate of infection in spawning population (numbers):" << endl << inf_inc_sp << endl << endl;
+  report1 << "Fatality rate of infection in spawning population (numbers):" << endl << fatal_sp << endl << endl;
+  report1 << "VHSV seroprevalence in spawning population (numbers):" << endl << vhsprev_sp << endl << endl;
 
 
-    report1 << "ICH. HOF. INFECTION ASSOCIATED SURVIVAL"        << endl;
-    report1 << "Proportion that avoids or survives infection:"  << endl << ich_survival << endl << endl;
+  report1 << "ICH. HOF. INFECTION ASSOCIATED SURVIVAL" << endl;
+  report1 << "Proportion that avoids or survives infection:" << endl << ich_survival_age << endl << endl;
 
-    report1 << "ICH. HOF. INFECTION AGE-SPECIFIC CHRONIC INFECTION" << endl;
-    report1 << "Proportions that are infected at start of year:"    << endl << ich_chronic_infection << endl << endl;
+  report1 << "ICH. HOF. INFECTION AGE-SPECIFIC CHRONIC INFECTION" << endl;
+  report1 << "Proportions that are infected at start of year:" << endl << ich_chronic_infection_age << endl << endl;
 
-    report1 << "ICH. HOF. INFECTION CHARACTERISTICS"                                << endl;
-    report1 << "Incidence rate of infection in spawning population (numbers):"      << endl << inf_inc_sp_ich << endl << endl;
-    report1 << "Fatality rate of infection in spawning population (numbers):"       << endl << fatal_sp_ich << endl << endl;
-    report1 << "I. hoferi infection prevalence in spawning population (numbers):"   << endl << ichprev_sp << endl << endl;
+  report1 << "ICH. HOF. INFECTION CHARACTERISTICS" << endl;
+  report1 << "Incidence rate of infection in spawning population (numbers):" << endl << inf_inc_sp_ich << endl << endl;
+  report1 << "Fatality rate of infection in spawning population (numbers):" << endl << fatal_sp_ich << endl << endl;
+  report1 << "I. hoferi infection prevalence in spawning population (numbers):" << endl << ichprev_sp << endl << endl;
 
-    //report1 << "PROJECTED MANAGEMENT QUANTITIES" << endl;
-    //report1 << "Mean recruits from past 10 years" << endl << mean_log_recruitment << endl;
-    //report1 << "Projected total pre-fishery biomass" << endl << projected_pre_fish_biomass << endl;
-    //report1 << "Projected pre-fishery biomass by age" << endl << projected_Early_Sp_biomass << endl;
-    //report1 << "Projected numbers at age" << endl << projected_N_y_a << endl << endl;
+  //report1 << "PROJECTED MANAGEMENT QUANTITIES" << endl;
+  //report1 << "Mean recruits from past 10 years" << endl << meanLgRec << endl;
+  //report1 << "Projected total pre-fishery biomass" << endl << projected_prefishery_biomass << endl;
+  //report1 << "Projected pre-fishery biomass by age" << endl << projected_Early_Sp_biomass << endl;
+  //report1 << "Projected numbers at age" << endl << projected_N_y_a << endl << endl;
 
-    report1.close();
+  report1.close();
 
 RUNTIME_SECTION
 maximum_function_evaluations 100, 100, 1000, 1000, 10000
