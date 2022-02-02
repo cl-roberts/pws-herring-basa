@@ -1,4 +1,4 @@
-"Years","Median Age 3 (in millions)","Lower 95th Age 3 (in millions)","Upper 95th Age 3 (in millions)","Median Pre-fishery biomass (in 1000s metric tons)","Lower 95th Biomass (in 1000s metric tons)","Upper 95th Biomass (in 1000s metric tons)","Median Exploitation rate","Lower 95th ER","Upper 95th ER","Probability B<20K","NA"
+"Years","Median Age 3 (in millions)","Lower 95th Age 3 (in millions)","Upper 95th Age 3 (in millions)","Median Pre-fishery biomass (in 1000s metric tons)","Lower 95th Biomass (in 1000s metric tons)","Upper 95th Biomass (in 1000s metric tons)","Catch (metric tons)","Median Exploitation rate","Lower 95th ER","Upper 95th ER","Probability B<20K"
 1980,225.93,149.13,321.51,66.42,53.94,83.4,7143.76,0.11,0.09,0.13,0
 1981,116.44,77.61,171.43,67.98,55.33,85.07,14140.11,0.21,0.17,0.26,0
 1982,164.02,121.03,225.68,58.59,45.95,75.99,8097.08,0.14,0.11,0.18,0

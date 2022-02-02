@@ -136,32 +136,58 @@ projected.recruit <- apply(data$Age3, 1, FUN=function(x) sum(x[(length(x)-9):len
 ylim <- 2000
 myMGP=c(3, 0.8, 0) 
 
-pdf(here::here("figures/recruitment_and_ssb.pdf"), height=4, width=12)
-par(mfcol=c(1, 2), mar=c(4, 5, 2, 2), oma=c(1, 1, 0, 3))
-rec.posterior.figure <- rec_posterior(years=years, nYr-1, data$Age3, myMGP=myMGP, modelPath=rfunctions.path, 
+single.figure=TRUE
+
+if(single.figure){
+    pdf(here::here("figures/outputs-for-management.pdf"), height=8, width=12)
+    par(mfcol=c(2, 2), mar=c(4, 5, 2, 2), oma=c(1, 1, 0, 3))
+
+    rec.posterior.figure <- rec_posterior(years=years, nYr-1, data$Age3, myMGP=myMGP, modelPath=rfunctions.path, 
                                       ylim=ylim, ylabel, xlabel, labels.x, labels.y)
 
-ylim <- 180
-ssb.traj.figure <- ssb_trajectory(data$PFRB, years=c(years, tail(years,1)), nYr-1, myMGP=myMGP, modelPath=rfunctions.path, 
-                                  ylim=ylim, ylabel, xlabel, labels.x, labels.y, ylabel.2, labels.y2)
-dev.off()
-
-pdf(here::here("figures/exploitation_rate.pdf"), height=4, width=6)
-par(mfcol=c(1, 1), mar=c(4, 5, 2, 2), oma=c(1, 1, 0, 3))
-exploit.rate.figure <- exploit_rate(data$f.median[1:nYr-1], data$exploit.rate.ci[, 1:nYr-1], years=c(years, tail(years,1)), nYr-1, 
+    exploit.rate.figure <- exploit_rate(data$f.median[1:nYr-1], data$exploit.rate.ci[, 1:nYr-1], years=c(years, tail(years,1)), nYr-1, 
                                     myMGP=myMGP, ylabel, xlabel, labels.x, labels.y)
-dev.off()
+
+    ylim <- 180
+    ssb.traj.figure <- ssb_trajectory(data$PFRB, years=c(years, tail(years,1)), nYr-1, myMGP=myMGP, modelPath=rfunctions.path, 
+                                      ylim=ylim, ylabel, xlabel, labels.x, labels.y, ylabel.2, labels.y2)
+
+    xlabel <- TRUE
+    xlim <- 40
+    ylim <- 0.13
+    labels.y <- TRUE
+    pfrb.posterior.figure <- pfrb_posterior(data$PFRB, years, nYr-1, myMGP=myMGP, xlim=xlim, ylim=ylim, ylabel, xlabel, labels.x, labels.y)
+
+  dev.off()
+
+}else{
+  pdf(here::here("figures/recruitment_and_ssb.pdf"), height=4, width=12)
+  par(mfcol=c(1, 2), mar=c(4, 5, 2, 2), oma=c(1, 1, 0, 3))
+  rec.posterior.figure <- rec_posterior(years=years, nYr-1, data$Age3, myMGP=myMGP, modelPath=rfunctions.path, 
+                                        ylim=ylim, ylabel, xlabel, labels.x, labels.y)
+
+  ylim <- 180
+  ssb.traj.figure <- ssb_trajectory(data$PFRB, years=c(years, tail(years,1)), nYr-1, myMGP=myMGP, modelPath=rfunctions.path, 
+                                    ylim=ylim, ylabel, xlabel, labels.x, labels.y, ylabel.2, labels.y2)
+  dev.off()
+
+  pdf(here::here("figures/exploitation_rate.pdf"), height=4, width=6)
+  par(mfcol=c(1, 1), mar=c(4, 5, 2, 2), oma=c(1, 1, 0, 3))
+  exploit.rate.figure <- exploit_rate(data$f.median[1:nYr-1], data$exploit.rate.ci[, 1:nYr-1], years=c(years, tail(years,1)), nYr-1, 
+                                      myMGP=myMGP, ylabel, xlabel, labels.x, labels.y)
+  dev.off()
 
 
-xlabel <- TRUE
-xlim <- 40
-ylim <- 0.13
-labels.y <- TRUE
+  xlabel <- TRUE
+  xlim <- 40
+  ylim <- 0.13
+  labels.y <- TRUE
 
-pdf(here::here("figures/post_fishery_biomass_posterior.pdf"), height=4, width=6)
-par(mfcol=c(1, 1), mar=c(4, 5, 2, 2), oma=c(1, 1, 0, 3))
-pfrb.posterior.figure <- pfrb_posterior(data$PFRB, years, nYr-1, myMGP=myMGP, xlim=xlim, ylim=ylim, ylabel, xlabel, labels.x, labels.y)
-dev.off()
+  pdf(here::here("figures/pre_fishery_biomass_posterior.pdf"), height=4, width=6)
+  par(mfcol=c(1, 1), mar=c(4, 5, 2, 2), oma=c(1, 1, 0, 3))
+  pfrb.posterior.figure <- pfrb_posterior(data$PFRB, years, nYr-1, myMGP=myMGP, xlim=xlim, ylim=ylim, ylabel, xlabel, labels.x, labels.y)
+  dev.off()
+}
 
 ###############################################################
 ## Save csv of values displayed in table above (with 95% credibility intervals) 
@@ -187,6 +213,7 @@ names(final.table) <- c("Years",
                         "Median Pre-fishery biomass (in 1000s metric tons)",
                         "Lower 95th Biomass (in 1000s metric tons)",
                         "Upper 95th Biomass (in 1000s metric tons)",
+                        "Catch (metric tons)",
                         "Median Exploitation rate",
                         "Lower 95th ER",
                         "Upper 95th ER",
