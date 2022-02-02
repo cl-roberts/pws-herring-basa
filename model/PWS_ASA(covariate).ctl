@@ -169,7 +169,7 @@
 -9	0.172222222	0
 -9	0.133333333	0 
 -9	0.190001883	0
--9	0.190001883	0
+-9	0.190001883	0 # Revisit
                                        
 # Observed WINTER Natural mortality deviates for year to be forecast (average of 3 preceding years)
 -9
