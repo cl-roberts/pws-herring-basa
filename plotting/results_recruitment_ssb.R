@@ -15,7 +15,7 @@ models <- c("base/")
 model.name <- c("Base model")
 
 # Years of the model
-years<-1980:2020
+years<-1980:2021
 nyr<-length(years)+1
 
 dat.plot.2 <- data.frame()
@@ -59,7 +59,7 @@ for(j in 1:length(models)){
           Q.975=quantile(value,probs=0.975, na.rm=TRUE)
       )
 
-  dat.plot.2 <- bind_rows(dat.plot.2, data.frame(model=mod_name[j], dat.plot))
+  dat.plot.2 <- bind_rows(dat.plot.2, data.frame(model=model.name[j], dat.plot))
 }
 
 # Estimate stats for paper

@@ -14,7 +14,7 @@ source(file=here::here("functions/data_header_reader.R"))
 setwd(modelPath)
 
 nburn <- 1
-final.year <- 2020 # CHANGE with each update
+final.year <- 2021 # CHANGE with each update
 
 #Color-reordering function: 
 reorder<-function(vec,pos){

@@ -13,7 +13,7 @@ source(file=here::here("functions/data_reader.R"))
 source(file=here::here("functions/data_header_reader.R"))
 
 # Years of the model
-years<-1980:2020 # CHANGE with each update
+years<-1980:2021 # CHANGE with each update
 nYr<-length(years)+1
 n.burn <- 1 # This is the burn-in period - be sure to adjust accordingly with you specified chain length and thinning rate
 
@@ -82,13 +82,13 @@ read.in.files <- function(model.path,n.burn,nYr){
     #allIts <- length(final.PFRB) # number of thinned iterations after burn-in
     
     exploit.rate.mat<-total.catch.mass[1:(nYr-1)]/t(PFRB[,1:(nYr-1)]) # Calculate the exploitation rate
-    exploit.rate.mat<<-rbind(exploit.rate.mat,rep(0,ncol(exploit.rate.mat)))
+    exploit.rate.mat<-rbind(exploit.rate.mat,rep(0,ncol(exploit.rate.mat)))
     
     fMedian<-apply(exploit.rate.mat, 1, median) # And its median
-    fMedian<<-replace(fMedian, fMedian == 0, NA)
+    fMedian<-replace(fMedian, fMedian == 0, NA)
     
     # lower .95 int is row 1, upper is row 2
-    exploit.rate.ci <<- apply(exploit.rate.mat, 1, quantile, probs=c(.025, .975)) # And its credibility interval
+    exploit.rate.ci <- apply(exploit.rate.mat, 1, quantile, probs=c(.025, .975)) # And its credibility interval
 
     return(
       list(
@@ -97,7 +97,8 @@ read.in.files <- function(model.path,n.burn,nYr){
         final.PFRB = final.PFRB,
         exploit.rate.mat = exploit.rate.mat,
         f.median = fMedian,
-        exploit.rate.ci = exploit.rate.ci
+        exploit.rate.ci = exploit.rate.ci,
+        catch = total.catch.mass
       )
     )
 
@@ -153,8 +154,8 @@ dev.off()
 
 
 xlabel <- TRUE
-xlim <- 30
-ylim <- 0.2
+xlim <- 40
+ylim <- 0.13
 labels.y <- TRUE
 
 pdf(here::here("figures/post_fishery_biomass_posterior.pdf"), height=4, width=6)
@@ -178,7 +179,7 @@ ssb.est <- as.matrix(t(apply(data$PFRB[, 1:(nYr-1)], 2, quantile,
                              probs=c(0.5, 0.025, 0.975), name=F, na.rm=T)))
 exploit.rate.est <- as.matrix(t(apply(data$exploit.rate.mat[1:(nYr-1), ], 1, quantile,
                             probs=c(0.5, 0.025, 0.975), name=F, na.rm=T)))
-final.table <- round.df(data.frame(years, recruitment.est, ssb.est/1000, exploit.rate.est, round.df(ssb.traj.figure, 2)), 2)
+final.table <- round.df(data.frame(years, recruitment.est, ssb.est/1000, data$catch, exploit.rate.est, round.df(ssb.traj.figure, 2)), 2)
 names(final.table) <- c("Years",
                         "Median Age 3 (in millions)",
                         "Lower 95th Age 3 (in millions)",

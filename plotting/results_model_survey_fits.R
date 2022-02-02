@@ -225,8 +225,8 @@ pp.plotter.nb <- function(PP, sd, obs, cv, sYr, nYr, dataYears, years, ylabel, x
 ###################################
 library(dplyr)
 
-years <- 1980:2020 # Model fitting year - CHANGE!
-dataYears <- 1980:2020 # Years the data spans - CHANGE#!
+years <- 1980:2021 # Model fitting year - CHANGE!
+dataYears <- 1980:2021 # Years the data spans - CHANGE#!
 nYr <- length(dataYears) # Number of years in current data set
 sYr <- 1
 #sYr <- 29

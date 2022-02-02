@@ -41,8 +41,8 @@ ssb_trajectory <- function(PFRB,years,nYr,myMGP,modelPath,ylabel,xlabel,labels.x
     source(file=paste0(modelPath,"function_add.polygon2.R"))
     add.polygon2(x=years[1:(nYr)], z=PFRB[,1:(nYr)]/1000, alpha.level=c(.05,.5,.95), alpha.min=.2, alpha.max=.9)
     axis(2, at=c(0,20,40,seq(100,vert.max,length.out = 2)), labels=labels.y, las=1, mgp=myMGP, cex.axis=font.size-0.6, col="grey60")
-    abline(h=20, lty=2) 
-    abline(h=40, lty=2)
+    abline(h=22.5, lty=2) 
+    abline(h=42.5, lty=2)
     #lines(years, prob_below_threshold*200, lwd=2)
     
     count<-rep(0,nYr)
