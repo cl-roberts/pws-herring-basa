@@ -2,7 +2,7 @@
 title: "2021 Bayesian Age-structure Stock Assessment (BASA) Results for Prince William Sound (PWS) herring"
 author:
   - John T. Trochta
-  - Joshua Zahner
+  - Joshua A. Zahner
   - Trevor A. Branch
 date: "`r format(Sys.time(), '%B %d, %Y')`"
 geometry: margin=1in
@@ -27,10 +27,10 @@ Various updates have been made to the equations of BASA since Muradian et al. (2
 
 Furthermore, a more efficient Markov Chain Monte Carlo (MCMC) algorithm called the No-U-turn Sampler (NUTS) has been introduced to rapidly sample posteriors of the parameters in BASA (Monnahan et al. 2019).
 
-At present, BASA is primarily used to estimate spawning biomass and recruitment up to the most recent year with data. Persistent low levels of biomass and recruitment since the early 1990s continue to preclude consideration of reopening of fisheries under the current harvest strategy, and thus forecasts are not conducted. BASA has also been used as a research tool to investigate hypotheses and evaluate alternative models. In this report, we present the most recent fits and estimates from BASA for 2020 and summarize any modifications and alternative models explored.
+At present, BASA is primarily used to estimate spawning biomass and recruitment up to the most recent year with data. Persistent low levels of biomass and recruitment since the early 1990s continue to preclude consideration of reopening of fisheries under the current harvest strategy, and thus forecasts are not conducted. BASA has also been used as a research tool to investigate hypotheses and evaluate alternative models. In this report, we present the most recent fits and estimates from BASA for 2021 and summarize any modifications and alternative models explored.
 
-# 2020 BASA Summary
-To run the 2020 BASA model, the key software and versions used include:
+# 2021 BASA Summary
+To run the 2021 BASA model, the key software and versions used include:
 
 * ADMB-12.3 (compiled using Apple Clang C++ 12.0.0 arm64bit)
 * R package 'adnuts' version 1.1.1
@@ -39,26 +39,26 @@ To run the 2020 BASA model, the key software and versions used include:
 
 The no-U-turn sampler (NUTS) was used within ADMB to sample the posterior distributions of BASA parameters and derived quantities. The 'adnuts' package and its dependencies were used to run NUTS and diagnostic checking from within R. Four NUTS chains were ran in total with the default arguments already supplied to 'sample_nuts()' (e.g. warmup=1000, iter=2000), except for a higher target acceptance rate (adapt_delta=0.9) and using the inverse Hessian as the mass matrix (metric='mle'). Diagnostics supported convergence in all four chains (zero divergences and all R-hat convergence values < 1.05) and had sufficient sample size (estimated Bulk Effective Sample Size > 500 from merged chains). The total duration for running BASA was 1.9 minutes.
 
-Results are shown from the BASA model fits to data up to and including 2020 (Figs. 1-3). The inner 95th percentiles of the posterior predictive distributions of the ongoing biomass survey data (Mile-days milt and PWSSC acoustic biomass) from BASA encompass all observations (Fig. 1). Fits of the discontinued data (Egg deposition and ADF&G acoustic biomass) also fit well the historical time series.
+Results are shown from the BASA model fits to data up to and including 2021 (Figs. 1-3). The inner 95th percentiles of the posterior predictive distributions of the ongoing biomass survey data (Mile-days milt and PWSSC acoustic biomass) from BASA encompass all observations (Fig. 1). Fits of the discontinued data (Egg deposition and ADF&G acoustic biomass) also fit well the historical time series.
 
 ```{r, out.width="85%", include=TRUE, fig.align="center", echo=FALSE}
-knitr::include_graphics(here::here("../out/fig_survey_biomass_predictions.pdf"))
+knitr::include_graphics(here::here("figures/predicted-survey-values.pdf"))
 ```
 **Fig. 1. Estimated survey biomass from Bayesian age structured assessment (shading showing 50% and 95% posterior predictive intervals in dark and light gray, respectively) compared to indices of biomass in the population (points and lines showing observation CV).**
 
 
-Posterior predictions of the juvenile aerial survey index (age-1 schools) bounded all observations, albeit with large uncertainty. BASA largely overestimated the 2017 index  which was the largest in the available record, although the relative scale of this cohort (2016 age-0) agrees with the large proportions of age-3s and -4s observed in 2019 and 2020 (Fig. 2). The overestimation of 2017 schools may be due to bias from a subjective standardization used to calculate this index; schools were numerated by four descriptive categories (small, medium, large, and extra large) and the largest three categories were converted to and summed as small school equivalents to calculate the index. Furthermore, the numbers of medium, large, and extra large schools in 2017 each represented the historical maxima in their respective categories, while the number of small schools was the third largest. Further investigation into the accuracy of this standardization is needed.
+Posterior predictions of the juvenile aerial survey index (age-1 schools) bounded all observations, albeit with large uncertainty. BASA largely overestimated the 2017 index  which was the largest in the available record, although the relative scale of this cohort (2016 age-0) agrees with the large proportions of age-3s and -4s observed in 2019, 2020, and 2021 (Fig. 2). The overestimation of 2017 schools, as well as the underestimation of 2021 schools, may be due to bias from a subjective standardization used to calculate this index; schools were numerated by four descriptive categories (small, medium, large, and extra large) and the largest three categories were converted to and summed as small school equivalents to calculate the index. Furthermore, the numbers of medium, large, and extra large schools in 2017 each represented the historical maxima in their respective categories, while the number of small schools was the third largest. Further investigation into the accuracy of this standardization is needed.
 
 ```{r, out.width="85%", include=TRUE, fig.align="center", echo=FALSE}
-knitr::include_graphics(here::here("../out/fig_age_comp_predictions.pdf"))
+knitr::include_graphics(here::here("figures/predicted-age-comps.pdf"))
 ```
 **Fig. 2. Estimated age structure from the Bayesian age structured stock assessment (points = median, lines = 95% posterior predictive intervals) compared to the age composition data from catches and surveys (bars). Each color follows a single cohort as it ages through the fishery. Data are available only for ages-3 and above.**
 
 
-Posterior predictive intervals for the age composition data mostly show good fits, except for the age-3 classes in 1987 and 1998 (Fig. 2). In 2020, there was a large proportion of observed and estimated age-4 herring, which supports a strong 2016 cohort, the size of which has not been seen since 2002 (Fig. 3). Since the 2016 cohort continued to enter the spawning population at age 4 (of which approximately 94% are estimated to be mature), spawning biomass continued to increase in 2020 from 2019, a trend also shown in the milt and acoustic data (Fig. 1). The median spawning biomass estimate in 2020 was approximately 18,500 metric tons which is still below ADF&G's lower cut-off for fishing (Table 1). Additionally, uncertainty in this estimate indicates there is a 63% probability that 2020 spawning biomass was below this lower cutoff.
+Posterior predictive intervals for the age composition data mostly show good fits, except for the age-3 classes in 1987 and 1998 (Fig. 2). In 2021, there was a large proportion of observed and estimated age-5 herring, continuing to support a strong 2016 cohort, the size of which has not been seen since 2002 (Fig. 3). The median spawning biomass estimate in 2021 was approximately 21,0000 metric tons which remains just below ADF&G's lower cut-off for fishing (Table 1). Additionally, uncertainty in this estimate indicates there is a 41% probability that 2021 spawning biomass was below this lower cutoff.
 
 ```{r, out.width="100%", include=TRUE, fig.align="center", echo=FALSE}
-knitr::include_graphics(here::here("../out/fig_ssb_&_rec_est.pdf"))
+knitr::include_graphics(here::here("figures/recruitment_and_ssb.pdf"))
 ```
 **Fig. 3. Bayesian age structured assessment estimates of numbers of age-3 recruitment in millions and spawning biomass with 95% credibility intervals (light gray shading).**$\\$
 
@@ -73,7 +73,7 @@ library(tidyverse,quietly = TRUE)
 library(magrittr,quietly = TRUE)
 set_flextable_defaults(fonts_ignore=TRUE)
 
-ssb_est <- readr::read_csv(here::here("../out/table_ssb_rec_cat.csv"))
+ssb_est <- readr::read_csv(here::here("data_outputs/outputs-for-management.csv"))
 
 names(ssb_est) <- paste0("col_",1:ncol(ssb_est))
 
