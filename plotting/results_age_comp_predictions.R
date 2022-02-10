@@ -226,7 +226,7 @@ for(i in 1:foot.print[length(foot.print[, 3]), 3]){
         }
     }
 }
-axis(2, at=c(0, 50, 100), labels=c("0.0", "0.5", "1.0"), las=2, cex.axis=0.7, mgp=c(1, .04, 0), tcl=-0.25)
+axis(2, at=c(0, 50, 100), labels=c("0.0", "0.5", "1.0"), las=2, cex.axis=0.7, mgp=c(1, 0.4, 0), tcl=-0.25)
 
 ## plot SPAWN comps - three columns
 par(mar=c(0, 1, 0, .5))

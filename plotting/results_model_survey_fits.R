@@ -206,7 +206,7 @@ pp.plotter.nb <- function(PP, sd, obs, cv, sYr, nYr, dataYears, years, ylabel, x
     # ymax.1 <- max(t(obs[sYr:nYr,1])*calc.buck.cv(cv=cv)[sYr:nYr],na.rm=T)
     ymax.2 <- max(apply(PP[,sYr:nYr], 2, quantile,probs=0.99,name=F, na.rm=T),na.rm=T)
     #ylimit <- signif(ymax.2,1)
-    ylimit <- 20000
+    ylimit <- 40000
     plot(dataYears[sYr:nYr], rep(NA,(nYr-sYr+1)), col=4, ylab='', xlab=xlabel,axes=F, xaxs="i", yaxs="i",ylim=c(0,ylimit),
         pch=16, cex.main=1.6, cex.lab=1.8, xlim=c(years[sYr],years[nYr]+0.3), las=1,xpd=NA, main=ylabel, cex=2.5)
     # Then calculate posterior predictive intervals, specificied at the inner 5% and 95% intervals around the median

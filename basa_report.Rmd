@@ -14,8 +14,11 @@ output:
     template: default
 ---
 
+# Executive Summary
+The median spawning biomass of PWS herring in 2021 was estimated at approximately 21,000 metric tons, slightly above the minimum threshold required for the opening of existing herring fisheries (19,958 metric tons). Taking into account uncertainity in this estimate, there is an approximately 41% probability that the true biomass of the PWS herring population is below this lower cutoff. The 2021 biomass estimate is the highest since 2011, and continues the recent trend of biomass growth observed since 2018. The estimated age-composition for 2021 shows a large proportion of age-5 individuals, continuing to support the estimate of a strong 2016 cohort. The age-1 aerial school survey estimated ~10,000 small-school equivalents, the second largest observed (behind 2016), potentially indicating another strong cohort in 2024. Based on recent trends in both the survey data and model estimates of biomass, the PWS herring stock appears to be recovering towards its mid-2000s level. While still a long way from the biomass levels sustained prior to the 1993 population crash, this is a welcome sign after nearly a deacade of further biomass decline. 
+
 # Background
-Before 2014, the Alaska Department of Fish and Game (ADF&G) ran an Excel-based age structured assessment (ASA) model to forecast PWS herring biomass for input into harvest control rule. The harvest control rule has a minimum biomass threshold at 22,000 tons, which is equivalent to 25% of the unfished biomass under equilibrium determined from simulations (Funk and Rowell 1995). When forecasted biomass is between 22,000 and 42,500 tons, the control rules scales the annual harvest rate from 0-20% (Botz et al. 2011). These reference points were last revised by the Alaska Board of Fisheries in 1994.
+Before 2014, the Alaska Department of Fish and Game (ADF&G) ran an Excel-based age structured assessment (ASA) model to forecast PWS herring biomass for input into harvest control rule. The harvest control rule has a minimum biomass threshold at 19,958 metric tons, which is equivalent to 25% of the unfished biomass under equilibrium determined from simulations (Funk and Rowell 1995). When forecasted biomass is between 19,958 and 38,555 metric tons (22,000-40,000 short tons), the control rules scales the annual harvest rate from 0-20% (Botz et al. 2011). These reference points were last revised by the Alaska Board of Fisheries in 1994.
 
 Since 2014, the ASA has been expanded to include a Bayesian formulation (BASA) that inherently weights the input data sources based on statistical probability distributions, and estimates uncertainty through the sampling of Bayesian posteriors (Muradian et al. 2017). Muradian et al. (2017) first demonstrated BASA as a more robust model to the previous ASA. Since then, BASA has been used in various studies to evaluate which historical input data were the most informative given the trade-off between information gain and cost (Muradian et al. 2019) and which ecological factors most likely regulate herring recruitment and natural mortality (Trochta and Branch 2021).
 
@@ -24,6 +27,7 @@ Various updates have been made to the equations of BASA since Muradian et al. (2
 * Fitting hydroacoustic data to mature biomass instead of total age 3+ biomass (Trochta and Branch 2021)
 * Estimating maturity (proportions mature at ages 3 and 4) over the entire modeling time period instead of two time periods split at 1997
 * Incorporating aerial age-1 school count data to inform recruitment estimates before they enter the spawning population at age 3
+* Integrating seroprevalence and disease data to inform natural mortality estimates (Trochta et al. _in review_)
 
 Furthermore, a more efficient Markov Chain Monte Carlo (MCMC) algorithm called the No-U-turn Sampler (NUTS) has been introduced to rapidly sample posteriors of the parameters in BASA (Monnahan et al. 2019).
 
@@ -33,13 +37,13 @@ At present, BASA is primarily used to estimate spawning biomass and recruitment 
 To run the 2021 BASA model, the key software and versions used include:
 
 * ADMB-12.3 (compiled using Apple Clang C++ 12.0.0 arm64bit)
-* R package 'adnuts' version 1.1.1
-* R package 'rstan' version 2.21.2
-* R package 'snowfall' version 1.84-6.1
+* R package 'adnuts' version 1.1.2
+* R package 'rstan' version 2.21.3
+* R package 'snowfall' version 1.84.6.1
 
-The no-U-turn sampler (NUTS) was used within ADMB to sample the posterior distributions of BASA parameters and derived quantities. The 'adnuts' package and its dependencies were used to run NUTS and diagnostic checking from within R. Four NUTS chains were ran in total with the default arguments already supplied to 'sample_nuts()' (e.g. warmup=1000, iter=2000), except for a higher target acceptance rate (adapt_delta=0.9) and using the inverse Hessian as the mass matrix (metric='mle'). Diagnostics supported convergence in all four chains (zero divergences and all R-hat convergence values < 1.05) and had sufficient sample size (estimated Bulk Effective Sample Size > 500 from merged chains). The total duration for running BASA was 1.9 minutes.
+The no-U-turn sampler (NUTS) was used within ADMB to sample the posterior distributions of BASA parameters and derived quantities. The 'adnuts' package and its dependencies were used to run NUTS and diagnostic checking from within R. Four NUTS chains were ran in total with the default arguments already supplied to 'sample_nuts()' (e.g. warmup=1000, iter=5000), except for a higher target acceptance rate (adapt_delta=0.9) and using the inverse Hessian as the mass matrix (metric='mle'). Diagnostics supported convergence in all four chains (zero divergences and all R-hat convergence values < 1.05) and had sufficient sample size (estimated Bulk Effective Sample Size > 500 from merged chains). The total duration for running BASA was 1.9 minutes.
 
-Results are shown from the BASA model fits to data up to and including 2021 (Figs. 1-3). The inner 95th percentiles of the posterior predictive distributions of the ongoing biomass survey data (Mile-days milt and PWSSC acoustic biomass) from BASA encompass all observations (Fig. 1). Fits of the discontinued data (Egg deposition and ADF&G acoustic biomass) also fit well the historical time series.
+Results are shown from the BASA model fits to data up to and including 2021 (Figs. 1-3). The inner 95th percentiles of the posterior predictive distributions of the ongoing biomass survey data (Mile-days milt and PWSSC acoustic biomass) from BASA encompass all observations (Fig. 1). Fits of the discontinued data (egg deposition and ADF&G acoustic biomass) also fit well the historical time series.
 
 ```{r, out.width="85%", include=TRUE, fig.align="center", echo=FALSE}
 knitr::include_graphics(here::here("figures/predicted-survey-values.pdf"))
@@ -55,16 +59,21 @@ knitr::include_graphics(here::here("figures/predicted-age-comps.pdf"))
 **Fig. 2. Estimated age structure from the Bayesian age structured stock assessment (points = median, lines = 95% posterior predictive intervals) compared to the age composition data from catches and surveys (bars). Each color follows a single cohort as it ages through the fishery. Data are available only for ages-3 and above.**
 
 
-Posterior predictive intervals for the age composition data mostly show good fits, except for the age-3 classes in 1987 and 1998 (Fig. 2). In 2021, there was a large proportion of observed and estimated age-5 herring, continuing to support a strong 2016 cohort, the size of which has not been seen since 2002 (Fig. 3). The median spawning biomass estimate in 2021 was approximately 21,0000 metric tons which remains just below ADF&G's lower cut-off for fishing (Table 1). Additionally, uncertainty in this estimate indicates there is a 41% probability that 2021 spawning biomass was below this lower cutoff.
+Posterior predictive intervals for the age composition data mostly show good fits, except for the age-3 classes in 1987 and 1998 (Fig. 2). In 2021, there was a large proportion of observed and estimated age-5 herring, continuing to support a strong 2016 cohort, the size of which has not been seen since 2002 (Fig. 3). The median spawning biomass estimate in 2021 was approximately 21,0000 metric tons which remains just below ADF&G's lower cut-off for fishing (Table 1). Additionally, uncertainty in this estimate indicates there is a 41% probability that 2021 spawning biomass was below this lower cutoff (Fig. 4).
 
 ```{r, out.width="100%", include=TRUE, fig.align="center", echo=FALSE}
 knitr::include_graphics(here::here("figures/recruitment_and_ssb.pdf"))
 ```
 **Fig. 3. Bayesian age structured assessment estimates of numbers of age-3 recruitment in millions and spawning biomass with 95% credibility intervals (light gray shading).**$\\$
 
+```{r, out.width="100%", include=TRUE, fig.align="center", echo=FALSE}
+knitr::include_graphics(here::here("figures/pre_fishery_biomass_posterior.pdf"))
+```
+**Fig. 4. Posterior distribution of pre-fishery spawning biomass with 95% confidence intervals indicated.**$\\$
+
 \newpage
 
-**Table 1.** Time series of posterior percentile (PCTL) estimates of the population from BASA. Pre-fishery spawning biomass (SB) is mature biomass of age-3+ fish. Catch includes all fisheries. Exploitation fraction is the catch divided by total age-3+ biomass. P(SB<20K) is the proportion of posterior SB samples that are less than 20,000 tons.
+**Table 1.** Time series of posterior percentile (PCTL) estimates of the population from BASA. Pre-fishery spawning biomass (SB) is mature biomass of age-3+ fish. Catch (metric tons) includes all fisheries. Exploitation fraction is the catch divided by total age-3+ biomass. P(SB<20K) is the proportion of posterior SB samples that are less than 20,000 tons.
 ```{r, echo=FALSE,message=FALSE}
 library(flextable,quietly = TRUE)
 library(officer, quietly = TRUE)
@@ -80,15 +89,15 @@ names(ssb_est) <- paste0("col_",1:ncol(ssb_est))
 tab_head <- tibble(col_keys=names(ssb_est),
                        line2=c("",
                                rep('Age-3 recruits\n(millions)',3),
-                               rep('SB (thousand\nmetric tons)',3),
+                               rep("Spawning Biomass \n(1000 metric tons)",3),
                                '',
                                rep('Exploitation\nfraction',3),
                                ''),
                        line3=c("Year",
-                               '2.5th\nPCTL','50th\nPCTL','97.5th\nPCTL',
-                               "2.5th\nPCTL",'50th\nPCTL','97.5th\nPCTL',
-                               'Catch (thousand\n metric tons)',
-                               '2.5th\nPCTL','50th\nPCTL','97.5th\nPCTL',
+                               '50th','2.5th','97.5th',
+                               '50th','2.5th','97.5th',
+                               'Catch',
+                               '50th','2.5th','97.5th',
                                'P(SB<20K)'))
 
 pgwid <- 5.5
@@ -97,22 +106,23 @@ ft_obj <- ssb_est %>%
   regulartable() %>%
   set_header_df(mapping = tab_head,key="col_keys") %>%
   merge_h(part = "header", i=1) %>%
-  merge_v(part = "header", j=c(1,8,12)) %>%
+  merge_v(part = "header", j=c(1,7,12)) %>%
   colformat_double(j=1, big.mark = "", digits = 0) %>%
   colformat_double(j=2:7, big.mark = "", digits = 1) %>%
   #theme_booktabs(bold_header = TRUE) %>%
   bold(part="header") %>%
-  align(align="center", part = "all") %>%
-  valign(j=c(1,8,12),valign="top", part = "header") %>%
+  align(align="right", part = "all") %>%
+  valign(j=c(1,7,12),valign="top", part = "header") %>%
   fontsize(size=9, part="all") %>%
   hline_bottom(j=1:12,part = 'header', border = fp_border(width = 1.5)) %>%
-  hline_top(j=1:12,part = 'header', border = fp_border(width = 1.5)) %>%
+  hline_top(j=1:12,part = 'header', border = fp_border(width = 1.5)) #%>%
   # set_formatter_type(fmt_double = paste0("%.0",decimal.places[j],"f")) %>%
   # display(formatters = list(mpg ~ sprintf("%.01f", mpg) )) %>%
-  autofit()
+  #autofit()
 
 ft_obj %>% 
-  width(width = dim(ft_obj)$widths*pgwid /(flextable_dim(ft_obj)$widths)) %>%
+  width(width = c(0.3, 0.5, 0.3, 0.3, 0.5, 0.3, 0.3, 0.8, 0.5, 0.3, 0.3, 0.8)) %>%
+  line_spacing(space=1, part="body") %>%
   padding(padding=0,part="body")
   
   
@@ -143,4 +153,21 @@ ft_obj %>%
 
 \newpage
 
-*CITATIONS TO GO HERE*
+# References 
+
+Botz, J., G. Hollowell, J. Bell, R. Brenner, and S. D. Moffitt. 2010. 2009 Prince William Sound Area Finfish Management Report. Alaska Department of Fish and Game, Anchorage, Alaska.
+
+Funk, F., and K. A. Rowell. 1995. Population model suggests new threshold for managing Alaska`s Togiak Fishery for Pacific herring in Bristol Bay. Alaska Fishery Research Bulletin 2:125-136.
+
+Monnahan, C. C., T. A. Branch, J. T. Thorson, I. J. Stewart, and C. S. Szuwalski. 2019. Overcoming long Bayesian run times in integrated fisheries stock assessments. ICES Journal of Marine Science 76:1477-1488.
+
+Muradian, M. L., T. A. Branch, S. D. Moffitt, and P.-J. F. Hulson. 2017. Bayesian stock assessment of Pacific herring in Prince William Sound, Alaska. PLOS ONE 12:e0172153.
+
+Muradian, M. L., T. A. Branch, and A. E. Punt. 2019. A framework for assessing which sampling programmes provide the best trade-off between accuracy and cost of data in stock assessments. ICES Journal of Marine Science 76:2102-2113.
+
+Trochta, J. T., T. A. Branch, A. O. Shelton, and D. E. Hay. 2020. The highs and lows of herring: A meta-analysis of patterns and factors in herring collapse and recovery. Fish and Fisheries 21:639-662.
+
+Trochta, J. T., and T. A. Branch. 2021. Applying Bayesian model selection to determine ecological covariates for recruitment and natural mortality in stock assessment. ICES Journal of Marine Science 78:2875-2894.
+
+Trochta, J. T., M. Groner, P. Hershberger, and T. A. Branch. in review. A better way to account for disease in fisheries stock assessment: the powerful potential of seroprevalence data. ICES Journal of Marine Science.
+
