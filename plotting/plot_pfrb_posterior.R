@@ -66,7 +66,7 @@ pfrb_posterior <- function(PFRB, years, nyr, myMGP, xlim, ylabel, xlabel, labels
     allIts<-length(final.PFRB)
     for(i in 1:allIts){
       #i<-1; j<-1
-      if(final.PFRB[i]<20000)
+      if(final.PFRB[i]<19958)
         count<-count+1
     }
     prob_below_threshold <- count/allIts
