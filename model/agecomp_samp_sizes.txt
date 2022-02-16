@@ -87,7 +87,7 @@
 2279
 1795
 1328
-1676
+2987
 
 # Antibody sample sizes
 0
