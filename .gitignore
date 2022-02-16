@@ -24,4 +24,6 @@ model/*.std
 model/rep_out/*
 model/mcmc_out/*
 
+*.tex
+
 *~
