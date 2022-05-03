@@ -5,7 +5,7 @@ The Bayesian Age-Structured Stock Assessment Model (BASA) for Pacific herring is
 BASA has been under active development by graduate students at the University of Washington - Seattle since 2014. The original model was developed by Melissa Muradian as part of her M.S. under Dr. Trevor Branch. Dr. John Trochta made further modifications to the model, including incorporating an age-1 aerial school index and seroprevalence disease data during the course of his Ph.D. Joshua Zahner is currently utilizing BASA to develop a management strategy evaluation framework for PWS herring as a part of his M.S.
 
 Cite as:
- 
+
 `Muradian ML, Branch TA, Moffitt SD, Hulson PJF (2017) Bayesian stock assessment of Pacific herring in Prince William Sound, Alaska. PLOS ONE 12(2): e0172153. https://doi.org/10.1371/journal.pone.0172153`
 
 ## Model Information
@@ -23,10 +23,10 @@ R Packages
 * 'snowfall' v. 1.84.6.1
 
 ## Running the Model
-The actual stock assessment model runs in ADMB, though, in practice, is more freuqently run using the provided `run_basa.r` R script. `run_basa.R` acts a wrapper that performs four important operations:
+The actual stock assessment model runs in ADMB, though, in practice, is more freuqently run using the provided `run_basa.r` R script. `run_basa.R` acts as a wrapper that performs four important operations:
 
 1. Calculates effective sample sizes (ESS) for each data source being provided to the model.
-2. Generates initial values for MCMC samples to begin at
+2. Generates initial values for MCMC sampler to begin at
 3. Runs the stock assessment program using the NUTS sampling algorithm
 4. Checks whether there were divergences between the sampling chains and whether all of the parameters were appropoiately estimated.
 
@@ -52,7 +52,7 @@ Trochta, J. T., T. A. Branch, A. O. Shelton, and D. E. Hay. 2020. The highs and 
 
 Trochta, J. T., and T. A. Branch. 2021. Applying Bayesian model selection to determine ecological covariates for recruitment and natural mortality in stock assessment. ICES Journal of Marine Science 78:2875-2894.
 
-Trochta, J. T., M. Groner, P. Hershberger, and T. A. Branch. in review. A better way to account for disease in fisheries stock assessment: the powerful potential of seroprevalence data. ICES Journal of Marine Science.
+Trochta, J. T., M. Groner, P. Hershberger, and T. A. Branch. 2022. A better way to account for disease in fisheries stock assessment: the powerful potential of seroprevalence data. Canadian Journal of Aquatic and Fisheries Sciences 79(4): 611-630
 
 
 
