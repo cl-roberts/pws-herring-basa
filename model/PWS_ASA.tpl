@@ -377,6 +377,9 @@ DATA_SECTION
     // Adjust maxind for parameters that are determined internally here (e.g. by nyr_tobeit,recruitment_covariate_counter, etc.)
     // This probably could be improved...
     nyr_recdevs = nyr_tobefit-1;
+    if(juvenile_survey_index(nyr_tobefit) == -9 || juvenile_survey_index(nyr_tobefit-1) == -9){
+        nyr_recdevs = nyr_tobefit-3;
+    }
     maxind2(2) = rec_cov_counter_age0devs;  
     maxind3(2) = nyr_recdevs;
     maxind2(3) = recruitment_covariate_counter;

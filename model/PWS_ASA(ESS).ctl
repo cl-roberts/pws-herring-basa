@@ -1,5 +1,5 @@
 # PWS age comp effective sample sizes
-# (Wed Feb  2 14:48:44 2022)
+# (Fri Apr 29 10:06:22 2022)
  
 # Determines which ctl file for the age comps and ESS to use (1 uses ESS control to be iteratively estimated)
 -1
@@ -63,25 +63,25 @@
 91
 30
 59
-54
-58
+55
+59
 55
 77
-112
+113
 78
-48
+49
 44
 66
 54
 33
 30
-23
+24
 52
 72
-49
+50
 27
 30
-66
+67
 19
 35
 17
@@ -90,7 +90,7 @@
 31
 24
 18
-22
+40
  
 # Sero ESS
 0
