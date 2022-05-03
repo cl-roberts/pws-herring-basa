@@ -258,8 +258,8 @@ if(dir.exists("mcmc_out")){
 
 start.time <- Sys.time()
 fit.1 <- sample_nuts(model='./PWS_ASA',path=template.files,
-                        #iter=500,
-                        #warmup=700,
+                        iter=2000,
+                        warmup=700,
                         #warmup=100,
                         duration = 5,
                         init=inits, seeds=seeds, chains=reps,cores=reps,
