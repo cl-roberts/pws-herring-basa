@@ -36,10 +36,6 @@ At present, BASA is primarily used to estimate spawning biomass and recruitment 
 # 2021 BASA Summary
 To run the 2021 BASA model, the key software and versions used include:
 
-* ADMB-12.3 (compiled using Apple Clang C++ 12.0.0 arm64bit)
-* R package 'adnuts' version 1.1.2
-* R package 'rstan' version 2.21.3
-* R package 'snowfall' version 1.84.6.1
 
 The no-U-turn sampler (NUTS) was used within ADMB to sample the posterior distributions of BASA parameters and derived quantities. The 'adnuts' package and its dependencies were used to run NUTS and diagnostic checking from within R. Four NUTS chains were ran in total with the default arguments already supplied to 'sample_nuts()' (e.g. warmup=1000, iter=5000), except for a higher target acceptance rate (adapt_delta=0.9) and using the inverse Hessian as the mass matrix (metric='mle'). Diagnostics supported convergence in all four chains (zero divergences and all R-hat convergence values < 1.05) and had sufficient sample size (estimated Bulk Effective Sample Size > 500 from merged chains). The total duration for running BASA was 1.9 minutes.
 
@@ -59,7 +55,7 @@ knitr::include_graphics(here::here("figures/predicted-age-comps.pdf"))
 **Fig. 2. Estimated age structure from the Bayesian age structured stock assessment (points = median, lines = 95% posterior predictive intervals) compared to the age composition data from catches and surveys (bars). Each color follows a single cohort as it ages through the fishery. Data are available only for ages-3 and above.**
 
 
-Posterior predictive intervals for the age composition data mostly show good fits, except for the age-3 classes in 1987 and 1998 (Fig. 2). In 2021, there was a large proportion of observed and estimated age-5 herring, continuing to support a strong 2016 cohort, the size of which has not been seen since 2002 (Fig. 3). The median spawning biomass estimate in 2021 was approximately 21,0000 metric tons which is just above ADF&G's lower cut-off for fishing (Table 1). Additionally, uncertainty in this estimate indicates there is a 41% probability that 2021 spawning biomass was below this lower cutoff (Fig. 4).
+Posterior predictive intervals for the age composition data mostly show good fits, except for the age-3 classes in 1987 and 1998 (Fig. 2). In 2021, there was a large proportion of observed and estimated age-5 herring, continuing to support a strong 2016 cohort, the size of which has not been seen since 2002 (Fig. 3). The median spawning biomass estimate in 2021 was approximately 21,000 metric tons which is just above ADF&G's lower cut-off for fishing (Table 1). Additionally, uncertainty in this estimate indicates there is a 41% probability that 2021 spawning biomass was below this lower cutoff (Fig. 4).
 
 ```{r, out.width="100%", include=TRUE, fig.align="center", echo=FALSE}
 knitr::include_graphics(here::here("figures/recruitment_and_ssb.pdf"))
