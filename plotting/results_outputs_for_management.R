@@ -13,7 +13,7 @@ source(file=here::here("functions/data_reader.R"))
 source(file=here::here("functions/data_header_reader.R"))
 
 # Years of the model
-years<-1980:2021 # CHANGE with each update
+years<-1980:2022 # CHANGE with each update
 nYr<-length(years)+1
 n.burn <- 1 # This is the burn-in period - be sure to adjust accordingly with you specified chain length and thinning rate
 
