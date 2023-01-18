@@ -79,7 +79,7 @@
 ## 2: annual_age0devs
    2                                    
    1   1   1   1                        # While only a single value, indices are set internally (within TPL)
-   -10.00 10.00   1   0   0   0   0
+   -10.00 10.00   1   0   0   0   0     # These have to be really wide for the MSE, or else the hessian isn't P&D
    0
 
 ## 3: beta_age0
@@ -97,7 +97,7 @@
 ## 5: annual_mortdevs
    2
    1   1   1   1
-   -10.00 10.00  -2   0   0   0   0
+   -20.00 20.00  -2   0   0   0   0
    0
 
 ## 6: beta_age0_offset
