@@ -27,3 +27,6 @@ model/mcmc_out/*
 *.tex
 
 *~
+.Rproj.user
+
+retrospectives/*
