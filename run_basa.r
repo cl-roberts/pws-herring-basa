@@ -33,7 +33,7 @@ library(adnuts)
 library(snowfall)
 library(rstan)
 library(r4ss)
-source(paste0(here::here("functions/"), "run_basa.r"))
+source(paste0(here::here("functions/"), "/run_basa.r"))
 
 run <- run.basa(here::here("model"))
 # Extracts NUTS stats (energy, leapfrog transitions,etc)
@@ -51,7 +51,7 @@ r.hat
 write.csv(mon, file="mcmc_out/table_par_posterior_summary.csv")
 
 # Write all MCMC samples of the parameters
-mcmc.samps <- data.frame(matrix(run$fit1$samples, nrow=dim(run$fit1$samples)[3], byrow=TRUE))
+mcmc.samps <- data.frame(matrix(run$fit1$samples, ncol=dim(run$fit1$samples)[3], byrow=FALSE))
 names(mcmc.samps) <- run$fit1$par_names
 write.csv(mcmc.samps, file="mcmc_out/iterations.csv", row.names=FALSE)
 
@@ -68,7 +68,7 @@ sum.dia <- data.frame(divergences.from.extract.function=sum(x$divergent__)/nrow(
                       time.elapsed=run$time)
 
 write.table(sum.dia, file="mcmc_out/table_convergence_diagnostics.csv", sep=",", row.names=FALSE)
-saveRDS(fit.1, file="mcmc_out/NUTS_fit.RDS")
+saveRDS(run$fit1, file="mcmc_out/NUTS_fit.RDS")
 
 # Launch Shiny App to check diagnostics online
 # launch_shinyadmb(fit.1)

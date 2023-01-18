@@ -10,11 +10,11 @@ library(rstan)
 library(r4ss)
 
 function.dir <- here::here("functions/")
-source(file=paste0(function.dir, "data_reader.R"))
-source(file=paste0(function.dir, "data_header_reader.R"))
-source(file=paste0(function.dir, "read_admb_dat_files.R"))
-source(file=paste0(function.dir, "calculate_ess.R"))
-source(file=paste0(function.dir, "init_admb_params.R"))
+source(file=paste0(function.dir, "/data_reader.R"))
+source(file=paste0(function.dir, "/data_header_reader.R"))
+source(file=paste0(function.dir, "/read_admb_dat_files.R"))
+source(file=paste0(function.dir, "/calculate_ess.R"))
+source(file=paste0(function.dir, "/init_admb_params.R"))
 
 #################################################################
 # Are you running this on a PC or a Mac
@@ -26,6 +26,7 @@ run.basa <- function(model.dir, n.samples=2000, n.warmup=700, n.time=5){
     print(template.files)
     setwd(template.files)
     system("admb -s PWS_ASA")
+    #shell("admb -s PWS_ASA")
 
     model.data <- read.admb.files()
 
