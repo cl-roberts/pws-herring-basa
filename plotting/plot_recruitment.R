@@ -9,10 +9,8 @@ nyr <- length(years)
 
 model.dir <- here::here("model/")
 
-exploit.df <- compute.exploit.rate(model.dir, nyr, years)
-plot <- plot.exploit.rate(exploit.df$exploit.rate.df,
-                          exploit.df$exploit.zeros,
-                          years)
+recruit.df <- compute.recruitment(model.dir, nyr, years)
+plot <- plot.recruitment.posterior(recruit.df, years)
 plot
 
-ggsave(paste0(here::here("figures/"), "exploitation_rate.pdf"))
+ggsave(paste0(here::here("figures/"), "recruitment_trajectory.pdf"))
