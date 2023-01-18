@@ -1,7 +1,6 @@
 ---
-title: "2021 Bayesian Age-structure Stock Assessment (BASA) Results for Prince William Sound (PWS) herring"
+title: "2022 Bayesian Age-structure Stock Assessment (BASA) Results for Prince William Sound (PWS) herring"
 author:
-  - John T. Trochta
   - Joshua A. Zahner
   - Trevor A. Branch
 date: "`r format(Sys.time(), '%B %d, %Y')`"
@@ -15,10 +14,10 @@ output:
 ---
 
 # Executive Summary
-The median spawning biomass of PWS herring in 2021 was estimated at approximately 21,000 metric tons, slightly above the minimum threshold required for the opening of existing herring fisheries (19,958 metric tons). Taking into account uncertainity in this estimate, there is an approximately 41% probability that the true biomass of the PWS herring population is below this lower cutoff. The 2021 biomass estimate is the highest since 2011, and continues the recent trend of biomass growth observed since 2018. The estimated age-composition for 2021 shows a large proportion of age-5 individuals, continuing to support the estimate of a strong 2016 cohort. The age-1 aerial school survey estimated ~10,000 small-school equivalents, the second largest observed (behind 2016), potentially indicating another strong cohort in 2024. Based on recent trends in both the survey data and model estimates of biomass, the PWS herring stock appears to be recovering towards its mid-2000s level. While still a long way from the biomass levels sustained prior to the 1993 population crash, this is a welcome sign after nearly a deacade of further biomass decline. 
+The median spawning biomass of PWS herring in 2022 was estimated at approximately 24,490 metric tons, above the minimum threshold required for the opening of existing herring fisheries (19,958 metric tons). Taking into account uncertainity in this estimate, there is an approximately 18% probability that the true biomass of the PWS herring population is below this lower cutoff. The 2022 biomass estimate is the highest since 2011, and continues the recent trend of biomass growth observed since 2018. The estimated age-composition for 2022 shows a large proportion of age-6 individuals, continuing to support the estimate of a strong 2016 cohort. The age-1 aerial school survey estimated ~11,800 small-school equivalents, the third largest observed (behind 2016 and 2021), potentially indicating another strong cohort in 2025. Based on recent trends in both the survey data and model estimates of biomass, the PWS herring stock appears to be recovering towards its mid-2000s level. While still a long way from the biomass levels sustained prior to the 1993 population crash, this is a welcome sign after nearly a decade of further biomass decline. 
 
 # Background
-Before 2014, the Alaska Department of Fish and Game (ADF&G) ran an Excel-based age structured assessment (ASA) model to forecast PWS herring biomass for input into harvest control rule. The harvest control rule has a minimum biomass threshold at 19,958 metric tons, which is equivalent to 25% of the unfished biomass under equilibrium determined from simulations (Funk and Rowell 1995). When forecasted biomass is between 19,958 and 38,555 metric tons (22,000-40,000 short tons), the control rules scales the annual harvest rate from 0-20% (Botz et al. 2011). These reference points were last revised by the Alaska Board of Fisheries in 1994.
+Before 2014, the Alaska Department of Fish and Game (ADF&G) ran an Excel-based age structured assessment (ASA) model to forecast PWS herring biomass for input into harvest control rule. The harvest control rule has a minimum biomass threshold at 19,958 metric tons, which is equivalent to 25% of the unfished biomass under equilibrium determined from simulations (Funk and Rowell 1995). When forecasted biomass is between 19,958 and 38,555 metric tons (22,000-42,500 short tons), the control rules scales the annual harvest rate from 0-20% (Botz et al. 2011). These reference points were last revised by the Alaska Board of Fisheries in 1994.
 
 Since 2014, the ASA has been expanded to include a Bayesian formulation (BASA) that inherently weights the input data sources based on statistical probability distributions, and estimates uncertainty through the sampling of Bayesian posteriors (Muradian et al. 2017). Muradian et al. (2017) first demonstrated BASA as a more robust model to the previous ASA. Since then, BASA has been used in various studies to evaluate which historical input data were the most informative given the trade-off between information gain and cost (Muradian et al. 2019) and which ecological factors most likely regulate herring recruitment and natural mortality (Trochta and Branch 2021).
 
@@ -33,39 +32,34 @@ Furthermore, a more efficient Markov Chain Monte Carlo (MCMC) algorithm called t
 
 At present, BASA is primarily used to estimate spawning biomass and recruitment up to the most recent year with data. Persistent low levels of biomass and recruitment since the early 1990s continue to preclude consideration of reopening of fisheries under the current harvest strategy, and thus forecasts are not conducted. BASA has also been used as a research tool to investigate hypotheses and evaluate alternative models. In this report, we present the most recent fits and estimates from BASA for 2021 and summarize any modifications and alternative models explored.
 
-# 2021 BASA Summary
-To run the 2021 BASA model, the key software and versions used include:
+# 2022 BASA Summary
+To run the 2022 BASA model, the key software and versions used include:
 
 
-The no-U-turn sampler (NUTS) was used within ADMB to sample the posterior distributions of BASA parameters and derived quantities. The 'adnuts' package and its dependencies were used to run NUTS and diagnostic checking from within R. Four NUTS chains were ran in total with the default arguments already supplied to 'sample_nuts()' (e.g. warmup=1000, iter=5000), except for a higher target acceptance rate (adapt_delta=0.9) and using the inverse Hessian as the mass matrix (metric='mle'). Diagnostics supported convergence in all four chains (zero divergences and all R-hat convergence values < 1.05) and had sufficient sample size (estimated Bulk Effective Sample Size > 500 from merged chains). The total duration for running BASA was 1.9 minutes.
+The no-U-turn sampler (NUTS) was used within ADMB to sample the posterior distributions of BASA parameters and derived quantities. The 'adnuts' package and its dependencies were used to run NUTS and diagnostic checking from within R. Four NUTS chains were ran in total with the default arguments already supplied to 'sample_nuts()' (e.g. warmup=1000, iter=5000), except for a higher target acceptance rate (adapt_delta=0.9) and using the inverse Hessian as the mass matrix (metric='mle'). Diagnostics supported convergence in all four chains (zero divergences and all R-hat convergence values < 1.05) and had sufficient sample size (estimated Bulk Effective Sample Size > 500 from merged chains). The total duration for running BASA was 2.1 minutes.
 
-Results are shown from the BASA model fits to data up to and including 2021 (Figs. 1-3). The inner 95th percentiles of the posterior predictive distributions of the ongoing biomass survey data (Mile-days milt and PWSSC acoustic biomass) from BASA encompass all observations (Fig. 1). Fits of the discontinued data (egg deposition and ADF&G acoustic biomass) also fit well the historical time series.
+Results are shown from the BASA model fits to data up to and including 2022 (Figs. 1-3).  The inner 95th percentiles of the posterior predictive distributions of the ongoing biomass survey data (Mile-days milt and PWSSC acoustic biomass) from BASA encompass all observations (Fig. 1). Fits of the discontinued data (egg deposition and ADF&G acoustic biomass) also fit well the historical time series.
 
 ```{r, out.width="85%", include=TRUE, fig.align="center", echo=FALSE}
-knitr::include_graphics(here::here("figures/predicted-survey-values.pdf"))
+knitr::include_graphics(here::here("figures/survey_fits.pdf"))
 ```
 **Fig. 1. Estimated survey biomass from Bayesian age structured assessment (shading showing 50% and 95% posterior predictive intervals in dark and light gray, respectively) compared to indices of biomass in the population (points and lines showing observation CV).**
 
 
-Posterior predictions of the juvenile aerial survey index (age-1 schools) bounded all observations, albeit with large uncertainty. BASA largely overestimated the 2017 index  which was the largest in the available record, although the relative scale of this cohort (2016 age-0) agrees with the large proportions of age-3s and -4s observed in 2019, 2020, and 2021 (Fig. 2). The overestimation of 2017 schools, as well as the underestimation of 2021 schools, may be due to bias from a subjective standardization used to calculate this index; schools were numerated by four descriptive categories (small, medium, large, and extra large) and the largest three categories were converted to and summed as small school equivalents to calculate the index. Furthermore, the numbers of medium, large, and extra large schools in 2017 each represented the historical maxima in their respective categories, while the number of small schools was the third largest. Further investigation into the accuracy of this standardization is needed.
+Posterior predictions of the juvenile aerial survey index (age-1 schools) bounded all observations, albeit with large uncertainty. BASA largely overestimated the 2017 index  which was the largest in the available record, although the relative scale of this cohort (2016 age-0) agrees with the large proportions of age-3s and -4s observed in 2019, 2020, and 2021 (Fig. 2). The overestimation of 2017 schools, as well as the underestimation of 2021 schools, may be due to bias from a subjective standardization used to calculate this index; schools were numerated by four descriptive categories (small, medium, large, and extra large) and the largest three categories were converted to and summed as small school equivalents to calculate the index. Furthermore, the numbers of medium, large, and extra large schools in 2017 each represented the historical maxima in their respective categories, while the number of small schools was the third largest. Further investigation into the accuracy of this standardization is needed. The large aerual survey index in 2022 is also anomalous, in that two sequential years have never been observed to have near equally large numbers of age-1 schools. The exact reasons for this discrepency remain unknown at this time.
 
 ```{r, out.width="85%", include=TRUE, fig.align="center", echo=FALSE}
-knitr::include_graphics(here::here("figures/predicted-age-comps.pdf"))
+knitr::include_graphics(here::here("figures/age_compositions.pdf"))
 ```
 **Fig. 2. Estimated age structure from the Bayesian age structured stock assessment (points = median, lines = 95% posterior predictive intervals) compared to the age composition data from catches and surveys (bars). Each color follows a single cohort as it ages through the fishery. Data are available only for ages-3 and above.**
 
 
-Posterior predictive intervals for the age composition data mostly show good fits, except for the age-3 classes in 1987 and 1998 (Fig. 2). In 2021, there was a large proportion of observed and estimated age-5 herring, continuing to support a strong 2016 cohort, the size of which has not been seen since 2002 (Fig. 3). The median spawning biomass estimate in 2021 was approximately 21,000 metric tons which is just above ADF&G's lower cut-off for fishing (Table 1). Additionally, uncertainty in this estimate indicates there is a 41% probability that 2021 spawning biomass was below this lower cutoff (Fig. 4).
+Posterior predictive intervals for the age composition data mostly show good fits, except for the age-3 classes in 1987 and 1998 (Fig. 2). In 2022, there was a large proportion of observed and estimated age-6 herring, continuing to support a strong 2016 cohort, the size of which has not been seen since 2002 (Fig. 3). The median spawning biomass estimate in 2021 was approximately 24,490 metric tons which is above ADF&G's lower cut-off for fishing (Table 1). Additionally, uncertainty in this estimate indicates there is a 18% probability that 2021 spawning biomass was below this lower cutoff (Fig. 3).
 
 ```{r, out.width="100%", include=TRUE, fig.align="center", echo=FALSE}
-knitr::include_graphics(here::here("figures/recruitment_and_ssb.pdf"))
+knitr::include_graphics(here::here("figures/management_outputs.pdf"))
 ```
-**Fig. 3. Bayesian age structured assessment estimates of numbers of age-3 recruitment in millions and spawning biomass with 95% credibility intervals (light gray shading).**$\\$
-
-```{r, out.width="100%", include=TRUE, fig.align="center", echo=FALSE}
-knitr::include_graphics(here::here("figures/pre_fishery_biomass_posterior.pdf"))
-```
-**Fig. 4. Posterior distribution of pre-fishery spawning biomass with 95% confidence intervals indicated.**$\\$
+**Fig. 3. Bayesian age structured assessment estimates of numbers of age-3 recruitment in millions, spawning biomass with 95% credibility intervals (light gray shading), total exploitation rate, and poterior probability density of pre-fishery biomass.**$\\$
 
 \newpage
 
