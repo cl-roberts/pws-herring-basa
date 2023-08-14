@@ -1,8 +1,9 @@
 library(ggplot2)
 library(ggpubr)
 
-source(file=paste0(here::here("plotting/", "compute_plot_products.R")))
+source(file=paste0(here::here("plotting/"), "compute_plot_products.R"))
 source(file=paste0(here::here("plotting/", "plot_utils.R")))
+source(paste0(here::here("functions/"), "fun_read_dat.R"))
 
 start.year <- 1980
 curr.year <- 2023
