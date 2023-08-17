@@ -100,7 +100,7 @@ plot.survey.fits <- function(fits, survey.data, y.max, title, ylabel="", scale=1
 }
 
 start.year <- 1980
-curr.year <- 2023
+curr.year <- 2024
 nyr.sim <- 0
 years <- seq(start.year, curr.year+nyr.sim-1)
 nyr <- length(years)

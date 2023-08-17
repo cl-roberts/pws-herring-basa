@@ -6,7 +6,7 @@ source(file=paste0(here::here("plotting/", "plot_utils.R")))
 source(paste0(here::here("functions/"), "fun_read_dat.R"))
 
 start.year <- 1980
-curr.year <- 2023
+curr.year <- 2024
 nyr.sim <- 0
 years <- seq(start.year, curr.year+nyr.sim-1)
 nyr <- length(years)
