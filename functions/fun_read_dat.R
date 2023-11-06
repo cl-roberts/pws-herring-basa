@@ -139,8 +139,8 @@ read.biomass.estimates <- function(model.dir, nyr=NA){
   fname <- paste0(here::here(model.dir), "/mcmc_out/PFRBiomass.csv")
   biomass.data <- read.table(fname, header = FALSE, sep = ",", dec=".")
 
-  nyr <- ifelse(is.na(nyr), ncol(biomass.data)-1, nyr)
-  years <- 1980:(1980+nyr)
+  nyr <- ifelse(is.na(nyr), ncol(biomass.data), nyr)
+  years <- 1980:(1980+nyr-1)
 
   colnames(biomass.data) <- years
 
@@ -152,7 +152,7 @@ read.exploit.rates <- function(model.dir, nyr=NA){
   raw.data <- read.data.files(model.dir)
 
   pfrb <- read.biomass.estimates(model.dir, nyr=nyr)
-  nyr <- ifelse(is.na(nyr), ncol(pfrb), nyr)
+  nyr <- ifelse(is.na(nyr), ncol(pfrb)-1, nyr)
 
   total.catch.biomass <- compute.catch.biomass(raw.data$PWS_ASA.dat, nyr)
   exploit.rate <- t(total.catch.biomass/t(pfrb))

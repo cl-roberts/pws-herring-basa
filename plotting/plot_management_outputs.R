@@ -8,16 +8,17 @@ source(paste0(here::here("functions/"), "fun_read_dat.R"))
 start.year <- 1980
 curr.year <- 2024
 nyr.sim <- 0
-years <- seq(start.year, curr.year+nyr.sim-1)
+years <- seq(start.year, curr.year+nyr.sim)
 nyr <- length(years)
 
 model.dir <- here::here("model/")
 
 biomass.df <- compute.biomass.traj(model.dir, nyr, years)
-biomass.plot <- plot.biomass.trajectory(biomass.df, years, legend=FALSE)
+biomass.plot <- plot.biomass.trajectory(biomass.df, years, legend=FALSE, new.theme=present.theme)
+# biomass.plot+present.theme
 ggsave(paste0(here::here("figures/"), "biomass_trajectory.pdf"), height=8.5, width=11)
 
-exploit.df <- compute.exploit.rate(model.dir, nyr, years)
+exploit.df <- compute.exploit.rate(model.dir, nyr-1, years[1:(nyr-1)])
 exploit.rate.plot <- plot.exploit.rate(exploit.df$exploit.rate.df,
                                        exploit.df$exploit.zeros,
                                        years)
@@ -31,7 +32,7 @@ pfrb.posterior.plot <- plot.pfrb.posterior(pfrb.posterior$biomass.df,
                                            font.size=5)
 ggsave(paste0(here::here("figures/"), "pfrb_posterior.pdf"), height=8.5, width=11)
 
-recruit.df <- compute.recruitment(model.dir, nyr, years)
+recruit.df <- compute.recruitment(model.dir, nyr-1, years[1:(nyr-1)])
 recruit.plot <- plot.recruitment.posterior(recruit.df, years, legend=FALSE)
 ggsave(paste0(here::here("figures/"), "recrtuitment_trajectory.pdf"), height=8.5, width=11)
 

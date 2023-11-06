@@ -5,31 +5,59 @@ library(ggdist)
 
 color.palette <- "Blues"
 
-plot.biomass.trajectory <- function(df, years, legend=TRUE, show.probs=TRUE){
+present.theme <- theme(
+    panel.grid.minor = element_blank(),
+    panel.grid.major = element_blank(),
+    panel.background = element_blank(),
+    axis.line = element_line(colour = "black"),
+    legend.position = ifelse(legend, "right", "none"),
+    axis.title = element_text(size=16, face="bold"),
+    axis.text = element_text(size=14),
+    plot.title = element_text(size=20, face="bold")
+)
+
+plot.biomass.trajectory <- function(df, years, legend=TRUE, show.probs=TRUE, new.theme=NA){
   
+    # the.theme <- ifelse(
+    #     is.na(new.theme),
+    #     theme(
+    #         panel.grid.minor = element_blank(),
+    #         panel.grid.major = element_blank(),
+    #         panel.background = element_blank(),
+    #         axis.line = element_line(colour = "black"),
+    #         legend.position = ifelse(legend, "right", "none")
+    #     ),
+    #     new.theme
+    # )
+
     plot <- ggplot(df ) +
       geom_lineribbon(aes(x=year, y=biomass/1000, ymin=.lower/1000, ymax=.upper/1000, group=1), size=0.25)+
       scale_fill_grey(start=0.8, end=0.4)+
       #scale_fill_brewer(palette = color.palette)+
       scale_x_discrete("Year", breaks=seq(min(years), max(years), by=5), expand=c(0, 0))+
       geom_hline(yintercept=c(20, 40), linetype="dashed")+
+      geom_vline(xintercept = length(years)-1, linetype="dashed")+
       ggtitle("Biomass Trajectory")+
       scale_y_continuous(
         "Pre-fishery biomass (1000 mt)", 
         breaks=c(0, 20, 40, 50, 100, 150, 200),
-        expand=c(0, 0))+
+        expand=c(0, 0)
+      )+
       coord_cartesian(clip="off")+
       theme(
         panel.grid.minor = element_blank(),
         panel.grid.major = element_blank(),
         panel.background = element_blank(),
         axis.line = element_line(colour = "black"),
-        legend.position = ifelse(legend, "right", "none")
+        legend.position = ifelse(legend, "right", "none"),
+        axis.title = element_text(size=16, face="bold"),
+        axis.text = element_text(size=14),
+        plot.title = element_text(size=20, face="bold")
       )
     
     if(show.probs){
-      plot <- plot + geom_point(aes(x=year, y=prob*200))+
-              geom_line(aes(x=year, y=prob*200, group=1))+
+      plot <- plot + geom_point(aes(x=year, y=prob*200), size=2)+
+              geom_line(aes(x=year, y=prob*200, group=1), size=0.8)+
               scale_y_continuous(
                 "Pre-fishery biomass (1000 mt)", 
                 breaks=c(0, 20, 40, 50, 100, 150, 200),
@@ -57,6 +85,9 @@ plot.exploit.rate <- function(df, zeros, years){
                 panel.grid.major = element_blank(),
                 panel.background = element_blank(),
                 axis.line = element_line(colour = "black"),
+                axis.title = element_text(size=16, face="bold"),
+                axis.text = element_text(size=14),
+                plot.title = element_text(size=20, face="bold")
             )
     )
 }
@@ -82,6 +113,9 @@ plot.pfrb.posterior <- function(df, quants, prob, curr.year, font.size=1){
                 panel.grid.major = element_blank(),
                 panel.background = element_blank(),
                 axis.line = element_line(colour = "black"),
+                axis.title = element_text(size=16, face="bold"),
+                axis.text = element_text(size=14),
+                plot.title = element_text(size=20, face="bold")
             )
     )
 }
@@ -99,7 +133,10 @@ plot.recruitment.posterior <- function(df, years, legend=TRUE){
                 panel.grid.major = element_blank(),
                 panel.background = element_blank(),
                 axis.line = element_line(colour = "black"),
-                legend.position = ifelse(legend, "right", "none")
+                legend.position = ifelse(legend, "right", "none"),
+                axis.title = element_text(size=16, face="bold"),
+                axis.text = element_text(size=14),
+                plot.title = element_text(size=20, face="bold")
             )
     )
 }
