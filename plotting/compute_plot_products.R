@@ -90,3 +90,42 @@ compute.catch.biomass <- function(model.dir, nyr, years){
     return(total.catch.biomass)
 
 }
+
+compute.retrospective.matrix <- function(n.peels, fname="PFRBiomass.csv"){
+
+    base <- as.numeric(read_csv(paste0(here::here(), "/model/mcmc_out/", fname), col_names=FALSE, show_col_types = FALSE) %>%
+                                            summarise(
+                                                across(
+                                                everything(),
+                                                median
+                                                )
+                                            ))
+    nyr <- length(base)
+
+    # Aggregate biomass estimates for each retrospective run
+    annual.estimate <- matrix(NA, nyr, n.peels+1)
+    annual.estimate[1:nyr, 1] <- base
+
+    for(i in n.peels:1){
+        print(i)
+        est <- read_csv(paste0(here::here(), "/retrospectives/", "basa-", i,"/mcmc_out/", fname), col_names=FALSE, show_col_types = FALSE) %>%
+                summarise(
+                    across(
+                    everything(),
+                    median
+                    )
+                ) 
+        
+        est <- t(as.matrix(est))
+        rownames(est) <- NULL
+        for(j in 1:length(est)){
+            print(j)
+            annual.estimate[j, i+1] <- est[j, 1]
+        }
+    }
+
+    rownames(annual.estimate) <- 1980:(1980+nyr-1)
+    colnames(annual.estimate) <- c("base", paste0("-", 1:n.peels))
+    
+    return(annual.estimate)
+}
