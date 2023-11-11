@@ -34,7 +34,7 @@ Furthermore, a more efficient Markov Chain Monte Carlo (MCMC) algorithm called t
 
 At present, BASA is primarily used to estimate spawning biomass and recruitment up to the most recent year with data. Persistent low levels of biomass and recruitment since the early 1990s continue to preclude consideration of reopening of fisheries under the current harvest strategy, and thus forecasts are not conducted. BASA has also been used as a research tool to investigate hypotheses and evaluate alternative models. In this report, we present the most recent fits and estimates from BASA for 2021 and summarize any modifications and alternative models explored.
 
-# 2022 BASA Summary
+# 2023 BASA Summary
 To run the 2023 BASA model, the key software and versions used include:
 
 The no-U-turn sampler (NUTS) was used within ADMB to sample the posterior distributions of BASA parameters and derived quantities. The 'adnuts' package and its dependencies were used to run NUTS and diagnostic checking from within R. Four NUTS chains were ran in total with the default arguments already supplied to 'sample_nuts()' (e.g. warmup=700, iter=2000), except for a higher target acceptance rate (adapt_delta=0.9) and using the inverse Hessian as the mass matrix (metric='mle'). Diagnostics supported convergence in all four chains (zero divergences and all R-hat convergence values < 1.05) and had sufficient sample size (estimated Bulk Effective Sample Size > 500 from merged chains). The total duration for running BASA was 1.8 minutes.
@@ -61,6 +61,17 @@ Posterior predictive intervals for the age composition data mostly show good fit
 knitr::include_graphics(here::here("figures/management_outputs.pdf"))
 ```
 **Fig. 3. Bayesian age structured assessment estimates of numbers of age-3 recruitment in millions, spawning biomass with 95% credibility intervals (light gray shading), total exploitation rate, and poterior probability density of pre-fishery biomass.**$\\$
+
+\newpage
+
+# 2023 BASA Diagnostics
+
+A retrospective analysis was conducted to evaluate the effect that adding new data has on prior predictions of stock biomass. The Mohn's rho statistic, commonly used to asses the magnitude and direction of retrosepctive biad, was $\rho=-0.06$ in 2023, indicating a small negative bias in biomass estimates in previous years. This value of mohn's rho is not considered indicative of substantial model misspecification, as it falls withing the accepted interval of (-0.22, 0.30; Hurtado-Ferro et al. 2015). 
+
+```{r, out.width="100%", include=TRUE, fig.align="center", echo=FALSE}
+knitr::include_graphics(here::here("figures/retrospective.pdf"))
+```
+**Fig. 4. 5-year retrospectives for the 2023 BASA model. Peels show no pervasive retrospective bias.**$\\$
 
 \newpage
 
@@ -149,6 +160,8 @@ ft_obj %>%
 Botz, J., G. Hollowell, J. Bell, R. Brenner, and S. D. Moffitt. 2010. 2009 Prince William Sound Area Finfish Management Report. Alaska Department of Fish and Game, Anchorage, Alaska.
 
 Funk, F., and K. A. Rowell. 1995. Population model suggests new threshold for managing Alaska`s Togiak Fishery for Pacific herring in Bristol Bay. Alaska Fishery Research Bulletin 2:125-136.
+
+Hurtado-Ferro F, Szuwalski CS, Valero JL, Anderson SC, Cunningham CJ, Johnson KF, et al. (2015). Looking in the rear-view mirror: bias and retrospective patterns in integrated, age-structured stock assessment models. ICES Journal of Marine Science 72: 99±110.
 
 Monnahan, C. C., T. A. Branch, J. T. Thorson, I. J. Stewart, and C. S. Szuwalski. 2019. Overcoming long Bayesian run times in integrated fisheries stock assessments. ICES Journal of Marine Science 76:1477-1488.
 
