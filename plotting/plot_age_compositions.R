@@ -5,6 +5,18 @@ library(ggdist)
 
 source(file=paste0(here::here("functions/"), "fun_read_dat.R"))
 
+shanon.weiner.evenness <- function(age.struct){
+    if(sum(age.struct) != 1.0){
+        age.struct <- age.struct/sum(age.struct)
+    }
+
+    as.log <- log(age.struct)
+    as.log[is.infinite(as.log)] <- 0
+
+    H = -sum(age.struct*as.log)
+    return(H/log(length(age.struct)))
+}
+
 generate.post.pred <- function(seine.age.comp, spawn.age.comp, seine.ess, spawn.ess, ncol=10){
     pp.seine.age.comp<-matrix(0, nrow(seine.age.comp), ncol(seine.age.comp)) # CHANGE
     pp.spawn.age.comp<-matrix(0, nrow(spawn.age.comp), ncol(spawn.age.comp))
@@ -151,14 +163,24 @@ age.comp.df <- rbind(seac.df, spac.df)
 age.comp.df$age <- factor(age.comp.df$age, levels=sort(unique(age.comp.df$age)), ordered=TRUE)
 age.comp.df$type <- factor(age.comp.df$type)
 
+spac.50 <- spac.df %>% select(year, age, `50%`) %>%
+            filter(!is.na(`50%`)) %>%
+            pivot_wider(names_from=age, values_from=`50%`)
+spac.50 <- as.matrix(spac.50 %>% select(c(`3`, `4`, `5`, `6`, `7`, `8`, `9`)))
+evenness.50 <- apply(spac.50, 1, shanon.weiner.evenness)
+eveness.df <- data.frame(year=1982:(curr.year+nyr.sim-1), e=round(evenness.50, 2))
+
 age.class.df <- data.frame(year=raw.df$year, age=rep(c("3", "4", "5", "6", "7", "8", "9"), nrow(raw.df)), color=rep(c("black", "white", "black", "white", "black", "white", "black"), nrow(raw.df)), type=rep(c("seine", "spawn"), each=nrow(raw.df)/2))
 year.df <- data.frame(year=years, year_str=years)
+
+raw.df <- raw.df %>% left_join(eveness.df)
 
 age.struct.plot <- ggplot(raw.df)+
     geom_col(aes(x=type, y=val/100, color=age, fill=fill.color), position=position_dodge(0.9), size=0.0)+
     scale_fill_manual(values=c(color.options, "grey")) + 
     geom_pointinterval(data=age.comp.df, aes(x=type, y=`50%`/100, ymin=`2.5%`/100, ymax=`97.5%`/100, color=age), position=position_dodge(0.9)) +
-    geom_text(data=year.df, aes(x=2.3, y=1, label=year_str), size=4)+
+    geom_text(data=year.df, aes(x=0.7, y=1, label=year), size=4)+
+    geom_text(data=eveness.df, aes(x=2.2, y=1, label=paste0("J=", e)), size=4)+
     geom_text(data=age.class.df, aes(x=type, y=-0.25, label=age, group=age), position=position_dodge(0.9), size=3)+
     scale_color_manual(values=rep("black", 7))+
     scale_y_continuous("Proportion", breaks=c(0.0, 0.5, 1.0))+
@@ -263,27 +285,27 @@ n.y.a.interval <- matrix(rep(0, 2*length(n.y.a[1, ])), nrow=2, ncol=length(n.y.a
 n.y.a.interval[1:2,] <- apply(n.y.a, 2, quantile, probs=c(0.025, 0.975), na.rm=T) # Fills first row with 0.025 percentile and second with 0.975 percentile
 n.y.a.median <- apply(n.y.a, 2, median)
 ## Now cut each up into years
-n.y.a.median.mat <- matrix(n.y.a.median, nrow=nyr, ncol=ncol, byrow=T) # nyr x nages matrix filled with posterior predictive median
-n.y.a.lower.mat <- matrix(n.y.a.interval[1, ], nrow=nyr, ncol=ncol, byrow=T)
-n.y.a.upper.mat <- matrix(n.y.a.interval[2, ], nrow=nyr, ncol=ncol, byrow=T)
+n.y.a.median.mat <- matrix(n.y.a.median, nrow=nyr, byrow=T) # nyr x nages matrix filled with posterior predictive median
+n.y.a.lower.mat <- matrix(n.y.a.interval[1, ], nrow=nyr, byrow=T)
+n.y.a.upper.mat <- matrix(n.y.a.interval[2, ], nrow=nyr, byrow=T)
 
 sink(here::here("data_outputs/numbers-at-age.csv"))
 cat("# Numbers-at-age (millions): Median estimate\n")
 write.table(
-    cbind(long.years, round_df(n.y.a.median.mat, 3)), 
-    row.names=FALSE, col.names=c("# Year", 0:8, "9+"), sep=","
+    cbind(years, round(n.y.a.median.mat, 3), round(apply(n.y.a.median.mat, 1, shanon.weiner.evenness), 2)), 
+    row.names=FALSE, col.names=c("# Year", 0:8, "9+", "J"), sep=","
 )
 
 cat("\n# Numbers-at-age (millions): Lower 95% Credibility Interval\n")
 write.table(
-    cbind(long.years, round_df(n.y.a.lower.mat, 3)),  
-    row.names=FALSE, col.names=c("# Year", 0:8, "9+"), sep=","
+    cbind(years, round(n.y.a.lower.mat, 3), round(apply(n.y.a.lower.mat, 1, shanon.weiner.evenness), 2)),  
+    row.names=FALSE, col.names=c("# Year", 0:8, "9+", "J"), sep=","
 )
 
 cat("\n# Numbers-at-age (millions): Upper 95% Credibility Interval\n")
 write.table(
-    cbind(long.years, round_df(n.y.a.upper.mat, 3)),  
-    row.names=FALSE, col.names=c("# Year", 0:8, "9+"), sep=","
+    cbind(years, round(n.y.a.upper.mat, 3), round(apply(n.y.a.upper.mat, 1, shanon.weiner.evenness), 2)),  
+    row.names=FALSE, col.names=c("# Year", 0:8, "9+", "J"), sep=","
 )
 
 sink()
