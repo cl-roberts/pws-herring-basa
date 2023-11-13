@@ -37,6 +37,10 @@ At present, BASA is primarily used to estimate spawning biomass and recruitment 
 # 2023 BASA Summary
 To run the 2023 BASA model, the key software and versions used include:
 
+* AD Model Builder v. 13.1
+* R                v. 4.3.2
+* adnuts           v. 1.1.2 
+
 The no-U-turn sampler (NUTS) was used within ADMB to sample the posterior distributions of BASA parameters and derived quantities. The 'adnuts' package and its dependencies were used to run NUTS and diagnostic checking from within R. Four NUTS chains were ran in total with the default arguments already supplied to 'sample_nuts()' (e.g. warmup=700, iter=2000), except for a higher target acceptance rate (adapt_delta=0.9) and using the inverse Hessian as the mass matrix (metric='mle'). Diagnostics supported convergence in all four chains (zero divergences and all R-hat convergence values < 1.05) and had sufficient sample size (estimated Bulk Effective Sample Size > 500 from merged chains). The total duration for running BASA was 1.8 minutes.
 
 Results are shown from the BASA model fits to data up to and including 2023 (Figs. 1-3).  The inner 95th percentiles of the posterior predictive distributions of the ongoing biomass survey data (Mile-days milt and PWSSC acoustic biomass) from BASA encompass all observations (Fig. 1). Fits of the discontinued data (egg deposition and ADF&G acoustic biomass) also fit well the historical time series.
@@ -102,7 +106,7 @@ tab_head <- tibble(col_keys=names(ssb_est),
                                '50th','2.5th','97.5th',
                                'P(SB<20K)'))
 
-pgwid <- 5.5
+pgwid <- 8.5
 
 ft_obj <- ssb_est %>%
   regulartable() %>%
@@ -123,7 +127,7 @@ ft_obj <- ssb_est %>%
   #autofit()
 
 ft_obj %>% 
-  width(width = c(0.3, 0.5, 0.3, 0.3, 0.5, 0.3, 0.3, 0.8, 0.5, 0.3, 0.3, 0.8)) %>%
+  width(width = c(0.3, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.8, 0.5, 0.5, 0.5, 1)) %>%
   line_spacing(space=1, part="body") %>%
   padding(padding=0,part="body")
   
