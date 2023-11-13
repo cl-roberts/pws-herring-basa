@@ -1,8 +1,9 @@
 library(ggplot2)
 library(ggpubr)
+library(ggdist)
 
 source(file=paste0(here::here("plotting/"), "compute_plot_products.R"))
-source(file=paste0(here::here("plotting/", "plot_utils.R")))
+source(file=paste0(here::here("plotting/"), "plot_utils.R"))
 source(paste0(here::here("functions/"), "fun_read_dat.R"))
 
 start.year <- 1980
@@ -44,16 +45,16 @@ ggarrange(
 
 ggsave(paste0(here::here("figures/"), "management_outputs.pdf"), height=8.5, width=11)
 
-biomass.matrix <- biomass.df %>% filter(.width==0.95) %>% select(biomass, .lower, .upper) %>% as.matrix %>% round(., 2)
+biomass.matrix <- biomass.df %>% filter(.width==0.95) %>% select(biomass, .lower, .upper) %>% head(nyr-1) %>% as.matrix %>% round(., 2)
 recruit.matrix <- recruit.df %>% filter(.width==0.95) %>% select(recruits, .lower, .upper) %>% as.matrix %>% round(., 2)
 exploit.matrix <- exploit.df$exploit.rate.df %>% filter(.width==0.95) %>% select(exploit, .lower, .upper) %>% as.matrix %>% round(., 2)
-prob.matrix    <- biomass.df %>% filter(.width==0.95) %>% select(prob) %>% as.matrix %>% round(., 2)
+prob.matrix    <- biomass.df %>% filter(.width==0.95) %>% select(prob) %>% head(nyr-1) %>% as.matrix %>% round(., 2)
 
 
 raw.data <- read.data.files(model.dir)
-total.catch.biomass <- compute.catch.biomass(raw.data$PWS_ASA.dat, nyr) %>% round(., 2)
+total.catch.biomass <- compute.catch.biomass(raw.data$PWS_ASA.dat, nyr-1) %>% round(., 2)
 
-final.table <- data.frame(years, recruit.matrix, biomass.matrix/1000, total.catch.biomass, exploit.matrix, prob.matrix) 
+final.table <- data.frame(years[1:(nyr-1)], recruit.matrix, biomass.matrix/1000, total.catch.biomass, exploit.matrix, prob.matrix) 
 names(final.table) <- c("Years",
                         "Median Age 3 (in millions)",
                         "Lower 95th Age 3 (in millions)",

@@ -1,41 +1,35 @@
-library(here)
-library(ggplot2)
-library(tidyverse)
-library(ggdist)
+packages <- c("here", "tidyverse", "ggplot2", "ggdist", "ggpubr")
+if(length(packages[which(packages %in% rownames(installed.packages()) == FALSE )]) > 0){
+  install.packages(packages[which(packages %in% rownames(installed.packages()) == FALSE)])
+}
+lapply(packages, library, character.only = TRUE)
+
+# library(here)
+# library(ggplot2)
+# library(tidyverse)
+# library(ggdist)
 
 color.palette <- "Blues"
 
-present.theme <- theme(
-    panel.grid.minor = element_blank(),
-    panel.grid.major = element_blank(),
-    panel.background = element_blank(),
-    axis.line = element_line(colour = "black"),
-    legend.position = ifelse(legend, "right", "none"),
-    axis.title = element_text(size=16, face="bold"),
-    axis.text = element_text(size=14),
-    plot.title = element_text(size=20, face="bold")
-)
+# present.theme <- theme(
+#     panel.grid.minor = element_blank(),
+#     panel.grid.major = element_blank(),
+#     panel.background = element_blank(),
+#     axis.line = element_line(colour = "black"),
+#     legend.position = ifelse(legend, "right", "none"),
+#     axis.title = element_text(size=16, face="bold"),
+#     axis.text = element_text(size=14),
+#     plot.title = element_text(size=20, face="bold")
+# )
 
 plot.biomass.trajectory <- function(df, years, legend=TRUE, show.probs=TRUE, new.theme=NA){
-  
-    # the.theme <- ifelse(
-    #     is.na(new.theme),
-    #     theme(
-    #         panel.grid.minor = element_blank(),
-    #         panel.grid.major = element_blank(),
-    #         panel.background = element_blank(),
-    #         axis.line = element_line(colour = "black"),
-    #         legend.position = ifelse(legend, "right", "none")
-    #     ),
-    #     new.theme
-    # )
 
     plot <- ggplot(df ) +
       geom_lineribbon(aes(x=year, y=biomass/1000, ymin=.lower/1000, ymax=.upper/1000, group=1), size=0.25)+
       scale_fill_grey(start=0.8, end=0.4)+
       #scale_fill_brewer(palette = color.palette)+
       scale_x_discrete("Year", breaks=seq(min(years), max(years), by=5), expand=c(0, 0))+
-      geom_hline(yintercept=c(20, 40), linetype="dashed")+
+      geom_hline(yintercept=c(19.958, 38.555), linetype="dashed")+
       geom_vline(xintercept = length(years)-1, linetype="dashed")+
       ggtitle("Biomass Trajectory")+
       scale_y_continuous(
@@ -102,7 +96,7 @@ plot.pfrb.posterior <- function(df, quants, prob, curr.year, font.size=1){
             scale_fill_grey(start=0.8, end=0.6)+
             geom_vline(xintercept = quants, linetype=c("dashed", "solid", "dashed"), size=c(0.5, 1, 0.5))+
             geom_text(data=extra, aes(x=58, y=0.14, label=paste("Median:", q2)), size=font.size, hjust=1)+
-            geom_text(data=extra, aes(x=58, y=0.12, label=paste0("95% interval:\n", "(", q1, ", ", q2, ")")), size=font.size, hjust=1)+
+            geom_text(data=extra, aes(x=58, y=0.12, label=paste0("95% interval:\n", "(", q1, ", ", q3, ")")), size=font.size, hjust=1)+
             geom_text(data=extra, aes(x=58, y=0.09, label=paste("Probability below\nthreshold:", prob)), size=font.size, hjust=1)+
             scale_x_continuous(paste(curr.year-1, "Pre-Fishery Biomass (mt)"), breaks=seq(0, 60, 5), expand=c(0, 0))+
             scale_y_continuous("Probability density", breaks=seq(0, 0.15, 0.05), expand=c(0, 0))+

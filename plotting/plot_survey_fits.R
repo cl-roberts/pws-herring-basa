@@ -47,7 +47,7 @@ post.pred.negbin <- function(model.pred, sd){
 generate.post.pred <- function(fname, var, years, nburn=1, dist="lognorm", mask=NA){
     data <- read.table(fname, header = FALSE, sep = ",", dec=".")[-c(1:nburn), 1:length(years)]
 
-    if(is.na(mask)){
+    if(any(is.na(mask))){
         data[data == 0] <- NA
     }else{
         mask <- which(as.numeric(as.vector(mask))==1)

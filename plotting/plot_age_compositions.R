@@ -104,10 +104,10 @@ spac.raw.df <- as_tibble(model.data$spac) %>%
 raw.df <- rbind(seac.raw.df, spac.raw.df)
 
 spawn.age.comp<-read.csv(paste0(model.dir, "mcmc_out/SpAC.csv"), header = FALSE, dec=".") 
-spawn.age.comp<-spawn.age.comp[-c(1:nburn), 1:(nyr*10)]*100
+spawn.age.comp<-spawn.age.comp[, 1:(nyr*10)]*100
 
 seine.age.comp<-read.csv(paste0(model.dir, "mcmc_out/SeAC.csv"), header = FALSE, dec=".") 
-seine.age.comp<-seine.age.comp[-c(1:nburn), 1:(nyr*10)]*100
+seine.age.comp<-seine.age.comp[, 1:(nyr*10)]*100
 
 pps <- generate.post.pred(seine.age.comp, spawn.age.comp, model.data$ess.seine, model.data$ess.spawn)
 
@@ -256,7 +256,7 @@ sink()
 ## Read-in Numbers-at-age and output into nice tables (.csv) 
 
 n.y.a<-read.csv(here::here("model/mcmc_out/Num_at_age.csv"), header = FALSE, dec=".") 
-n.y.a<-n.y.a[-c(1:nburn), ] # Just 'cause it's easier to work with this scale
+#n.y.a<-n.y.a[-c(1:nburn), ] # Just 'cause it's easier to work with this scale
 
 ## seine.age.comp.interval is a 2 X (# of ages in age comp * years) matrix; e.g. 10 ages (ages 0-9+) * 35 years (from 1980-2014)=350
 n.y.a.interval <- matrix(rep(0, 2*length(n.y.a[1, ])), nrow=2, ncol=length(n.y.a[1, ]))
