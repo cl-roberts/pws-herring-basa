@@ -27,28 +27,44 @@
 # https://discourse.mc-stan.org/t/divergent-transitions-a-primer/17099
 
 #################################################################
-library(data.table)
-library(tidyverse)
-library(adnuts)
-library(snowfall)
-library(rstan)
-library(r4ss)
+
+packages <- c("data.table", "tidyverse", "adnuts", "rstan", "here", "r4ss")
+if(length(packages[which(packages %in% rownames(installed.packages()) == FALSE )]) > 0){
+  install.packages(packages[which(packages %in% rownames(installed.packages()) == FALSE)])
+}
+lapply(packages, library, character.only = TRUE)
+
+# library(data.table)
+# library(tidyverse)
+# library(adnuts)
+# library(snowfall)
+# library(rstan)
+# library(r4ss)
 source(paste0(here::here("functions/"), "/run_basa.r"))
 
 run <- run.basa(here::here("model"))
 # Extracts NUTS stats (energy, leapfrog transitions,etc)
-mon <- monitor(run$fit1$samples, warmup=run$fit1$warmup, print=FALSE)
+mon <- run$fit1$monitor 
 x <- extract_sampler_params(run$fit1)
 
-# Quick check for divergences & Gelman-Ruben statistic
+# Quick check for divergences, Gelman-Ruben statistic, and tail ESS
 n.divergences <- sum(x$divergent__)/nrow(x)
-r.hat <- max(mon[, "Rhat"])<=1.1
+r.hat <- max(mon[, "Rhat"]) <= 1.1
+ess <- min(mon[, "Tail_ESS"]) >= 500
 
 n.divergences
 r.hat
+ess
+
+# If this returns TRUE, diagnostic convergence checks pass
+ifelse(
+  n.divergences < 0.001 & r.hat & ess, 
+  print("Diagnostics pass. Convergence likely."), 
+  print("One or more diagnostic checks failed.")
+)
 
 # Write summary of parameter posteriors (medians, percentiles, etc)
-write.csv(mon, file="mcmc_out/table_par_posterior_summary.csv")
+write.csv(as.data.frame(mon), file="mcmc_out/table_par_posterior_summary.csv")
 
 # Write all MCMC samples of the parameters
 mcmc.samps <- data.frame(matrix(run$fit1$samples, ncol=dim(run$fit1$samples)[3], byrow=FALSE))
@@ -59,13 +75,15 @@ write.csv(mcmc.samps, file="mcmc_out/iterations.csv", row.names=FALSE)
 # slow <- names(sort(mon[,"n_eff"]))[1:8]
 # pairs_admb(fit=fit, pars=slow)
 
-# Create summary file of NUTS/MCMC diagnostics
-sum.dia <- data.frame(divergences.from.extract.function=sum(x$divergent__)/nrow(x),
-                      min.ESS=min(mon[, "n_eff"]),
-                      which.min.ESS=names(which.min(mon[, "n_eff"])),
-                      max.Rhat=max(mon[, "Rhat"]),
-                      which.max.Rhat=names(which.max(mon[, "Rhat"])),
-                      time.elapsed=run$time)
+#Create summary file of NUTS/MCMC diagnostics
+sum.dia <- data.frame(
+    divergences.from.extract.function=n.divergences,
+    min.ESS=min(mon[, "n_eff"]),
+    which.min.ESS=names(which.min(mon[, "n_eff"])),
+    max.Rhat=max(mon[, "Rhat"]),
+    which.max.Rhat=names(which.max(mon[, "Rhat"])),
+    time.elapsed=run$time
+)
 
 write.table(sum.dia, file="mcmc_out/table_convergence_diagnostics.csv", sep=",", row.names=FALSE)
 saveRDS(run$fit1, file="mcmc_out/NUTS_fit.RDS")
