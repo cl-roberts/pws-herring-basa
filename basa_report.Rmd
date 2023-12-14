@@ -1,5 +1,5 @@
 ---
-title: "2023 Bayesian Age-structure Stock Assessment (BASA) PRELIMINARY Results for Prince William Sound (PWS) herring"
+title: "2023 Bayesian Age-structure Stock Assessment (BASA) Results for Prince William Sound (PWS) herring"
 author:
   - Joshua A. Zahner
   - Trevor A. Branch
@@ -14,9 +14,7 @@ output:
 ---
 
 # Executive Summary
-*All quantities and model fits reported here should be considered preliminary until the full ASL survey dataset has been processed and integrated into the model.*
-
-The median spawning biomass of PWS herring in 2023 was estimated at approximately 26,540 metric tons, above the minimum threshold required for the opening of existing herring fisheries (19,958 metric tons). Taking into account uncertainity in this estimate, there is an approximately 10% probability that the true biomass of the PWS herring population is below this lower cutoff. The 2023 biomass estimate is the highest since 2008, and continues the recent trend of biomass growth observed since 2018. The estimated age-composition for 2023 shows a modest proportion of age-7 individuals, continuing to support the estimate of a strong 2016 cohort, as well as relatively large proportions of age-3 fish, supporting a large 2020 year-class. Based on recent trends in both the survey data and model estimates of biomass, the PWS herring stock appears to be recovering towards its mid-2000s level. While still a long way from the biomass levels sustained prior to the 1993 population crash, this is a welcome sign after nearly a decade of further biomass decline. 
+The median expected spawning biomass of PWS herring in 2024 was estimated at approximately 27,050 metric tons, above the minimum threshold required for the opening of existing herring fisheries (19,958 metric tons). Taking into account uncertainity in this estimate, there is an approximately 11% probability that the true biomass of the PWS herring population is below this lower cutoff. The 2024 biomass estimate is the highest since 1993, and continues the recent trend of biomass growth observed since 2018. The estimated age-composition for 2023 shows a modest proportion of age-7 individuals, continuing to support the estimate of a strong 2016 cohort, as well as relatively large proportions of age-3 and age-4 fish, supporting a large 2020 and 2021 year-class. Based on recent trends in both the survey data and model estimates of biomass, the PWS herring stock appears to be recovering towards its mid-2000s level. While still a long way from the biomass levels sustained prior to the 1993 population crash, this is a welcome sign after nearly a decade of further biomass decline. 
 
 # Background
 Before 2014, the Alaska Department of Fish and Game (ADF&G) ran an Excel-based age structured assessment (ASA) model to forecast PWS herring biomass for input into harvest control rule. The harvest control rule has a minimum biomass threshold at 19,958 metric tons, which is equivalent to 25% of the unfished biomass under equilibrium determined from simulations (Funk and Rowell 1995). When forecasted biomass is between 19,958 and 38,555 metric tons (22,000-42,500 short tons), the control rules scales the annual harvest rate from 0-20% (Botz et al. 2011). These reference points were last revised by the Alaska Board of Fisheries in 1994.
@@ -51,15 +49,17 @@ knitr::include_graphics(here::here("figures/survey_fits.pdf"))
 **Fig. 1. Estimated survey biomass from Bayesian age structured assessment (shading showing 50% and 95% posterior predictive intervals in dark and light gray, respectively) compared to indices of biomass in the population (points and lines showing observation CV).**
 
 
-Posterior predictions of the juvenile aerial survey index (age-1 schools) bounded all observations, albeit with large uncertainty. BASA largely overestimated the 2017 index which was the largest in the available record, although the relative scale of this cohort (2016 age-0) agrees with the large proportions of age-3s, -4s, -5s, and -6s observed in 2019, 2020, 2021, and 2022 (Fig. 2). The overestimation of 2017 schools, as well as the underestimation of 2021 schools, may be due to bias from a subjective standardization used to calculate this index; schools were numerated by four descriptive categories (small, medium, large, and extra large) and the largest three categories were converted to and summed as small school equivalents to calculate the index. Furthermore, the numbers of medium, large, and extra large schools in 2017 each represented the historical maxima in their respective categories, while the number of small schools was the third largest. Further investigation into the accuracy of this standardization is needed. The large aerual survey index in 2022 is also anomalous, in that two sequential years have never been observed to have near equally large numbers of age-1 schools. The exact reasons for this discrepency remain unknown at this time.
+Posterior predictions of the juvenile aerial survey index (age-1 schools) bounded all observations, albeit with large uncertainty. BASA largely overestimated the 2017 index which was the largest in the available record, although the relative scale of this cohort (2016 age-0) agrees with the large proportions of age-3s, -4s, -5s, and -6s observed in 2019, 2020, 2021, and 2022 (Fig. 2). The consistent overestimation of schools since 2017 may be due to bias from a subjective standardization used to calculate this index; schools were numerated by four descriptive categories (small, medium, large, and extra large) and the largest three categories were converted to and summed as small school equivalents to calculate the index. Furthermore, the numbers of medium, large, and extra large schools in 2017 each represented the historical maxima in their respective categories, while the number of small schools was the third largest. Further investigation into the accuracy of this standardization is needed. The large aerial survey index in 2022 is also anomalous, in that two sequential years have never been observed to have near equally large numbers of age-1 schools. The exact reasons for this discrepency remain unknown at this time.
 
 ```{r, out.width="85%", include=TRUE, fig.align="center", echo=FALSE}
 knitr::include_graphics(here::here("figures/age_compositions.pdf"))
 ```
-**Fig. 2. Estimated age structure from the Bayesian age structured stock assessment (points = median, lines = 95% posterior predictive intervals) compared to the age composition data from catches and surveys (bars). Each color follows a single cohort as it ages through the fishery. Data are available only for ages-3 and above.**
+**Fig. 2. Estimated age structure from the Bayesian age structured stock assessment (points = median, lines = 95% posterior predictive intervals) compared to the age composition data from catches and surveys (bars). Each color follows a single cohort as it ages through the fishery. Data are available only for ages-3 and above. The quantity 'J' in the upper-right corner of each panel is the Shannon-Weiner evenness index score of the age composition for each year (Shannon and Weaver, 1949).**
 
 
-Posterior predictive intervals for the age composition data mostly show good fits, except for the age-3 classes in 1987 and 1998 (Fig. 2) and the all age classes in 2023. The model misfit in 2023 is, likely, due to the heavily reduced sample size from the ASL survey being used at this stage. In 2023, there was a large proportion of observed and estimated age-7 herring, continuing to support a strong 2016 cohort, the size of which has not been seen since 2002 (Fig. 3). Estimates of the age-3 and age-4 year classes support strong 2019 and 2020 cohorts as well. The median spawning biomass estimate in 2021 was approximately 26,540 metric tons which is above ADF&G's lower cut-off for fishing (Table 1). Additionally, uncertainty in this estimate indicates there is a 10% probability that 2023 spawning biomass was below this lower cutoff (Fig. 3).
+Posterior predictive intervals for the age composition data mostly show good fits, except for the age-3 classes in 1987 and 1998 (Fig. 2) as well as the age-4 and -7 class in 2023. The model misfit in 2023 could be due to a reduced sample size from the ASL survey being used. Estimates of the age-3 and age-4 year classes support strong 2019 and 2020 cohort. The median spawning biomass estimate in 2023 was approximately 28,700 metric tons which is above ADF&G's lower cut-off for fishing (Table 1). Additionally, uncertainty in this estimate indicates there was a 5% probability that 2023 spawning biomass was below this lower cutoff (Table 1).
+
+The spawning biomass estimate for 2024 is approximately 27,050 metric tons (95% CI: 16,790 - 46,190), corresponding to a ~11% probability that spawning biomass is below the lower regulatory cutoff definde by ADF&G (Figure 3).
 
 ```{r, out.width="100%", include=TRUE, fig.align="center", echo=FALSE}
 knitr::include_graphics(here::here("figures/management_outputs.pdf"))
@@ -70,7 +70,7 @@ knitr::include_graphics(here::here("figures/management_outputs.pdf"))
 
 # 2023 BASA Diagnostics
 
-A retrospective analysis was conducted to evaluate the effect that adding new data has on prior predictions of stock biomass. The Mohn's rho statistic, commonly used to asses the magnitude and direction of retrosepctive biad, was $\rho=-0.06$ in 2023, indicating a small negative bias in biomass estimates in previous years. This value of mohn's rho is not considered indicative of substantial model misspecification, as it falls withing the accepted interval of (-0.22, 0.30; Hurtado-Ferro et al. 2015). 
+A retrospective analysis was conducted to evaluate the effect that adding new data has on prior predictions of stock biomass. The Mohn's rho statistic, commonly used to assess the magnitude and direction of retrosepctive biad, was $\rho=-0.088$ in 2023, indicating a small negative bias in biomass estimates in previous years. This value of Mohn's rho is not considered indicative of substantial model misspecification, as it falls within the accepted interval of (-0.22, 0.30; Hurtado-Ferro et al. 2015). 
 
 ```{r, out.width="100%", include=TRUE, fig.align="center", echo=FALSE}
 knitr::include_graphics(here::here("figures/retrospective.pdf"))
@@ -113,7 +113,7 @@ ft_obj <- ssb_est %>%
   set_header_df(mapping = tab_head,key="col_keys") %>%
   merge_h(part = "header", i=1) %>%
   merge_v(part = "header", j=c(1,7,12)) %>%
-  colformat_double(j=1, big.mark = "", digits = 0) %>%
+  colformat_double(j=c(1, 8), big.mark = "", digits = 0) %>%
   colformat_double(j=2:7, big.mark = "", digits = 1) %>%
   #theme_booktabs(bold_header = TRUE) %>%
   bold(part="header") %>%
@@ -165,13 +165,15 @@ Botz, J., G. Hollowell, J. Bell, R. Brenner, and S. D. Moffitt. 2010. 2009 Princ
 
 Funk, F., and K. A. Rowell. 1995. Population model suggests new threshold for managing Alaska`s Togiak Fishery for Pacific herring in Bristol Bay. Alaska Fishery Research Bulletin 2:125-136.
 
-Hurtado-Ferro F, Szuwalski CS, Valero JL, Anderson SC, Cunningham CJ, Johnson KF, et al. (2015). Looking in the rear-view mirror: bias and retrospective patterns in integrated, age-structured stock assessment models. ICES Journal of Marine Science 72: 99±110.
+Hurtado-Ferro, F., C.S. Szuwalski, J.L. Valero, S.C. Anderson, C.J. Cunningham, K.F. Johnson, R. Licandeo, C.R. McGilliard, C.C. Monnahan, M.L. Muradian, K. Ono, K.A. Vert-Pre, A.R. Whitten, and A.E. Punt. 2015. Looking in the rear-view mirror: bias and retrospective patterns in integrated, age-structured stock assessment models. ICES Jounal of Marine Science. 72(1): 99–110.
 
 Monnahan, C. C., T. A. Branch, J. T. Thorson, I. J. Stewart, and C. S. Szuwalski. 2019. Overcoming long Bayesian run times in integrated fisheries stock assessments. ICES Journal of Marine Science 76:1477-1488.
 
 Muradian, M. L., T. A. Branch, S. D. Moffitt, and P.-J. F. Hulson. 2017. Bayesian stock assessment of Pacific herring in Prince William Sound, Alaska. PLOS ONE 12:e0172153.
 
 Muradian, M. L., T. A. Branch, and A. E. Punt. 2019. A framework for assessing which sampling programmes provide the best trade-off between accuracy and cost of data in stock assessments. ICES Journal of Marine Science 76:2102-2113.
+
+Shannon, C. E., and Weaver, W. 1949. A Mathematical Theory of Communication, University of Illinois Press, Urbana.
 
 Trochta, J. T., T. A. Branch, A. O. Shelton, and D. E. Hay. 2020. The highs and lows of herring: A meta-analysis of patterns and factors in herring collapse and recovery. Fish and Fisheries 21:639-662.
 

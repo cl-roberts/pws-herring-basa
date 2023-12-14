@@ -13,7 +13,7 @@
 //                              tbranch@uw.edu                                //
 //                                                                            //
 //                               Joshua Zahner                                //
-//                              jzahner @uw.edu                               //
+//                              jzahner@uw.edu                                //
 //                                                                            //
 //                Built on code developed by Melissa Muradian                 //
 //           Adapted from Excel-based model by Steven Moffitt (ADF&G)         //

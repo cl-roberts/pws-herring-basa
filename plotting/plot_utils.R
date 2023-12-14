@@ -98,10 +98,10 @@ plot.pfrb.posterior <- function(df, quants, prob, curr.year, font.size=1){
             geom_text(data=extra, aes(x=58, y=0.14, label=paste("Median:", q2)), size=font.size, hjust=1)+
             geom_text(data=extra, aes(x=58, y=0.12, label=paste0("95% interval:\n", "(", q1, ", ", q3, ")")), size=font.size, hjust=1)+
             geom_text(data=extra, aes(x=58, y=0.09, label=paste("Probability below\nthreshold:", prob)), size=font.size, hjust=1)+
-            scale_x_continuous(paste(curr.year-1, "Pre-Fishery Biomass (mt)"), breaks=seq(0, 60, 5), expand=c(0, 0))+
+            scale_x_continuous(paste(curr.year, "Pre-Fishery Biomass (mt)"), breaks=seq(0, 60, 5), expand=c(0, 0))+
             scale_y_continuous("Probability density", breaks=seq(0, 0.15, 0.05), expand=c(0, 0))+
             coord_cartesian(ylim=c(0, 0.15), xlim=c(0, 60))+
-            ggtitle(paste(curr.year-1, "Pre-fishery Biomass Posterior Probability Density"))+
+            ggtitle(paste(curr.year, "Pre-fishery Biomass Posterior Probability Density"))+
             theme(
                 panel.grid.minor = element_blank(),
                 panel.grid.major = element_blank(),
