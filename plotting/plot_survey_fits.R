@@ -1,117 +1,72 @@
-library(ggplot2)
-library(ggdist)
-library(here)
+################################################################################
+
+# plot survey fits
+
+# plots BASA model fits to survey data for all five indices collected on PWS 
+# herring 1980-present
+
+# authors: John Trochta, Joshua Zahner, CL Roberts
+
+# inputs: BASA model inputs (model/PWS_ASA.dat) and outputs (from mcmc_out/)
+
+# outputs: 
+#   - plots: five individuals plots to all survey fits, and a combined plot
+#   - tables: a single csv file ("data_outputs/predicted-survey-values.csv") 
+#             containing all survey fits
+
+################################################################################
+
+
+#### front matter ####
+
+# choose TMB or ADMB
+software <- "ADMB"
+
+# attach packages
+
+library(pwsHerringBasa)
 library(dplyr)
-library(magrittr)
-library(tidyverse)
+library(ggpubr)
 
-source(file=paste0(here::here("functions/"), "fun_read_dat.R"))
+# directory handling
 
-# Calculates 95% confidence intervals from survey CV (from Buckland 1992 in References)
-calc.buck.cv <- function(cv) {
-    return(exp(1.96*sqrt(log(1+(cv^2)))))
+dir_model <- here::here("model")
+
+if (software == "ADMB") {
+    dir_mcmc_out <- here::here(dir_model, "mcmc_out")
+    dir_figures <- here::here("figures")
+    dir_outputs <- here::here("data_outputs")
+} else if (software == "TMB") {
+    dir_mcmc_out <- here::here(dir_model, "mcmc_out_tmb")
+    dir_figures <- here::here("figures/tmb")
+    dir_outputs <- here::here("data_outputs/tmb")
+} else {
+    stop("choose valid software")
 }
 
-#Computes posterior predictive intervals for log normal
-post.pred.lognorm <- function(model.pred, sd){
-    PP <- matrix(NA,nrow=nrow(model.pred),ncol=ncol(model.pred))
-    for(i in 1:nrow(model.pred)){
-        fits <- as.numeric(model.pred[i,]) # Take the true value of the survey estimate
-        errors <- as.numeric(sd[i]*fits) # Take the error based on the true value of the survey estimate
-        
-        # Need to reparameterize to calculate the log-normal mean and sd for the survey data
-        # From: https://msalganik.wordpress.com/2017/01/21/making-sense-of-the-rlnorm-function-in-r/
-        E <- log(fits^2/sqrt(errors^2+fits^2))
-        SD <- sqrt(log(1+(errors^2/fits^2)))
-        PP[i,] <- rlnorm(n=length(fits),meanlog=E,sdlog=SD)
-        # MDM.PP[i,] <- rnorm(n=length(fits),mean=E,sd=SD) # Generate a random variable based on the expected value (predictive) using the assumed 
-    }
-    return(PP)
-}
+# load data
 
-post.pred.negbin <- function(model.pred, sd){
-    PP <- matrix(NA,nrow=nrow(model.pred),ncol=ncol(model.pred))
-    set.seed(100)
-    for(i in 1:nrow(model.pred)){
-        fits <- as.numeric(model.pred[i,]) # Take the true value of the survey estimate
-        dispersion <- as.numeric(sd[i]) # Take the error based on the true value of the survey estimate
-        
-        E <- fits
-        SD <- exp(dispersion)
-        PP[i,] <- rnbinom(n=length(fits),size=SD,prob=SD/(SD+E))
-        # MDM.PP[i,] <- rnorm(n=length(fits),mean=E,sd=SD) # Generate a random variable based on the expected value (predictive) using the assumed 
-    }
-    return(PP)
-}
+raw.data <- read.data.files(dir_model)$PWS_ASA.dat
 
-generate.post.pred <- function(fname, var, years, nburn=1, dist="lognorm", mask=NA){
-    data <- read.table(fname, header = FALSE, sep = ",", dec=".")[-c(1:nburn), 1:length(years)]
+# local vars 
 
-    if(any(is.na(mask))){
-        data[data == 0] <- NA
-    }else{
-        mask <- which(as.numeric(as.vector(mask))==1)
-        data[,as.vector(unique(mask))] <- NA
-    }
-
-    if(dist == "lognorm"){
-        pp <- post.pred.lognorm(data, var)
-    }else{
-        pp <- post.pred.negbin(data, var)
-    }
-    
-    colnames(pp) <- years
-
-    samples <- as_tibble(pp) %>%
-                pivot_longer(everything(), names_to = "year", values_to = "data") %>%
-                na.omit() %>%
-                group_by(year) %>%
-                median_qi(data, .width = c(0.5, 0.95)) %>%
-                print(n=150)
-
-    return(samples) 
-}
-
-plot.survey.fits <- function(fits, survey.data, y.max, title, ylabel="", scale=1, cvs=TRUE){
-    
-    if(cvs){
-        points <- geom_pointinterval(data=survey.data, aes(x=year, y=data/scale, ymin=lower/scale, ymax=upper/scale))
-    }else{
-        points <- geom_point(data=survey.data, aes(x=year, y=data/scale))
-    }
-    
-    return(
-        ggplot(fits) +
-            geom_lineribbon(aes(x=year, y=data/scale, ymin=.lower/scale, ymax=.upper/scale, group=1), size=0.25)+
-            scale_fill_grey(start=0.8, end=0.6) +
-            points +
-            geom_line(data=survey.data, aes(x=year, y=data/scale, group=1))+
-            scale_x_discrete("Year", breaks=seq(min(years), max(years), by=5))+
-            scale_y_continuous(expand=c(0, 0))+
-            labs(y=ylabel, title=title)+
-            coord_cartesian(xlim=c(1, nyr), ylim=c(0, y.max/scale))+
-            theme(
-                panel.grid.minor = element_blank(),
-                panel.grid.major = element_blank(),
-                panel.background = element_blank(),
-                axis.line = element_line(colour = "black"),
-            )
-    )
-}
-
+nyr <- raw.data$nyr
 start.year <- 1980
-curr.year <- 2024
+curr.year <- start.year+nyr
 nyr.sim <- 0
 years <- seq(start.year, curr.year+nyr.sim-1)
-nyr <- length(years)
 
-model.dir <- here::here("model/")
+#-------------------------------------------------------------------------------
 
-variances <- read.table(paste0(model.dir, "/mcmc_out/VARSReport.csv"), sep=",", header=FALSE)[-c(1:1),]
+#### read-in model outputs, calculate posteriors, and plot ####
+
+# model estimated variances
+
+variances <- read.table(here::here(dir_mcmc_out, "VARSReport.csv"), 
+                        sep=",", header=FALSE)[-1,]
 names(variances) <- c("mdm", "egg", "adfg.hydro", "pwssc.hydro")
 
 add.vars <- apply(variances, 2, median)
-raw.data <- read.data.files(model.dir)$PWS_ASA.dat
 cvs <- list(
     mdm         = as.vector(rep(add.vars[1], nyr)),
     egg         = as.vector(sqrt(raw.data$egg_se[1:nyr]^2 + add.vars[2]^2)),
@@ -119,23 +74,33 @@ cvs <- list(
     pwssc.hydro = as.vector(sqrt((raw.data$pwssc_hydro_se[1:nyr]^2) + (add.vars[4]^2)))
 )
 
-juv.overdisp <- read.table(paste0(model.dir, "/mcmc_out/iterations.csv"),  header = FALSE, sep = ",")[-c(1:1), 19]
+juv.overdisp <- read.table(here::here(dir_mcmc_out, "iterations.csv"),  
+                           header = TRUE, sep = ",")[, "juvenile_overdispersion"]
 juv.schools.mask <- c(raw.data$juvenile_survey == -9)[1:nyr]
 
-mdm.fname <- paste0(model.dir, "/mcmc_out/MDM.csv")
-egg.fname <- paste0(model.dir, "/mcmc_out/EGG.csv")
-adfg.hydro.fname <- paste0(model.dir, "/mcmc_out/HYD_ADFG.csv")
-pwssc.hydro.fname <- paste0(model.dir, "/mcmc_out/HYD_PWSSC.csv")
-juv.schools.fname <- paste0(model.dir, "/mcmc_out/juv_schools.csv")
+# save file paths containing model outputs
 
-mdm.pp <- generate.post.pred(mdm.fname, variances$mdm, years)
-egg.pp <- generate.post.pred(egg.fname, variances$egg, years)
-adfg.hydro.pp <- generate.post.pred(adfg.hydro.fname, variances$adfg.hydro, years)
-pwssc.hydro.pp <- generate.post.pred(pwssc.hydro.fname, variances$pwssc.hydro, years)
-juv.schools.pp <- generate.post.pred(juv.schools.fname, juv.overdisp, years, dist="negbin", mask=juv.schools.mask)
+mdm.fname <- here::here(dir_mcmc_out, "MDM.csv")
+egg.fname <- here::here(dir_mcmc_out, "EGG.csv")
+adfg.hydro.fname <- here::here(dir_mcmc_out, "HYD_ADFG.csv")
+pwssc.hydro.fname <- here::here(dir_mcmc_out, "HYD_PWSSC.csv")
+juv.schools.fname <- here::here(dir_mcmc_out, "juv_schools.csv")
+
+# calculate posterior predictive intervals for each survey fit
+# see ?pwsHerringBasa::generate.post.pred() for more info
+
+mdm.pp <- generate.post.pred(fname = mdm.fname, var = variances$mdm, years = years)
+egg.pp <- generate.post.pred(fname = egg.fname, var = variances$egg, years = years)
+adfg.hydro.pp <- generate.post.pred(fname = adfg.hydro.fname, 
+                                    var = variances$adfg.hydro, years = years)
+pwssc.hydro.pp <- generate.post.pred(fname = pwssc.hydro.fname, 
+                                     var = variances$pwssc.hydro, years = years)
+juv.schools.pp <- generate.post.pred(fname = juv.schools.fname, var = juv.overdisp, 
+                                     years = years, dist="negbin", mask=juv.schools.mask)
 
 
-# Read in and format raw survey data for each annual survey
+# save and format raw survey data for each annual survey
+
 mdm.data            <- data.frame(year=as.character(years), data=raw.data$mdm[1:length(years)], lower=raw.data$mdm[1:length(years)]/calc.buck.cv(cvs$mdm), upper=raw.data$mdm[1:length(years)]*calc.buck.cv(cvs$mdm))
 egg.data            <- data.frame(year=as.character(years), data=raw.data$egg[1:length(years)], lower=raw.data$egg[1:length(years)]/calc.buck.cv(cvs$egg), upper=raw.data$egg[1:length(years)]*calc.buck.cv(cvs$egg))
 adfg.hydro.data     <- data.frame(year=as.character(years), data=raw.data$adfg_hydro[1:length(years)], lower=raw.data$adfg_hydro[1:length(years)]/calc.buck.cv(cvs$adfg.hydro), upper=raw.data$adfg_hydro[1:length(years)]*calc.buck.cv(cvs$adfg.hydro))
@@ -152,29 +117,48 @@ data <- list(
 for(i in 1:length(data)){
     missing <- data[[i]]$data == -9
     data[[i]]$data[missing] <- NA
-    data[[i]]$lower[missing] <- NA
+    data[[i]]$lower[missing] <- NA  # replaces missing data (-9's) with NAs
     data[[i]]$upper[missing] <- NA
 }
 
+# plot survey fits 
+# see pwsHerringBasa::plot_survey_fits()
 
-mdm.fit.plot <- plot.survey.fits(mdm.pp, data$mdm, y.max=500, title="Mile Days of Milt")
-egg.fit.plot <- plot.survey.fits(egg.pp, data$egg, y.max=21, title="Egg Deposition (trillions)")
-adfg.hydro.fit.plot <- plot.survey.fits(adfg.hydro.pp, data$adfg.hydro, y.max=175000, title="ADF&G Hydroacoustic Biomass (1000s tons)", scale=1000)
-pwssc.hydro.fit.plot <- plot.survey.fits(pwssc.hydro.pp, data$pwssc.hydro, y.max=205000, title="PWSSC Hydroacoustic Biomass (1000s tons)", scale=1000)
-aer.juvenile.fit.plot <- plot.survey.fits(juv.schools.pp, data$juvenile, y.max=40000, title="Age 1 Schools", cvs=FALSE)
+mdm.fit.plot <- plot_survey_fits(mdm.pp, data$mdm, y.max=500, title="Mile Days of Milt")
+egg.fit.plot <- plot_survey_fits(egg.pp, data$egg, y.max=21, title="Egg Deposition (trillions)")
+adfg.hydro.fit.plot <- plot_survey_fits(adfg.hydro.pp, data$adfg.hydro, y.max=175000, title="ADF&G Hydroacoustic Biomass (1000s tons)", scale=1000)
+pwssc.hydro.fit.plot <- plot_survey_fits(pwssc.hydro.pp, data$pwssc.hydro, y.max=205000, title="PWSSC Hydroacoustic Biomass (1000s tons)", scale=1000)
+aer.juvenile.fit.plot <- plot_survey_fits(juv.schools.pp, data$juvenile, y.max=40000, title="Age 1 Schools", cvs=FALSE)
 
-library(ggpubr)
+#-------------------------------------------------------------------------------
 
-ggarrange(
+
+#### save outputs ####
+
+# save individual plots
+
+ggsave(here::here(dir_figures, "mdm_fit.pdf"), plot = mdm.fit.plot, width=12, height=8, dpi=300)
+ggsave(here::here(dir_figures, "egg_fit.pdf"), plot = egg.fit.plot, width=12, height=8, dpi=300)
+ggsave(here::here(dir_figures, "adfg_hydro_fit.pdf"), plot = adfg.hydro.fit.plot, width=12, height=8, dpi=300)
+ggsave(here::here(dir_figures, "pwssc_hydro_fit.pdf"), plot = pwssc.hydro.fit.plot, width=12, height=8, dpi=300)
+ggsave(here::here(dir_figures, "aer_juvenile_fit.pdf"), plot = aer.juvenile.fit.plot, width=12, height=8, dpi=300)
+
+# save 5-panel plot
+
+survey_fits <- ggarrange(
     mdm.fit.plot, egg.fit.plot, adfg.hydro.fit.plot, pwssc.hydro.fit.plot, aer.juvenile.fit.plot,
     nrow=3,
     ncol=2,
     common.legend = TRUE, legend="right"
 )
 
-ggsave(paste0(here::here("figures/"), "survey_fits.pdf"), width=12, height=8, dpi=300)
+# CLR: added / to file path
+ggsave(here::here(dir_figures, "survey_fits.pdf"), survey_fits, width=12, height=8, dpi=300)
 
-sink(here::here("data_outputs/predicted-survey-values.csv"))
+
+# save .csv table with clean survey fits
+
+sink(here::here(dir_outputs, "predicted-survey-values.csv"))
 cat('Milt (mile-days) posterior predictions\n')
 write.table(
     mdm.pp %>% filter(.width==0.95) %>% select(-c(.point, .interval, .width)) %>% rename(median=data) %>% mutate(median=round(median, 3), .lower=round(.lower, 3), .upper=round(.upper, 3)),

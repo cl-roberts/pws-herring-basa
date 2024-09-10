@@ -1,0 +1,39 @@
+Package: pwsHerringBasa
+Type: Package
+Title: PWS Herring BASA
+Version: 0.1.0
+Author: CL Roberts,
+        Trevor Branch,
+        Joshua Zahner,
+        John Trochta,
+        Melissa Muradian
+Maintainer: CL Roberts <clroberts@alaska.gov>
+Description: This Bayesian Age-Structured Assessment (BASA) is a stock assessment model
+    written in ADMB for the Pacific Herring stock in Prince William Sound (PWS). 
+    This package provides functions for executing the model and processing the 
+    outputs. BASA was developed at the University of Washington by Dr. Trevor Branch 
+    and graduate students, and was initially adapted from an excel-based model
+    written by Steven Moffitt for Alaska Department of Fish & Game (ADF&G). This 
+    package was compiled by CL Roberts for ADF&G using source code written by
+    graduate students in Dr. Branch's lab. BASA is currently used for research 
+    purposes and is not presently used to provide forecasts.
+License: GPL (>= 3)
+Imports: 
+    adnuts,
+    here,
+    r4ss,
+    tidyr,
+    tibble,
+    dplyr,
+    magrittr,
+    tidybayes,
+    Rdpack,
+    ggdist,
+    ggplot2,
+    rlang,
+    readr
+RdMacros: Rdpack
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2

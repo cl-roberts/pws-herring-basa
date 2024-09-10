@@ -57,8 +57,10 @@
 -1
 -1
 -1
-               
+-1
+
 # R_beta_change - turn on years for the offset to take effect
+0
 0
 0
 0
@@ -133,6 +135,7 @@
 1 1 0
 1 1 0
 1 1 0
+1 1 0
                                        
 # Ichthy pre-2007/	Ichthy post-2007/	VHSV
 -9	-9	-9
@@ -179,6 +182,7 @@
 -9  -9         -9 
 -9  -9         -9
 -9  -9         -9
+-9  -9         -9
                                        
 # Observed WINTER Natural mortality deviates for year to be forecast (average of 3 preceding years)
 -9
@@ -186,6 +190,7 @@
 -9
 
 # M_beta_change - turn on years for the offset to take effect
+0
 0
 0
 0

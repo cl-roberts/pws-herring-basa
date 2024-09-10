@@ -1,33 +1,33 @@
 library(ggplot2)
 library(ggdist)
-library(tidyverse)
+library(dplyr)
+library(ggrepel)
+library(pwsHerringBasa)
 
-source(paste0(here::here("functions/"), "fun_read_dat.R"))
-
-model.dir <- here::here("model/")
+dir_mcmc_out <- here::here("model/mcmc_out")
 
 b.star <- 40000
 f.star <- 0.20
 
-biomass.estimates <- read.biomass.estimates(model.dir)
-exploit.rate.estimates <- read.exploit.rates(model.dir)
+biomass.estimates <- read.biomass.estimates(dir_mcmc_out)
+exploit.rate.estimates <- read.exploit.rates(dir_mcmc_out)
 
 biomass.est.rel <- biomass.estimates/b.star
 exploit.est.rel <- exploit.rate.estimates/f.star
 
-exploit.rate.df <- as_tibble(exploit.est.rel) %>%
-                    pivot_longer(everything(), names_to="year", values_to="exploit") %>%
-                    group_by(year) %>%
-                    median_qi(exploit, .width=c(0.95)) %>%
+exploit.rate.df <- as_tibble(exploit.est.rel) |>
+                    pivot_longer(everything(), names_to="year", values_to="exploit") |>
+                    group_by(year) |>
+                    median_qi(exploit, .width=c(0.95)) |>
                     print(n=10)
 
-biomass.df <- as_tibble(biomass.est.rel) %>%
-                pivot_longer(everything(), names_to="year", values_to="biomass") %>%
-                group_by(year) %>%
-                median_qi(biomass, .width=c(0.95)) %>%
+biomass.df <- as_tibble(biomass.est.rel) |>
+                pivot_longer(everything(), names_to="year", values_to="biomass") |>
+                group_by(year) |>
+                median_qi(biomass, .width=c(0.95)) |>
                 print(n=10)
 
-biomass.exploit.df <- biomass.df %>%
+biomass.exploit.df <- biomass.df |>
                         left_join(exploit.rate.df, by="year", suffix=c("bio", "exp"))
 
 rect_dat <- data.frame(panel = c("bottom_left", "top_right",
@@ -52,4 +52,4 @@ ggplot(biomass.exploit.df)+
     coord_cartesian(xlim=c(0, 4), ylim=c(0, 2), expand=FALSE)+
     ggtitle("Kobe Trajectory")   
 
-ggsave(paste0(here::here("figures/"), "kobe_trajectory.pdf"), width=7, height=6, dpi=300)
+ggsave(paste0(here::here("figures/"), "/kobe_trajectory.pdf"), width=7, height=6, dpi=300)

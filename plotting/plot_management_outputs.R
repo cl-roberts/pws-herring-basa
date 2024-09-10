@@ -1,60 +1,145 @@
+################################################################################
+
+# plot management outputs
+
+# plots BASA-estimated and derived time series parameters of interest to management
+
+# authors: John Trochta, Joshua Zahner, CL Roberts
+
+# inputs: BASA model inputs (model/PWS_ASA.dat) and outputs (from mcmc_out/)
+
+# outputs: 
+#   - plots: 
+#       - recruitment (figures/recruitment_trajectory.pdf)
+#       - spawning biomass (figures/biomass_trajectory.pdf)
+#       - exploitation rate (figures/exploitation_rate.pdf)
+#       - pre-fishery biomass posterior (figures/pfrb_posterior.pdf)
+#       - a 4-panel composite plot of all outputs (figures/management_outputs.pdf)
+#   - tables: 
+#       - a single .csv file (data_outputs/outputs_for_management.csv) giving 
+#         estimated recruitment, PFRB, catch, exploitation rate, and probability 
+#         below harvest threshold with 95% credible intervals where relevant
+
+################################################################################
+
+
+#### front matter ####
+
+# choose TMB or ADMB
+software <- "ADMB"
+
+# load packages
+
 library(ggplot2)
 library(ggpubr)
-library(ggdist)
+library(pwsHerringBasa)
+library(dplyr)
 
-source(file=paste0(here::here("plotting/"), "compute_plot_products.R"))
-source(file=paste0(here::here("plotting/"), "plot_utils.R"))
-source(paste0(here::here("functions/"), "fun_read_dat.R"))
+# directory handling
 
+dir_model <- here::here("model")
+
+if (software == "ADMB") {
+    dir_mcmc_out <- here::here(dir_model, "mcmc_out")
+    dir_figures <- here::here("figures")
+    dir_outputs <- here::here("data_outputs")
+} else if (software == "TMB") {
+    dir_mcmc_out <- here::here(dir_model, "mcmc_out_tmb")
+    dir_figures <- here::here("figures/tmb")
+    dir_outputs <- here::here("data_outputs/tmb")
+} else {
+    stop("choose valid software")
+}
+
+# read model input data
+
+raw.data <- read.data.files(dir_model)
+
+# save global variables
+nyr <- raw.data$PWS_ASA.dat$nyr
 start.year <- 1980
-curr.year <- 2024
+curr.year <- start.year+nyr
 nyr.sim <- 0
-years <- seq(start.year, curr.year+nyr.sim)
-nyr <- length(years)
+years <- seq(start.year, curr.year+nyr.sim-1)
 
-model.dir <- here::here("model/")
 
-biomass.df <- compute.biomass.traj(model.dir, nyr, years)
-biomass.plot <- plot.biomass.trajectory(biomass.df, years, legend=FALSE, new.theme=present.theme)
-# biomass.plot+present.theme
-ggsave(paste0(here::here("figures/"), "biomass_trajectory.pdf"), height=8.5, width=11)
+#-------------------------------------------------------------------------------
 
-exploit.df <- compute.exploit.rate(model.dir, nyr-1, years[1:(nyr-1)])
-exploit.rate.plot <- plot.exploit.rate(exploit.df$exploit.rate.df,
+#### calculate and plot outputs ####
+
+# the following functions read in, compute posteriors, and plot each management 
+# output of interest see ?pwsHerringBasa::compute.* and ?pwsHerringBasa::plot_* 
+# for more details
+
+recruit.df <- compute.recruitment(dir_mcmc_out, nyr, years)
+recruit.plot <- plot_recruitment_posterior(recruit.df, years, legend=FALSE)
+
+biomass.df <- compute.biomass.traj(dir_mcmc_out, nyr)
+biomass.plot <- plot_biomass_trajectory(biomass.df, c(years, curr.year), legend=FALSE)
+
+exploit.df <- compute.exploit.rate(dir_mcmc_out, nyr)
+exploit.rate.plot <- plot_exploit_rate(exploit.df$exploit.rate.df,
                                        exploit.df$exploit.zeros,
                                        years)
-ggsave(paste0(here::here("figures/"), "exploitation_rate.pdf"), height=8.5, width=11)
 
-pfrb.posterior <- compute.pfrb.posterior(model.dir, nyr, years)
-pfrb.posterior.plot <- plot.pfrb.posterior(pfrb.posterior$biomass.df, 
+pfrb.posterior <- compute.pfrb.posterior(dir_mcmc_out, nyr+1)
+pfrb.posterior.plot <- plot_pfrb_posterior(pfrb.posterior$biomass.df, 
                                            pfrb.posterior$biomass.quants, 
                                            pfrb.posterior$prob.below.threshold,
                                            curr.year,
                                            font.size=5)
-ggsave(paste0(here::here("figures/"), "pfrb_posterior.pdf"), height=8.5, width=11)
 
-recruit.df <- compute.recruitment(model.dir, nyr-1, years[1:(nyr-1)])
-recruit.plot <- plot.recruitment.posterior(recruit.df, years, legend=FALSE)
-ggsave(paste0(here::here("figures/"), "recrtuitment_trajectory.pdf"), height=8.5, width=11)
+#-------------------------------------------------------------------------------
 
-ggarrange(
+#### save output files ####
+
+# save individual plots
+
+ggsave(here::here(dir_figures, "recruitment_trajectory.pdf"), plot = recruit.plot, height=8.5, width=11) 
+ggsave(here::here(dir_figures, "biomass_trajectory.pdf"), plot = biomass.plot, height=8.5, width=11) 
+ggsave(here::here(dir_figures, "exploitation_rate.pdf"), plot = exploit.rate.plot, height=8.5, width=11) 
+ggsave(here::here(dir_figures, "pfrb_posterior.pdf"), plot = pfrb.posterior.plot, height=8.5, width=11) 
+
+
+# save 4-panel composite plot
+
+management_outputs <- ggarrange(
     recruit.plot, biomass.plot, exploit.rate.plot, pfrb.posterior.plot,
     nrow=2,
     ncol=2
 )
-
-ggsave(paste0(here::here("figures/"), "management_outputs.pdf"), height=8.5, width=11)
-
-biomass.matrix <- biomass.df %>% filter(.width==0.95) %>% select(biomass, .lower, .upper) %>% head(nyr-1) %>% as.matrix %>% round(., 2)
-recruit.matrix <- recruit.df %>% filter(.width==0.95) %>% select(recruits, .lower, .upper) %>% as.matrix %>% round(., 2)
-exploit.matrix <- exploit.df$exploit.rate.df %>% filter(.width==0.95) %>% select(exploit, .lower, .upper) %>% as.matrix %>% round(., 2)
-prob.matrix    <- biomass.df %>% filter(.width==0.95) %>% select(prob) %>% head(nyr-1) %>% as.matrix %>% round(., 2)
+ggsave(here::here(dir_figures, "management_outputs.pdf"), management_outputs, 
+       height=8.5, width=11)
 
 
-raw.data <- read.data.files(model.dir)
-total.catch.biomass <- compute.catch.biomass(raw.data$PWS_ASA.dat, nyr-1) %>% round(., 2)
+# save outputs-for-management.csv table
 
-final.table <- data.frame(years[1:(nyr-1)], recruit.matrix, biomass.matrix/1000, total.catch.biomass, exploit.matrix, prob.matrix) 
+biomass.matrix <- biomass.df |> 
+    filter(.width==0.95, year != "forecast") |> 
+    select(biomass, .lower, .upper) |> 
+    as.matrix() |> 
+    round(2)
+recruit.matrix <- recruit.df |> 
+    filter(.width==0.95) |> 
+    select(recruits, .lower, .upper) |> 
+    as.matrix() |> 
+    round(2)
+exploit.matrix <- exploit.df$exploit.rate.df |> 
+    filter(.width==0.95) |> 
+    select(exploit, .lower, .upper) |> 
+    as.matrix() |> 
+    round(2)
+prob.matrix <- biomass.df |> 
+    filter(.width==0.95, year != "forecast") |> 
+    select(prob) |> 
+    as.matrix() |> 
+    round(2)
+
+total.catch.biomass <- compute.catch.biomass(data = raw.data$PWS_ASA.dat) |> 
+    round(2) 
+
+final.table <- data.frame(years, recruit.matrix, biomass.matrix/1000, 
+                          total.catch.biomass, exploit.matrix, prob.matrix) 
 names(final.table) <- c("Years",
                         "Median Age 3 (in millions)",
                         "Lower 95th Age 3 (in millions)",
@@ -67,4 +152,4 @@ names(final.table) <- c("Years",
                         "Lower 95th ER",
                         "Upper 95th ER",
                         "Probability B<20K")
-write.csv(final.table, here::here("data_outputs/outputs-for-management.csv"), row.names=FALSE)
+write.csv(final.table, here::here(dir_outputs, "outputs-for-management.csv"), row.names=FALSE)

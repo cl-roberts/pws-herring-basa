@@ -1,8 +1,9 @@
+
 # Prince William Sound Herring Bayesian Age-Structured Stock Assessment Model (BASA)
 
 The Bayesian Age-Structured Stock Assessment Model (BASA) for Pacific herring is the succesor to the historical Age-Structured Assessment model (ASA) used by the Alaska Department of Fish and Game (ADF&G) to assess the status of Pacific herring (_Clupea pallasii_) in Prince William Sound. Historically, the PWS herring stock posessed a total stock biomass in upwards of 100,000 metric tons, more than anough to sustain several active fisheries. The stock suddenly crashed in the spring of 1993, resulting in a complete closure of the fishery. To this day, the stock biomass remains below 20,000 metric tons, preventing the opening of the fishery per the harvest control rule put in place by ADF&G in 1994.
 
-BASA has been under active development by graduate students at the University of Washington - Seattle since 2014. The original model was developed by Melissa Muradian as part of her M.S. under Dr. Trevor Branch. Dr. John Trochta made further modifications to the model, including incorporating an age-1 aerial school index and seroprevalence disease data during the course of his Ph.D. Joshua Zahner is currently utilizing BASA to develop a management strategy evaluation framework for PWS herring as a part of his M.S.
+BASA has been under active development by graduate students at the University of Washington - Seattle since 2014. The original model was developed by Melissa Muradian as part of her M.S. under Dr. Trevor Branch. Dr. John Trochta made further modifications to the model, including incorporating an age-1 aerial school index and seroprevalence disease data during the course of his Ph.D. Joshua Zahner is currently utilizing BASA to develop a management strategy evaluation framework for PWS herring as a part of his M.S. This repository was forked from Joshua Zahner's GitHub site `Ovec8hkin` and is managed by CL Roberts for Alaska Department of Fish \& Game. See `meta/CLR_changes` for a detailed description of all changes made by CLR.
 
 Cite as:
 
@@ -28,15 +29,26 @@ The actual stock assessment model runs in ADMB, though, in practice, is more fre
 1. Calculates effective sample sizes (ESS) for each data source being provided to the model.
 2. Generates initial values for MCMC sampler to begin at
 3. Runs the stock assessment program using the NUTS sampling algorithm
-4. Checks whether there were divergences between the sampling chains and whether all of the parameters were appropoiately estimated.
+4. Checks whether there were divergences between the sampling chains and whether all of the parameters were appropriately estimated.
 
 `run_basa.R` can be run directly from the command line or can be run line-by-line in RStudio or another IDE. 
 
-Once the model has run succesfully, four R scripts are provided to visualize the results:
-* `plotting/results_age_comp_predictions.R` generates a multi-panel bar plot displaying model estimated age compositions of the population for each year since 1980
-* `plotting/results_model_survey_fits.R` generates a multi-panel plot displaying estaimte model fits to each of the five primary data sources.
-* `plotting/results_recruitment_ssb.R` generates a two-panel plot displaying estimated recruitment to the fishery and estimated spawning biomass in each year since 1980.
-* `plotting/results_output_for_management.R` generate a four panel plot summarising the model outputs for management use. The four plots include: annual recruitment, annual spawning biomass, annual fishing exploitation rate, and the posterior distribution of spawning biomass in the final year of the assessment. 
+Once the model has run successfully, three R scripts are provided to visualize the results:
+* `plotting/plot_age_compositions.R` generates a multi-panel bar plot displaying model estimated age compositions of the population for each year since 1980.
+* `plotting/plot_survey_fits.R` generates a multi-panel plot displaying estimated model fits to each of the five primary data sources.
+* `plotting/plot_management_outputs.R` generates a four panel plot summarizing the model outputs for management use. The four plots include: annual recruitment, annual spawning biomass, annual fishing exploitation rate, and the posterior distribution of spawning biomass in the final year of the assessment. 
+
+
+## Repository Structure
+* `data_outputs`: tables of clean model outputs in `.csv` format for general use.
+* `deprecated`: stores antiquated code not currently in use.
+* `figures`: all relevant plots generated to visualize model outputs.
+* `historical_outputs`: archived outputs of historical model runs.
+* `model`: model ADMB code, input data, and temporary files and directories generated during model runs. 
+* `meta`: metadata and general information about BASA.
+* `plotting`: R scripts for synthesizing model outputs into `figures` and `data_outputs`.
+* `pwsHerringBasa`: a self-contained R package containing R code and documentation for running the model, reading in data, plotting outputs, calculating effective sample sizes, etc.
+* `references`: papers which directly use BASA.
 
 ## Citations
 

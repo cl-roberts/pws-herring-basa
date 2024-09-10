@@ -1,10 +1,18 @@
-# basa_run.r
+################################################################################
+
+# Run BASA model and obtain parameter posteriors
+
 # Created by John Trochta
 # Date created:  06/08/2019
+
 # Summary:
-# This script runs the Bayesian ASA model using the No-U-turn (NUTS) MCMC sampler to obtain posteriors.
+# This script runs the Bayesian ASA model using the No-U-turn (NUTS) MCMC sampler 
+# to obtain posteriors.
+
 # The adnuts package developed by Cole Monnahan to run NUTS with ADMB (hence adnuts) is used.
-# I highly recommend users should read the following for more details on NUTS application to stock assessments:
+
+# I highly recommend users should read the following for more details on NUTS 
+# application to stock assessments:
 #   Cole C Monnahan, Trevor A Branch, James T Thorson, Ian J Stewart, Cody S Szuwalski, 
 #         Overcoming long Bayesian run times in integrated fisheries stock assessments, 
 #         ICES Journal of Marine Science, Volume 76, Issue 6, November-December 2019, 
@@ -26,42 +34,57 @@
 # For divergence diagnoses and resolutions:
 # https://discourse.mc-stan.org/t/divergent-transitions-a-primer/17099
 
-#################################################################
+################################################################################
 
-packages <- c("data.table", "tidyverse", "adnuts", "rstan", "here", "r4ss")
-if(length(packages[which(packages %in% rownames(installed.packages()) == FALSE )]) > 0){
-  install.packages(packages[which(packages %in% rownames(installed.packages()) == FALSE)])
-}
-lapply(packages, library, character.only = TRUE)
+#### front matter ####
 
-# library(data.table)
-# library(tidyverse)
-# library(adnuts)
-# library(snowfall)
-# library(rstan)
-# library(r4ss)
-source(paste0(here::here("functions/"), "/run_basa.r"))
+# load packages
+
+library(data.table)
+library(adnuts)
+library(snowfall)
+library(rstan)
+library(r4ss)
+library(pwsHerringBasa)
+
+#-------------------------------------------------------------------------------
+
+#### compile model, calculate ESS's execute NUTS for parameter posteriors ####
+
+# see ?pwsHerringBasa::run.basa() for more details
 
 run <- run.basa(here::here("model"))
+
+#-------------------------------------------------------------------------------
+
+#### extract model run metadata and diagnostics ####
+
 # Extracts NUTS stats (energy, leapfrog transitions,etc)
-mon <- run$fit1$monitor 
+mon <- monitor(run$fit1$samples, warmup=run$fit1$warmup, print=FALSE)
 x <- extract_sampler_params(run$fit1)
 
-# Quick check for divergences, Gelman-Ruben statistic, and tail ESS
+# Quick check for divergences & Gelman-Ruben statistic
 n.divergences <- sum(x$divergent__)/nrow(x)
-r.hat <- max(mon[, "Rhat"]) <= 1.1
-ess <- min(mon[, "Tail_ESS"]) >= 500
+r.hat <- max(mon[, "Rhat"])<=1.1
 
 n.divergences
 r.hat
-ess
 
-# If this returns TRUE, diagnostic convergence checks pass
-ifelse(
-  n.divergences < 0.001 & r.hat & ess, 
-  print("Diagnostics pass. Convergence likely."), 
-  print("One or more diagnostic checks failed.")
-)
+## Examine the slowest mixing parameters
+# slow <- names(sort(mon[,"n_eff"]))[1:8]
+# pairs_admb(fit=fit, pars=slow)
+
+# summarize NUTS/MCMC diagnostics
+sum.dia <- data.frame(divergences.from.extract.function=sum(x$divergent__)/nrow(x),
+                      min.ESS=min(mon[, "n_eff"]),
+                      which.min.ESS=names(which.min(mon[, "n_eff"])),
+                      max.Rhat=max(mon[, "Rhat"]),
+                      which.max.Rhat=names(which.max(mon[, "Rhat"])),
+                      time.elapsed=run$time)
+
+#-------------------------------------------------------------------------------
+
+#### save information from model run ####
 
 # Write summary of parameter posteriors (medians, percentiles, etc)
 write.csv(as.data.frame(mon), file="mcmc_out/table_par_posterior_summary.csv")
@@ -71,20 +94,7 @@ mcmc.samps <- data.frame(matrix(run$fit1$samples, ncol=dim(run$fit1$samples)[3],
 names(mcmc.samps) <- run$fit1$par_names
 write.csv(mcmc.samps, file="mcmc_out/iterations.csv", row.names=FALSE)
 
-## Examine the slowest mixing parameters
-# slow <- names(sort(mon[,"n_eff"]))[1:8]
-# pairs_admb(fit=fit, pars=slow)
-
-#Create summary file of NUTS/MCMC diagnostics
-sum.dia <- data.frame(
-    divergences.from.extract.function=n.divergences,
-    min.ESS=min(mon[, "n_eff"]),
-    which.min.ESS=names(which.min(mon[, "n_eff"])),
-    max.Rhat=max(mon[, "Rhat"]),
-    which.max.Rhat=names(which.max(mon[, "Rhat"])),
-    time.elapsed=run$time
-)
-
+# write summary file of NUTS/MCMC diagnostics
 write.table(sum.dia, file="mcmc_out/table_convergence_diagnostics.csv", sep=",", row.names=FALSE)
 saveRDS(run$fit1, file="mcmc_out/NUTS_fit.RDS")
 

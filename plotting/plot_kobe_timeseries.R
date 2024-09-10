@@ -1,9 +1,8 @@
 library(ggplot2)
 library(ggdist)
-library(tidyverse)
-
-source(paste0(here::here("functions/"), "fun_read_dat.R"))
-
+library(dplyr)
+library(gghighlight)
+library(pwsHerringBasa)
 
 b.star <- 40000
 f.star <- 0.20
@@ -19,13 +18,15 @@ data <- data.frame(year=NA, biomass=NA, exploit=NA, sim=NA, cr=NA)
 for(c in control.rules){
     for(s in sims){
         print(s)
-        model.dir <- paste0(here::here("model/"))
+        dir_mcmc_out <- here::here("model/mcmc_out")
 
-        biomass.estimates <- read.biomass.estimates(model.dir)
-        exploit.rate.estimates <- read.exploit.rates(model.dir)
+        biomass.estimates <- read.biomass.estimates(dir_mcmc_out)
+        exploit.rate.estimates <- read.exploit.rates(dir_mcmc_out)
 
-        biomass.est.rel <- as_tibble(biomass.estimates/b.star) %>% pivot_longer(everything(), "year", values_to="biomass")
-        exploit.est.rel <- as_tibble(exploit.rate.estimates/f.star) %>% pivot_longer(everything(), "year", values_to="exploit")
+        biomass.est.rel <- as_tibble(biomass.estimates/b.star) |> pivot_longer(cols = everything(), 
+                                                                        names_to = "year", values_to="biomass")
+        exploit.est.rel <- as_tibble(exploit.rate.estimates/f.star) |> pivot_longer(cols = everything(), 
+                                                                        names_to = "year", values_to="exploit")
 
         d <- biomass.est.rel 
         d$exploit <- exploit.est.rel$exploit
@@ -38,12 +39,12 @@ for(c in control.rules){
 
 data$year <- as.numeric(data$year)
 
-data.df <- data %>% na.omit() %>%
-            group_by(year, cr) %>%
+data.df <- data |> na.omit() |>
+            group_by(year, cr) |>
             summarise(
                 biomass = median(biomass),
                 exploit=median(exploit)
-            ) %>%
+            ) |>
             print(n=10)
 
 rect_dat <- data.frame(panel = c("bottom_left", "top_right",
@@ -71,7 +72,7 @@ n.tot <- 5200*total.sims
 
 kobe.plot
 
-kobe.df <- data %>% 
+kobe.df <- data |> 
                 mutate(
                     kobe.color = ifelse(
                         data$biomass < 1 & data$exploit > 1,
@@ -86,13 +87,13 @@ kobe.df <- data %>%
                             )
                         )
                     )
-                ) %>% 
-                na.omit() %>%
-                group_by(year, cr, kobe.color) %>%
+                ) |> 
+                na.omit() |>
+                group_by(year, cr, kobe.color) |>
                 summarise(
                     n=n()
-                ) %>%
-                mutate(freq=n/n.tot) %>%
+                ) |>
+                mutate(freq=n/n.tot) |>
                 mutate(across(kobe.color, factor, levels=c("red", "orange", "yellow", "green")))
 
 
@@ -108,20 +109,20 @@ ggplot(kobe.df) +
         panel.spacing.x = unit(0.4, "in")
     ) 
 
-ggsave(paste0(here::here("figures/"), "kobe_timeseries.pdf"), width=6, height=5, dpi=300)              
+ggsave(paste0(here::here("figures/"), "/kobe_timeseries.pdf"), width=6, height=5, dpi=300)              
 
-data.df.2 <- data %>% na.omit() %>%
-                group_by(year, cr) %>%
+data.df.2 <- data |> na.omit() |>
+                group_by(year, cr) |>
                 summarise(
                     biomass.quants=quantile(biomass, c(0.025, 0.5, 0.975)),
                     exploit.quants=quantile(exploit, c(0.025, 0.5, 0.975))
-                ) %>%
-                mutate(perc=c("2.5%", "50%", "97.5%")) %>%
+                ) |>
+                mutate(perc=c("2.5%", "50%", "97.5%")) |>
                 pivot_wider(
                     names_from = perc,
                     values_from = c(biomass.quants, exploit.quants)
-                ) %>%
-                filter(year == max(data$year, na.rm=TRUE)) %>%
+                ) |>
+                filter(year == max(data$year, na.rm=TRUE)) |>
                 print(n=10)
 
 
