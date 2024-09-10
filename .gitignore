@@ -13,6 +13,7 @@ model/*.hes
 model/*.bar
 model/*.cor
 model/*.cpp
+!model/PWS_ASA_tmb.cpp
 model/*.eva
 model/*.htp
 model/*.log
@@ -23,10 +24,15 @@ model/*.std
 
 model/rep_out/*
 model/mcmc_out/*
+model/mcmc_out_tmb/*
 
 *.tex
 
 *~
 .Rproj.user
+*.code-workspace
 
 retrospectives/*
+
+*.dll
+*.o
