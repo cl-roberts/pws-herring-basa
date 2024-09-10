@@ -32,7 +32,7 @@ model/mcmc_out_tmb/*
 .Rproj.user
 *.code-workspace
 
-retrospectives/*
+retrospectives/basa-*
 
 *.dll
 *.o
