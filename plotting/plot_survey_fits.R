@@ -20,7 +20,7 @@
 #### front matter ####
 
 # choose TMB or ADMB
-software <- "ADMB"
+software <- "TMB"
 
 # attach packages
 

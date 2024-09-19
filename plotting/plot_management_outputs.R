@@ -26,7 +26,7 @@
 #### front matter ####
 
 # choose TMB or ADMB
-software <- "ADMB"
+software <- "TMB"
 
 # load packages
 
