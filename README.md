@@ -42,10 +42,10 @@ Once the model has run successfully, three R scripts are provided to visualize t
 ## Repository Structure
 * `data_outputs`: tables of clean model outputs in `.csv` format for general use.
 * `deprecated`: stores antiquated code not currently in use.
+* `docs`: metadata and general information about BASA.
 * `figures`: all relevant plots generated to visualize model outputs.
 * `historical_outputs`: archived outputs of historical model runs.
 * `model`: model ADMB code, input data, and temporary files and directories generated during model runs. 
-* `meta`: metadata and general information about BASA.
 * `plotting`: R scripts for synthesizing model outputs into `figures` and `data_outputs`.
 * `pwsHerringBasa`: a self-contained R package containing R code and documentation for running the model, reading in data, plotting outputs, calculating effective sample sizes, etc.
 * `references`: papers which directly use BASA.
@@ -66,5 +66,5 @@ Trochta, J. T., and T. A. Branch. 2021. Applying Bayesian model selection to det
 
 Trochta, J. T., M. Groner, P. Hershberger, and T. A. Branch. 2022. A better way to account for disease in fisheries stock assessment: the powerful potential of seroprevalence data. Canadian Journal of Aquatic and Fisheries Sciences 79(4): 611-630
 
-
+Zahner, J. A., and T. A. Branch. 2024. Management strategy evaluation of harvest control rules for Pacific Herring in Prince William Sound, Alaska. ICES Journal of Marine Science 81:317-333.
 
