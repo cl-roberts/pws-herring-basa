@@ -4,10 +4,10 @@
 \alias{run.basa}
 \title{Run BASA model}
 \usage{
-run.basa(model.dir, n.samples = 2000, n.warmup = 700, n.time = 5)
+run.basa(dir_model, n.samples = 2000, n.warmup = 700, n.time = 5)
 }
 \arguments{
-\item{model.dir}{Relative path to model}
+\item{dir_model}{Relative path to model}
 
 \item{n.samples}{Number of samples to draw from MCMC iterations}
 
