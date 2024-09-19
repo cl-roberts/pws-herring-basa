@@ -56,19 +56,19 @@
 template <class Type>
 Type dunif(Type x, Type lwr, Type upr, int give_log=0)
 {
-    Type density;
+    Type dens = 0;
 
     if (lwr >= upr) {
         throw std::invalid_argument("upper bound is not larger than lower bound");
     }
 
     if (x < lwr || upr < x) {
-        density = 0;
+        dens = 0;
     } else if (lwr <= x && x <= upr) {
-        density = 1 / (upr-lwr);
+        dens = 1 / (upr-lwr);
     } 
 
-    if (give_log) return log(density); else return density;
+    if (give_log) return log(dens); else return dens;
 }
 
 template <class Type>
