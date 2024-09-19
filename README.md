@@ -3,7 +3,7 @@
 
 The Bayesian Age-Structured Stock Assessment Model (BASA) for Pacific herring is the succesor to the historical Age-Structured Assessment model (ASA) used by the Alaska Department of Fish and Game (ADF&G) to assess the status of Pacific herring (_Clupea pallasii_) in Prince William Sound. Historically, the PWS herring stock posessed a total stock biomass in upwards of 100,000 metric tons, more than anough to sustain several active fisheries. The stock suddenly crashed in the spring of 1993, resulting in a complete closure of the fishery. To this day, the stock biomass remains below 20,000 metric tons, preventing the opening of the fishery per the harvest control rule put in place by ADF&G in 1994.
 
-BASA has been under active development by graduate students at the University of Washington - Seattle since 2014. The original model was developed by Melissa Muradian as part of her M.S. under Dr. Trevor Branch. Dr. John Trochta made further modifications to the model, including incorporating an age-1 aerial school index and seroprevalence disease data during the course of his Ph.D. Joshua Zahner is currently utilizing BASA to develop a management strategy evaluation framework for PWS herring as a part of his M.S. This repository was forked from Joshua Zahner's GitHub site `Ovec8hkin` and is managed by CL Roberts for Alaska Department of Fish \& Game. See `meta/CLR_changes` for a detailed description of all changes made by CLR.
+BASA has been under active development by graduate students at the University of Washington - Seattle since 2014. The original model was developed by Melissa Muradian as part of her M.S. under Dr. Trevor Branch. Dr. John Trochta made further modifications to the model, including incorporating an age-1 aerial school index and seroprevalence disease data during the course of his Ph.D. Joshua Zahner developed a management strategy evaluation framework for PWS herring as a part of his M.S. Currently, C.L. Roberts's PhD work is using BASA for collaborative research between the University of Washington and the Alaska Department of Fish and Game.
 
 Cite as:
 
@@ -41,14 +41,17 @@ Once the model has run successfully, three R scripts are provided to visualize t
 
 ## Repository Structure
 * `data_outputs`: tables of clean model outputs in `.csv` format for general use.
-* `deprecated`: stores antiquated code not currently in use.
+<!-- * `deprecated`: stores antiquated code not currently in use. -->
 * `docs`: metadata and general information about BASA.
 * `figures`: all relevant plots generated to visualize model outputs.
+* `functions/simulation`: MSE code current lives here **add to package in future**.
 * `historical_outputs`: archived outputs of historical model runs.
 * `model`: model ADMB code, input data, and temporary files and directories generated during model runs. 
 * `plotting`: R scripts for synthesizing model outputs into `figures` and `data_outputs`.
-* `pwsHerringBasa`: a self-contained R package containing R code and documentation for running the model, reading in data, plotting outputs, calculating effective sample sizes, etc.
+* `pwsHerringBasa`: a self-contained R package containing R code and documentation for running the model, reading in data, plotting outputs, calculating effective sample sizes, etc. The `pwsHerringBasa` package may be installed via the `pwsHerringBasa_0.1.0.tar.gz` tarball.
 * `references`: papers which directly use BASA.
+* `report`: code and utilities for generating annual report.
+* `retrospectives`: code for running retrospective analysis.
 
 ## Citations
 
