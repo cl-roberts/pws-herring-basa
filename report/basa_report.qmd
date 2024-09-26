@@ -34,9 +34,9 @@ library(pwsHerringBasa)
 #| label: opts
 
 options(scipen = 999)
-knit_hooks$set(inline = function(x) {
-	prettyNum(x, big.mark = ",", big.interval = 4L)
-})
+# knit_hooks$set(inline = function(x) {
+# 	prettyNum(x, big.mark = ",", big.interval = 4L)
+# })
 ```
 
 ```{r}
