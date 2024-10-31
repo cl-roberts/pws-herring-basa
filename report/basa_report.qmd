@@ -1,9 +1,9 @@
 ---
 title: "2024 Bayesian Age-structured Stock Assessment (BASA) Results for Prince William Sound (PWS) herring"
 author:
-  - Trevor A. Branch
-  - Joshua A. Zahner
   - C.L. Roberts
+  - Joshua A. Zahner
+  - Trevor A. Branch
 date: today
 date-format: long
 geometry: margin=1in
