@@ -107,9 +107,9 @@ ggsave(here::here(dir_figures, "pfrb_posterior.pdf"), plot = pfrb.posterior.plot
 #    recruit.plot, biomass.plot, exploit.rate.plot, pfrb.posterior.plot,
 #    nrow=2,
 #    ncol=2
-)
-ggsave(here::here(dir_figures, "management_outputs.pdf"), management_outputs, 
-       height=8.5, width=11)
+# )
+# ggsave(here::here(dir_figures, "management_outputs.pdf"), management_outputs, 
+#        height=8.5, width=11)
 
 
 # save outputs-for-management.csv table
