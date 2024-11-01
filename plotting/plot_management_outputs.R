@@ -26,12 +26,12 @@
 #### front matter ####
 
 # choose TMB or ADMB
-software <- "ADMB"
+software <- "TMB"
 
 # load packages
 
 library(ggplot2)
-library(ggpubr)
+#library(ggpubr)
 library(pwsHerringBasa)
 library(dplyr)
 
@@ -103,10 +103,10 @@ ggsave(here::here(dir_figures, "pfrb_posterior.pdf"), plot = pfrb.posterior.plot
 
 # save 4-panel composite plot
 
-management_outputs <- ggarrange(
-    recruit.plot, biomass.plot, exploit.rate.plot, pfrb.posterior.plot,
-    nrow=2,
-    ncol=2
+#management_outputs <- ggarrange(
+#    recruit.plot, biomass.plot, exploit.rate.plot, pfrb.posterior.plot,
+#    nrow=2,
+#    ncol=2
 )
 ggsave(here::here(dir_figures, "management_outputs.pdf"), management_outputs, 
        height=8.5, width=11)
