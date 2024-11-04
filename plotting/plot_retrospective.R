@@ -30,6 +30,11 @@ library(pwsHerringBasa)
 dir_model <- here::here("model")
 dir_mcmc_out <- here::here(dir_model, "mcmc_out")
 dir_retro <- here::here("retrospectives")
+dir_figures <- here::here("figures")
+
+if (!dir.exists(dir_figures)) {
+    dir.create(dir_figures)
+}
 
 if (!dir.exists(dir_retro)) {
     stop("Retrospective analysis has not yet been performed! Execute run_retrospectives.r ...")
@@ -95,4 +100,4 @@ ggplot(retro) +
         plot.title = element_text(size=18)
     )
 
-ggsave(here::here("figures", "retrospective.pdf"))
+ggsave(here::here(dir_figures, "retrospective.pdf"))

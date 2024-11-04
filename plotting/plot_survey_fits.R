@@ -44,6 +44,10 @@ if (software == "ADMB") {
     stop("choose valid software")
 }
 
+if (!dir.exists(dir_figures)) {
+    dir.create(dir_figures)
+}
+
 # load data
 
 raw.data <- read.data.files(dir_model)$PWS_ASA.dat

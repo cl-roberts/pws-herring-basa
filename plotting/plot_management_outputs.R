@@ -51,6 +51,10 @@ if (software == "ADMB") {
     stop("choose valid software")
 }
 
+if (!dir.exists(dir_figures)) {
+    dir.create(dir_figures)
+}
+
 # read model input data
 
 raw.data <- read.data.files(dir_model)
