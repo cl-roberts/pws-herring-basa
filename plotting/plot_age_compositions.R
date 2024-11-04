@@ -34,7 +34,7 @@ library(pwsHerringBasa)
 library(data.table)
 library(ggridges)
 
-# read in model input data
+# directory handling
 
 dir_model <- here::here("model")
 
@@ -50,6 +50,11 @@ if (software == "ADMB") {
     stop("choose valid software")
 }
 
+if (!dir.exists(dir_figures)) {
+    dir.create(dir_figures)
+}
+
+# read in model input data 
 raw.data <- read.data.files(dir_model)
 
 # save global variables
@@ -263,13 +268,13 @@ age.struct.plot <- ggplot(raw.df)+
 
 # make numbers-at-age plot
 
-naa_plot <- ggplot(naa_ridgedat, aes(x = Age, y = Year, fill = Year, group = Year)) +
-    geom_density_ridges2() +
-    scale_fill_viridis_c(option = viridis_palette, trans = "reverse") + 
-    scale_y_reverse() +
-    xlim(c(0, 12)) +
-    labs(title = "Estimated Numbers-at-age", subtitle = "Prince William Sound Herring, 1980-Present") +
-    theme_bw()
+# naa_plot <- ggplot(naa_ridgedat, aes(x = Age, y = Year, fill = Year, group = Year)) +
+#     geom_density_ridges2() +
+#     scale_fill_viridis_c(option = viridis_palette, trans = "reverse") + 
+#     scale_y_reverse() +
+#     xlim(c(0, 12)) +
+#     labs(title = "Estimated Numbers-at-age", subtitle = "Prince William Sound Herring, 1980-Present") +
+#     theme_bw()
 
 
 #-------------------------------------------------------------------------------
@@ -282,7 +287,7 @@ ggsave(here::here(dir_figures, "age_compositions.pdf"), plot = age.struct.plot, 
 
 # save numbers-at-age plot
 
-ggsave(here::here(dir_figures, "numbers_at_age.pdf"), plot = naa_plot, height = 11, width=8.5)
+# ggsave(here::here(dir_figures, "numbers_at_age.pdf"), plot = naa_plot, height = 11, width=8.5)
 
 # save csv table of median age comps with 95% posterior predictive intervals
 
