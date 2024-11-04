@@ -36,3 +36,6 @@ retrospectives/basa-*
 
 *.dll
 *.o
+
+*.png
+*.pdf
