@@ -21,12 +21,13 @@ R CMD INSTALL pwsHerringBasa_0.1.0.tar.gz
 
 Note that this step may prompt you to acquire some packages or linux libraries. For example, I needed to run `sudo apt install libcurl4-ssl-dev` to get this to install correctly. 
 
-3. install other R package requirements. You should have already installed a vector of packages that I sent you in an `.rds` file, here are some others that were not included there.
+3. install other R package requirements. You should have already installed a vector of packages that I sent you in an `.rds` file, but in case you haven't:
 
 R:
 
 ```
-install.packages(c("TMB", "tmbstan"))
+pkgs <- readRDS("basa-dependencies.rds")
+install.packages(pkgs)
 ```
 
 4. Execute the model. This step should take a few minutes.
@@ -34,11 +35,11 @@ install.packages(c("TMB", "tmbstan"))
 bash:
 
 ```
-Rscript run_basa_tmb.r
+Rscript run_basa.r
 ```
 
 
-5. Run analysis code. This should create some plots in `figures/tmb` and `.csv` files in `data_outputs`.
+5. Run analysis code. This should create some plots in `figures` and `.csv` files in `data_outputs`.
 
 bash:
 
