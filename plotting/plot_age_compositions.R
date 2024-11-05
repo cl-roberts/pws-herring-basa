@@ -33,6 +33,7 @@ library(ggdist)
 library(pwsHerringBasa)
 library(data.table)
 library(ggridges)
+library(gplots)
 
 # directory handling
 
@@ -64,11 +65,9 @@ start.year <- 1980
 curr.year <- start.year+nyr
 nyr.sim <- 0
 years <- seq(start.year, curr.year+nyr.sim-1)
-nburn <- 1  # CLR: added this line
-ncol <- 10   # CLR: added this line
-# color.options <- RColorBrewer::brewer.pal(6, "Set2")
-# color.options <- RColorBrewer::brewer.pal(6, "Dark2")
-color.options <- gplots::rich.colors(n = 7, alpha = .5)
+nburn <- 1  
+ncol <- 10   
+color.options <- rich.colors(n = 7, alpha = .5)
 colors <- generate.colors(nyr = nyr, color.options = color.options[1:6])
 
 #-------------------------------------------------------------------------------
@@ -237,25 +236,31 @@ naa_ridgedat <- n.y.a.median.mat |>
 raw.df <- raw.df |> 
     left_join(data.frame(year = 1982:(curr.year+nyr.sim-1), J = round(evenness.50, 2)))
 
+year.df$J <- raw.df |> 
+    as.data.frame() |>
+    slice(match(year.df$year, raw.df$year)) |>
+    select(J) |>
+    unlist()
+
 age.struct.plot <- ggplot(raw.df)+
     geom_col(aes(x=type, y=val/100, color=age, fill=fill.color), position=position_dodge(0.9), linewidth=0)+
     # scale_fill_manual(values=c(color.options, "grey")) + 
     scale_fill_manual(values=color.options) + 
     geom_pointinterval(data=age.comp.df, aes(x=type, y=`50%`/100, ymin=`2.5%`/100, ymax=`97.5%`/100, color=age), position=position_dodge(0.9)) +
     geom_text(data=year.df, aes(x=0.65, y=1, label=year), size=4)+
-    geom_text(aes(x=2.25, y=1, label=ifelse(is.na(J), NA, paste0("J=", J))), size=4)+
+    geom_text(data=year.df, aes(x=2.25, y=1, label=ifelse(is.na(J), NA, paste0("J=", J))), size=4)+
     geom_text(data=age.class.df, aes(x=type, y=-0.25, label=age, group=age), position=position_dodge(0.9), size=3)+
     scale_color_manual(values=rep("black", 7))+
     scale_y_continuous("Proportion", breaks=c(0.0, 0.5, 1.0))+
     scale_x_discrete(labels=c("Seine Catch", "Spawner Survey"))+
     facet_wrap(~year, nrow=12, dir="v")+
     coord_cartesian(clip="off", ylim=c(0, 1.15))+
-    labs(x="Age Class", y="Proportion", title="Proportional Age Structure")+
-    # theme_bw() +
+    labs(x="Age class", y="Proportion", title="Proportional age structure")+
+    theme_bw() +
     theme(
         legend.position = "none",
-        panel.background = element_rect(fill = "grey95"),
-        # panel.border = element_rect(linewidth = 0),
+        # panel.background = element_rect(fill = "grey95"),
+        panel.border = element_rect(linewidth = 0),
         panel.grid = element_blank(),
         panel.spacing.y = unit(0.0, "line"),
         panel.spacing.x = unit(0.25, "line"),

@@ -76,22 +76,35 @@ years <- seq(start.year, curr.year+nyr.sim-1)
 # for more details
 
 recruit.df <- compute.recruitment(dir_mcmc_out, nyr, years)
-recruit.plot <- plot_recruitment_posterior(recruit.df, years, legend=FALSE)
+recruit.plot <- plot_recruitment_posterior(recruit.df, years, legend=FALSE) +
+    labs(main = "Age-3 recruitment") +
+    theme(axis.title = element_text(size=12),
+          title = element_text(size=14)) 
 
 biomass.df <- compute.biomass.traj(dir_mcmc_out, nyr)
-biomass.plot <- plot_biomass_trajectory(biomass.df, c(years, curr.year), legend=FALSE)
+biomass.plot <- plot_biomass_trajectory(biomass.df, c(years, curr.year), legend=FALSE) +
+    labs(main = "Biomass trajectory") +
+    theme(axis.title = element_text(size=12),
+          title = element_text(size=14))
 
 exploit.df <- compute.exploit.rate(dir_mcmc_out, nyr)
 exploit.rate.plot <- plot_exploit_rate(exploit.df$exploit.rate.df,
                                        exploit.df$exploit.zeros,
-                                       years)
+                                       years) +
+    labs(main = "Exploitation rate") +
+    theme(axis.title = element_text(size=12),
+          title = element_text(size=14))
 
 pfrb.posterior <- compute.pfrb.posterior(dir_mcmc_out, nyr+1)
 pfrb.posterior.plot <- plot_pfrb_posterior(pfrb.posterior$biomass.df, 
                                            pfrb.posterior$biomass.quants, 
                                            pfrb.posterior$prob.below.threshold,
                                            curr.year,
-                                           font.size=5)
+                                           font.size=5) +
+    labs(main=paste0(curr.year+1, "pre-fishery biomass posterior probability density"),
+         x=paste0(curr.year+1, "pre-fishery biomass (mt)")) +
+    theme(axis.title = element_text(size=12),
+          title = element_text(size=14))
 
 #-------------------------------------------------------------------------------
 

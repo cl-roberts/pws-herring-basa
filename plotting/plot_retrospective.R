@@ -88,11 +88,11 @@ ggplot(retro) +
     geom_line(aes(x=year, y=biomass, color=lag), size=1)+
     geom_point(data=final.year, aes(x=year, y=biomass, color=lag), size=3)+
     geom_hline(yintercept=c(20000, 40000), linetype="dashed")+
-    geom_text(data=data.frame(), aes(x=2016, y=180000, label=paste("Mohn's Rho:", round(rho, 3))))+
+    geom_text(data=data.frame(), aes(x=2016, y=180000, label=paste("Mohn's rho:", round(rho, 3))))+
     scale_fill_grey(start=0.8, end=0.4)+
     scale_y_continuous(limits=c(0, 200000), breaks=c(0, 20000, 40000, 50000, 100000, 150000, 200000), labels=scales::comma)+
     coord_cartesian(expand=0)+
-    labs(x="Year", y="Spawning Biomass (mt)", color="Data Lag", title=paste0(n.peels, "-year Retrospective Pattern"))+
+    labs(x="Year", y="Spawning biomass (mt)", color="Data lag", title=paste0(n.peels, "-year retrospective pattern"))+
     theme_classic()+
     theme(
         axis.title = element_text(size=16),

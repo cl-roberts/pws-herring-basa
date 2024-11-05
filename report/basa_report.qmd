@@ -142,7 +142,7 @@ Estimated survey biomass from Bayesian age structured assessment (shading showin
 ::: {#fig-age-comps}
 ![](../figures/age_compositions.pdf)
 
-Estimated age structure from the Bayesian age structured stock assessment (points = median, lines = 95% posterior predictive intervals) compared to the age composition data from catches and surveys (bars). Each color follows a single cohort as it ages through the fishery. Data are available only for ages-3 and above. The quantity 'J' in the upper-right corner of each panel is the Shannon-Weiner evenness index score of the age composition for each year [@shannonweaver1949].
+Estimated age structure from the Bayesian age structured stock assessment (points = median, lines = 95% posterior predictive intervals) compared to the age composition data from catches and surveys (bars). Each color follows a single cohort as it ages through the fishery. Data are available only for ages-3 and above. The quantity 'J' in the upper-right corner of each panel is the Shannon-Weiner evenness index score of the survey age composition for each year [@shannonweaver1949].
 :::
 
 ::: {#fig-management-outputs}
@@ -154,15 +154,14 @@ Bayesian age structured assessment estimates of numbers of age-3 recruitment in 
 ::: {#fig-retrospectives}
 ![](../figures/retrospective.pdf)
 
-5-year retrospectives for the `r curr.year-1L` BASA model. Peels show 
-no pervasive retrospective bias.
+5-year retrospectives for the `r curr.year-1L` BASA model. In recent years the model has tended to predict lower future biomass than actually occurred.
 :::
 
 {{< pagebreak >}}
 
 ```{r}
 #| label: tbl-management-outputs
-#| tbl-cap: Time series of posterior percentile (PCTL) estimates of the population from BASA. Pre-fishery spawning biomass (SB) is mature biomass of age-3+ fish. Catch (metric tons) includes all fisheries. Exploitation fraction is the catch divided by total age-3+ biomass. P(SB<20K) is the proportion of posterior SB samples that are less than 20,000 tons.
+#| tbl-cap: Time series of posterior percentile (PCTL) estimates of the population from BASA. Pre-fishery spawning biomass (SB) is mature biomass of age-3+ fish. Catch (metric tons) includes all fisheries. Exploitation fraction is the catch divided by total age-3+ biomass. P(SB<20K) is the proportion of posterior SB samples that are less than 20,000 tons. Columns shaded in light grey show 95% credibility intervals.
 
 set_flextable_defaults(fonts_ignore=TRUE)
 
@@ -171,7 +170,7 @@ names(ssb_est) <- paste0("col_",1:ncol(ssb_est))
 tab_head <- tibble(col_keys=names(ssb_est),
                        line2=c("",
                                rep('Age-3 recruits\n(millions)',3),
-                               rep("Spawning Biomass \n(1000 metric tons)",3),
+                               rep("Spawning biomass \n(1000 metric tons)",3),
                                '',
                                rep('Exploitation\nfraction',3),
                                ''),
@@ -198,6 +197,8 @@ ssb_est |>
 	align(align="right", part = "all") |>
 	valign(j=c(1,7,12),valign="top", part = "header") |>
 	fontsize(size=8, part="all") |>
+	fontsize(j=c(3, 4, 6, 7, 10, 11), size=6, part="body") |>	
+	bg(j=c(3, 4, 6, 7, 10, 11), bg="grey95", part="all") |>	
 	hline_bottom(j=1:12,part = 'header', border = fp_border(width = 1.5)) |>
 	hline_top(j=1:12,part = 'header', border = fp_border(width = 1.5)) |> 
 	width(width = c(0.3, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.6, 0.4, 0.4, 0.4, 0.8)) |>
