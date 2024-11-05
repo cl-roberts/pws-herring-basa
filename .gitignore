@@ -39,3 +39,5 @@ retrospectives/basa-*
 
 *.png
 *.pdf
+
+data_outputs/*
