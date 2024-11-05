@@ -66,8 +66,8 @@ nyr.sim <- 0
 years <- seq(start.year, curr.year+nyr.sim-1)
 nburn <- 1  # CLR: added this line
 ncol <- 10   # CLR: added this line
-# color.options <- RColorBrewer::brewer.pal(6, "Set2")
-# color.options <- RColorBrewer::brewer.pal(6, "Dark2")
+# color.options <- RColorBrewer::brewer.pal(7, "Set2")
+# color.options <- RColorBrewer::brewer.pal(7, "Dark2")
 color.options <- gplots::rich.colors(n = 7, alpha = .5)
 colors <- generate.colors(nyr = nyr, color.options = color.options[1:6])
 
@@ -239,7 +239,6 @@ raw.df <- raw.df |>
 
 age.struct.plot <- ggplot(raw.df)+
     geom_col(aes(x=type, y=val/100, color=age, fill=fill.color), position=position_dodge(0.9), linewidth=0)+
-    # scale_fill_manual(values=c(color.options, "grey")) + 
     scale_fill_manual(values=color.options) + 
     geom_pointinterval(data=age.comp.df, aes(x=type, y=`50%`/100, ymin=`2.5%`/100, ymax=`97.5%`/100, color=age), position=position_dodge(0.9)) +
     geom_text(data=year.df, aes(x=0.65, y=1, label=year), size=4)+
@@ -251,11 +250,10 @@ age.struct.plot <- ggplot(raw.df)+
     facet_wrap(~year, nrow=12, dir="v")+
     coord_cartesian(clip="off", ylim=c(0, 1.15))+
     labs(x="Age Class", y="Proportion", title="Proportional Age Structure")+
-    # theme_bw() +
+    theme_bw() +
     theme(
         legend.position = "none",
-        panel.background = element_rect(fill = "grey95"),
-        # panel.border = element_rect(linewidth = 0),
+        panel.border = element_rect(linewidth = 0),
         panel.grid = element_blank(),
         panel.spacing.y = unit(0.0, "line"),
         panel.spacing.x = unit(0.25, "line"),
