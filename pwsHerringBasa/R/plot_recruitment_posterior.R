@@ -19,7 +19,8 @@ plot_recruitment_posterior <- function(df, years, legend=TRUE){
     scale_fill_grey(start=0.8, end=0.6)+
     scale_x_discrete("Year", breaks=seq(min(years), max(years), by=5), expand=c(0, 0))+
     scale_y_continuous("Age-3 recruits (millions)", breaks=seq(0, 2000, by=500), limits=c(0, 2000), expand=c(0, 0))+
-    ggtitle("Age-3 Recruitment")+
+    ggtitle("Age-3 recruitment")+
+    theme_bw(base_size = 12) +
     theme(
       panel.grid.minor = element_blank(),
       panel.grid.major = element_blank(),

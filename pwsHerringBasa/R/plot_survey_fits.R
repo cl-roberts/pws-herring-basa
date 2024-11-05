@@ -37,6 +37,7 @@ plot_survey_fits <- function(fits, survey.data, y.max, title, ylabel="",
       scale_y_continuous(expand=c(0, 0))+
       labs(y=ylabel, title=title)+
       coord_cartesian(xlim=c(1, length(survey.data$year)), ylim=c(0, y.max/scale))+
+      theme_bw(base_size = 12) +
       theme(
         panel.grid.minor = element_blank(),
         panel.grid.major = element_blank(),

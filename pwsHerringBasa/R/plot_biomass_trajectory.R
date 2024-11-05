@@ -24,12 +24,13 @@ plot_biomass_trajectory <- function(df, years, legend=TRUE, show.probs=TRUE){
     scale_fill_grey(start=0.8, end=0.4)+
     scale_x_discrete("Year", breaks=seq(min(years), max(years), by=5), expand=c(0, 0))+
     geom_hline(yintercept=c(20, 40), linetype="dashed")+
-    ggtitle("Biomass Trajectory")+
+    ggtitle("Biomass trajectory")+
     scale_y_continuous(
       "Pre-fishery biomass (1000 mt)",
       breaks=c(0, 20, 40, 50, 100, 150, 200),
       expand=c(0, 0))+
-    coord_cartesian(clip="off")+
+    coord_cartesian(clip="off") +
+    theme_bw(base_size = 12) +
     theme(
       panel.grid.minor = element_blank(),
       panel.grid.major = element_blank(),
