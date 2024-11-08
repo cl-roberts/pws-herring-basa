@@ -35,6 +35,8 @@ plot_pfrb_posterior <- function(df, quants, prob, curr.year, font.size=1){
     # scale_x_continuous(paste(curr.year, "spawning biomass (mt)"), breaks=seq(0, 60, 5), expand=c(0, 0))+
     # scale_y_continuous("Probability density", breaks=seq(0, 0.10, 0.025), expand=c(0, 0))+
     # coord_cartesian(ylim=c(0, 0.15), xlim=c(0, 60))+
+    xlab(paste(curr.year, "spawning biomass (mt)")) + 
+    ylab("Probability density") +
     ggtitle(paste(curr.year, "spawning biomass"),
             subtitle = "Posterior probability density")+
     theme_bw(base_size = 12) +    
