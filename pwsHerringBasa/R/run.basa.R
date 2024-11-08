@@ -103,7 +103,7 @@ run.basa <- function(dir_model, n.samples=2000, n.warmup=700, n.time=5){
     )
 
     # Compile and Run PWS_ASA
-    if((OS == "MAC") | (OS == "Linux")){
+    if((OS == "Mac") | (OS == "Linux")){
       # system("./PWS_ASA -pinwrite -nohess")
       system("./PWS_ASA -pinwrite")
     }else if(OS == "PC"){
