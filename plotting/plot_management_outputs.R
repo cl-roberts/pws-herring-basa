@@ -82,7 +82,8 @@ years <- seq(start.year, curr.year+nyr.sim-1)
 recruit.df <- compute.recruitment(dir_mcmc_out, nyr, years)
 recruit.plot <- plot_recruitment_posterior(recruit.df, years, legend=FALSE) 
 
-biomass.df <- compute.biomass.traj(dir_mcmc_out, nyr)
+biomass.df <- compute.biomass.traj(dir_mcmc_out, nyr) |>
+    filter(year != "forecast")
 biomass.plot <- plot_biomass_trajectory(biomass.df, c(years, curr.year), legend=FALSE) 
 
 exploit.df <- compute.exploit.rate(dir_mcmc_out, nyr)
