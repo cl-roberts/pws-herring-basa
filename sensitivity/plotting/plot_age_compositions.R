@@ -41,12 +41,12 @@ dir_model <- here::here("sensitivity/model")
 
 if (software == "ADMB") {
     dir_mcmc_out <- here::here(dir_model, "mcmc_out")
-    dir_figures <- here::here("figures")
-    dir_outputs <- here::here("data_outputs")
+    dir_figures <- here::here("sensitivity/figures")
+    dir_outputs <- here::here("sensitivity/data_outputs")
 } else if (software == "TMB") {
     dir_mcmc_out <- here::here(dir_model, "mcmc_out_tmb")
-    dir_figures <- here::here("figures/tmb")
-    dir_outputs <- here::here("data_outputs/tmb")
+    dir_figures <- here::here("sensitivity/figures/tmb")
+    dir_outputs <- here::here("sensitivity/data_outputs/tmb")
 } else {
     stop("choose valid software")
 }
