@@ -30,7 +30,7 @@ library(ggpubr)
 
 # directory handling
 
-dir_model <- here::here("model")
+dir_model <- here::here("sensitivity/model")
 
 if (software == "ADMB") {
     dir_mcmc_out <- here::here(dir_model, "mcmc_out")
