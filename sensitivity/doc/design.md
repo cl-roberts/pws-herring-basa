@@ -21,6 +21,22 @@ The third type of user of this tool includes miscellaneous researchers in Prince
 ### User type 4 - Board members of agency funding model development
 ### User type 5 - General public
 
+Thomas is a fisherman in the Prince William Sound area. He is curious about how fishing populations would change 
+if certain conditions were met (e.g. birth rates were higher or lower, if he made the decision to throw back older fish). 
+He is very familiar with fishing terms, but not familiar at all with statistics terms (e.g. standard deviation, residuals). 
+He has average tech literacy and he prefers a straight forward term as opposed to something with all the bells and whistles. 
+
+Kerry is a 10th grade student living near the Prince William Sound area. He stumbled upon this as a random web app 
+and is just curious to play around with it. He’s not familiar with fishing terms or statistics terms, 
+but has a fairly high tech literacy. He won’t spend a lot of time using the web-app but is curious to 
+play with it for a few minutes.
+
+Lily is a college student studying ecology. She is working on a class project on overfishing. 
+She would like to use the web-app to generate some hypothetical scenarios to include in her class project. 
+She has high tech literacy, is fairly familiar with statistics terms, and a little bit familiar with fishing terms. 
+It’s important that she can compare different sensitivity runs. 
+
+
 ## TODO: write specific user stories for these types of users.
 
 ### Technician users
