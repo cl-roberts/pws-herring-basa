@@ -31,13 +31,22 @@ CL in 1 year will be the primary person who services this tool.
 ## Use Cases
 
 #### Explicit use case
-- Exploring the analysis (both graphically and maybe analytically)
-- Exporting the results (both data files and graphs)
-- Being able to save multiple runs for comparison
+- To generate the adjusted model output from the base data and a user-specified mortality value
+- To generate a data series of residuals between base data and adjusted data
+- To explore the difference between base model output and adjusted model output graphically, using a plot of time on the x axis and residuals between base data and adjusted data on the y axis (Plot A)
+- To explore the difference between base model output and adjusted model output graphically, using a plot of time on the x axis and percent difference between base data and adjusted data on the y axis (Plot B)
+- To visualize Plot A and Plot B side-by-side
+- To generate analysis values from the base data and the adjusted model output, specifically root mean squared error (RMSE) and mean absolute error (MAE) to evaluate residuals
+- To generate analysis values from the base data and the adjusted model output, specifically R^2 to evaluate how much of the adjusted model output variation can be explained by the original data, and therefore understand how much the adjusted model dataset is affected by the changing mortality value
+- To export the adjusted model output and residual data
+- To export image files for Plot A and Plot B
+- To save a previous model run inside the app
+
+
 
 #### Implied use case
 
-- Iteratively using the tool on an annual basis.
+- Run the model every year using the annually updated dataset
 
 
 ## Components
