@@ -41,3 +41,4 @@ retrospectives/basa-*
 *.pdf
 
 data_outputs/*
+sensitivity/*
