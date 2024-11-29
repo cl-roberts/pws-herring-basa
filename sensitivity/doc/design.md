@@ -18,7 +18,20 @@ Trevor Branch is CL's PhD supervisor. He will use the sensitivity tool to inform
 
 The third type of user of this tool includes miscellaneous researchers in Prince William Sound - zooplankton, marine mammal, sea bird scientists, etc. - who use the herring model for their own studies. This user base will be able to use the tool to inform how various model assumptions may affect conclusions from their own research. They will need the sensitivity tool to be extensible to parameters that are most relevant to their research (i.e., model assumptions about herring reproduction will be relevant to pink salmon studies because pink salmon predate larval herring). This group may or may not be technical, but they have expert-level knowledge in their respective domains.
 
+Mary studies humpback whales in Prince William Sound, where herring are a major food source for humpback whales. She wants to learn more about herring population for her research on humpback whales, and to assess how sensitive the model is to error to see how the food source for humpback whales may change. Mary wants to be able to see the biomass of herring without having to sort through too much data on her own. Mary has high technical skills but wants to be able to use the model with minimal effort.
+
+James studies plankton in Prince William Sound, which is a major food source for herring. He wants to know more about the BASA models sensitivity for results regarding herring biomass to understand how these changes might affect plankton dynamics. James has intermediate to high technical skills but prefers a more intuitive interface to enable him to explore the data easily. 
+
+Kiersten studies pink salmon in Prince William Sound, an ecological competitor of herring. She is particularly interested in how assumptions about herring influence biomass predictions to inform her understanding of competition dynamics. Kiersten has advanced technical skills and wants a flexible tool so she can run tailored sensitivity analyses. She also wants to be able to compare her results.
+
 ### User type 4 - Board members of agency funding model development
+
+Sylvia serves as a board member for the agency funding the model's development as a member from the general public. As a board member, she wants to know how accurate the model is so she can best represent the best interests of the community. She has limited technical knowledge and values clear, accessible explanations and figures for the data.
+
+Nancy serves as a board member for the agency funding the model's development. She wants to understand how accurate the model is to ensure the interests of commercial fishing are best represented. She wants a tool that will allow her to see how changes in variables affect the predictions with little effort on her part. Nancy has low to intermediate technical skills.
+
+Bob serves as a board member for the agency funding the model's development. He wants to know how accurate the model is so he can best represent sustenance fishers. Bob wants a tool that simplifies the complex analyses down to laymans terms and clearly shows the sensitivity. Bob has low technical skills. 
+
 ### User type 5 - General public
 
 Thomas is a fisherman in the Prince William Sound area. He is curious about how fishing populations would change 
