@@ -55,7 +55,8 @@ library(pwsHerringBasa)
 # see ?pwsHerringBasa::run.basa() for more details
 
 run <- run.basa(here::here("sensitivity/model"), 
-                n.samples = 1000, n.warmup = 500, n.chains = 1)
+                n.samples = 1000, n.warmup = 500, 
+                n.chains = 1, n.time = 2)
 
 #-------------------------------------------------------------------------------
 
