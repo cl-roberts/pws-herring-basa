@@ -8,12 +8,13 @@
 #' @param n.samples Number of samples to draw from MCMC iterations
 #' @param n.warmup Number of MCMC burn-in iterations
 #' @param n.time Number of minutes after which the model will quit running
+#' @param n.chains Number of MCMC chains to run
 #'
 #' @returns Metadata from model fit in ADMB. Model outputs are saved to `model/mcmc_out/`
 #' and `model/rep_out` subdirectories.
 #'
 
-run.basa <- function(dir_model, n.samples=2000, n.warmup=700, n.time=5){
+run.basa <- function(dir_model, n.samples=2000, n.warmup=700, n.time=5, n.chains=4){
  
   template.files <- here::here(dir_model)
   print(template.files)
@@ -215,7 +216,7 @@ run.basa <- function(dir_model, n.samples=2000, n.warmup=700, n.time=5){
   ######################################################
   # Create reps x starting par vectors, and run NUTS
   setwd(template.files)
-  reps <- 4
+  reps <- n.chains
   set.seed(8558)
   seeds <- sample(1:1e4, size=reps)
   #system("admb -s PWS_ASA")
