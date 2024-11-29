@@ -51,9 +51,11 @@ library(pwsHerringBasa)
 
 #### compile model, calculate ESS's execute NUTS for parameter posteriors ####
 
+
 # see ?pwsHerringBasa::run.basa() for more details
 
-run <- run.basa(here::here("sensitivity/model"))
+run <- run.basa(here::here("sensitivity/model"), 
+                n.samples = 1000, n.warmup = 500, n.chains = 1)
 
 #-------------------------------------------------------------------------------
 
