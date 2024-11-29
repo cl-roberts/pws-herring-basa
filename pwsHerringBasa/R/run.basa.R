@@ -86,7 +86,7 @@ run.basa <- function(dir_model, n.samples=2000, n.warmup=700, n.time=5, n.chains
 
   # calc.ess <- calculate.ess(age.comps, start.ess, samp.size, nyr.fit)
 
-  for(i in 1:2){
+  while(!convergence){
     # Create "PWS_ASA(ESS_estimate).ctl" with sample sizes (the original sample sizes on the first iteration)
     write.table(
       rbind("# PWS age comp effective sample sizes",
@@ -144,12 +144,11 @@ run.basa <- function(dir_model, n.samples=2000, n.warmup=700, n.time=5, n.chains
 
     # Compare this harmonic mean to the previous using a convergence criteria (WHAT AM I CONVERGING!!!!)
     if(its==1) {
-      convergence <- 0
       seine.hmS <- seine.hm
       spawn.hmS <- spawn.hm
       vhsv.hmS  <- vhsv.hm
       ich.hmS   <- ich.hm
-    }else{
+    } else {
       seine.test <- abs(seine.hm - seine.hmS[its-1])/seine.hmS[its-1]*100
       spawn.test <- abs(spawn.hm - spawn.hmS[its-1])/spawn.hmS[its-1]*100
       vhsv.test  <- abs(vhsv.hm - vhsv.hmS[its-1])/vhsv.hmS[its-1]*100
@@ -199,6 +198,7 @@ run.basa <- function(dir_model, n.samples=2000, n.warmup=700, n.time=5, n.chains
   write.table(
     rbind(
       "# PWS age comp effective sample sizes", paste0("# (", date(), ")"), " ",
+      paste0("# ", its-1, " iterations before ESS's converged"), " ",
       "# Determines which ctl file for the age comps and ESS to use (1 uses ESS control to be iteratively estimated)", -1, " ",
       "# Seine ESS", seine.ess, " ",
       "# Spawn ESS", spawn.ess, " ",
