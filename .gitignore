@@ -41,3 +41,5 @@ retrospectives/basa-*
 *.pdf
 
 data_outputs/*
+
+__pychache__/*

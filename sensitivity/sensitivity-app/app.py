@@ -6,7 +6,8 @@ from shinywidgets import output_widget, render_plotly
 import os
 from sensitivity.src import sensitivity
 
-dir_model = os.getcwd() + "/sensitivity/model"
+dir_sensitivity = os.getcwd() + "/sensitivity"
+dir_model = dir_sensitivity + "/model"
 
 app_ui = ui.page_sidebar(
     ui.sidebar(
@@ -45,9 +46,10 @@ def server(input, output, session):
 
     @reactive.effect
     @reactive.event(input.action_button)
-    def modify_mortality():
+    def run_sensitivity():
         sensitivity.modify_mortality(new_value=input.m(), dir_model=dir_model)
-        return 
+        return_value = sensitivity.run_basa(dir_sensitivity=dir_sensitivity)
+        return return_value
 
     @render.text
     def interesting_bit():
