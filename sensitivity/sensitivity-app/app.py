@@ -6,8 +6,11 @@ from shinywidgets import output_widget, render_plotly
 import os
 from sensitivity.src import sensitivity
 
-dir_sensitivity = os.getcwd() + "/sensitivity"
+dir_base = os.getcwd()
+dir_sensitivity = dir_base + "/sensitivity"
 dir_model = dir_sensitivity + "/model"
+
+biomass_base = sensitivity.read_biomass(dir_base + '/data_outputs')
 
 app_ui = ui.page_sidebar(
     ui.sidebar(

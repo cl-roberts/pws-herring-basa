@@ -18,8 +18,8 @@ flowchart TB
   subgraph py modules;
   B -.-> C("run_basa()");
   Bb -.-x C;
-  C -- "read_biomass_base()<br>read_biomass_sensitivity()" ---> G;
-  C -- "read_biomass_base()<br>read_biomass_sensitivity()" --> F("plot_sensitivity()");
+  C -- "read_biomass()" ---> G;
+  C -- "read_biomass()" --> F("plot_sensitivity()");
   G("sensitivity_comparison()") --> H("plot_sensitivity_comparison()"); 
   G -.-> N("Writes analysis<br>outputs to <tt>csv</tt>")
   end

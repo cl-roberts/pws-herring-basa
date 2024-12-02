@@ -151,14 +151,10 @@ able to choose in the shiny app will be much narrower than $[0, \infty)$.
 
 #### wrappers to read biomass estimates from `.csv`
 
-This module should create two functions:
-
-`read_biomass_base()`: takes no input, reads `data_outputs/outputs-for-management_base.csv`
-and saves it to a pandas DataFrame.
-
-`read_biomass_sensitivity()`: takes a directory input created by `run_basa()` that 
-points to a particular sensitivity run (e.g. `data_outputs/sensitivity_1`), 
-reads `outputs-for-management.csv` and saves to a pandas DataFrame. 
+This module should create a function which takes a directory input, reads 
+`outputs-for-management.csv` and saves to a pandas DataFrame. The directory input
+will terminate in `data_outputs` for the base model run, or will point to a 
+`data_outputs` directory in a sensitivity model run (e.g. `data_outputs/sensitivity_1`)
 
 ### Module 4. `plot_sensitivity.py`
 
@@ -166,18 +162,18 @@ reads `outputs-for-management.csv` and saves to a pandas DataFrame.
 
 This module will create a function that takes a directory input created by 
 `run_basa()` that points to a particular sensitivity run (e.g. 
-`data_outputs/sensitivity_1`) and use it to call `read_biomass_sensitivity()`.
-Then it will call `read_biomass_base()` and plot both time series with
-different colors and a legend. `plot_sensitivity()` will either return the plot or 
-save it to a file (not sure which would be better).
+`data_outputs/sensitivity_1`) and use it to call `read_biomass()`.
+Then it will call `read_biomass()` again to read base model outputs and plot both 
+time series with different colors and a legend. `plot_sensitivity()` will either 
+return the plot or save it to a file (not sure which would be better).
 
 ### Module 5. `sensitivity_comparison.py`
 
 #### calculates percent error (or any other relevant metric) between base and sensitivity biomass and reports summary statistics
 
-This module will create a function which calls `read_biomass_sensitivity()` and
-`read_biomass_base()` and calculate a percent error (or some other metric) between 
-base and sensitivity biomass 
+This module will create a function which calls `read_biomass()` twice (once to read
+sensitivity outputs and once to read base model outputs) and calculate a percent 
+error (or some other metric) between base and sensitivity biomass 
 for each year in the model time series. It will take a directory input pointing 
 to a particular sensitivity run (e.g. `data_outputs/sensitivity_1`) and returns
 some summary statistics (such as mean percent error, mean absolute percent error, 

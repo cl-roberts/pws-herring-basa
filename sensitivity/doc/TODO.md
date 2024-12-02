@@ -28,7 +28,7 @@ if we had more time to work on it.
 3. [ ] `plot_sensitivity.py` plots sensitivity model biomass time series alongside 
        base model biomass
    - [ ] Test
-4. [ ] `read_biomass.py` wrappers to read biomass estimates from `.csv`
+4. [ ] `read_biomass.py` wrapper to read biomass estimates from `.csv`
    - [ ] Test
 5. [ ] `sensitivity_comparison.py` calculates percent error (or any other relevant 
        metric) between base and sensitivity biomass and reports summary statistics
