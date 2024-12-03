@@ -19,7 +19,7 @@ def plot_sensitivity(input_directory, output_path):
 
     # Define the paths for the files; Q: Not sure how I should read in the data? Does this right?
     sensitivity_file = f"{input_directory}/outputs-for-management.csv"
-    base_file = f"{input_directory}/outputs-for-management-base.csv"
+    base_file = f"{input_directory}/outputs-for-management_base.csv"
 
     # Read in the csv data
     try:
@@ -44,8 +44,8 @@ def plot_sensitivity(input_directory, output_path):
              linestyle = "-",
              color = "blue")
 
-    plt.plot(sensitivity_data["Years"],
-             sensitivity_data["Median Pre-fishery biomass (in 1000s metric tons)"],
+    plt.plot(base_data["Years"],
+             base_data["Median Pre-fishery biomass (in 1000s metric tons)"],
              label = "Base Model",
              linestyle = "--",
              color = "orange")
