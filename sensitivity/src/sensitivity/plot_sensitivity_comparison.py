@@ -2,7 +2,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 
-def plot_sens_comparison(directory):
+def plot_sens_comparison(directory, output_path):
     """This function reads a csv file and return a plot"""
     # Read in the csv file
     perc_df = pd.read_csv(directory)
@@ -16,8 +16,9 @@ def plot_sens_comparison(directory):
     plt.ylabel("Percentage Error")
     plt.title("Percentage Error of Biomass: Sensitivity vs Base Model")
     plt.legend
-    return plt.gcf()
-    plt.show()
+    plt.savefig(output_path, dpi = 300)
+    plt.close
 
 
-# To test, use directory_path "../../data_outputs/sensitivity_comparison.csv"
+# To test, use directory "../../data_outputs/sensitivity_comparison.csv"
+# And for output_path, use "../../data_outputs/sensitivity_plot.png"
