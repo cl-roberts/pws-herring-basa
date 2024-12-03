@@ -1,16 +1,13 @@
 from shiny import App, ui, render, reactive
-import plotly.express as px
-import pandas as pd
-import numpy as np
-from shinywidgets import output_widget, render_plotly
 import os
+import atexit
+
 from sensitivity.src import sensitivity
 
 dir_base = os.getcwd()
 dir_sensitivity = dir_base + "/sensitivity"
 dir_model = dir_sensitivity + "/model"
-
-biomass_base = sensitivity.read_biomass(dir_base + '/data_outputs')
+dir_outputs = dir_sensitivity + '/data_outputs'
 
 app_ui = ui.page_sidebar(
     ui.sidebar(
@@ -39,7 +36,7 @@ app_ui = ui.page_sidebar(
     ui.layout_columns(
         ui.card(
             ui.card_header("Comparison to base model biomass"),
-            output_widget("compare_biomass"),
+            ui.output_image("compare_biomass"),
             full_screen=True,
         ),
     ),
@@ -52,21 +49,22 @@ def server(input, output, session):
     def run_sensitivity():
         sensitivity.modify_mortality(new_value=input.m(), dir_model=dir_model)
         return_value = sensitivity.run_basa(dir_sensitivity=dir_sensitivity)
+        sensitivity.plot_sensitivity(dir_outputs, dir_outputs + "/sensitivity_plot.png")
         return return_value
 
     @render.text
     def interesting_bit():
         print(dir_model)
         return input.m()
-    
-    @render_plotly
+
+    @reactive.file_reader(dir_outputs + "/outputs-for-management.csv")
+    @render.image
     def compare_biomass():
-        # Sample data
-        df = {
-            "year": range(1, 50),
-            "error": np.random.uniform(-5, 5, 49)
-        }        
-        fig = px.line(df, x="year", y="error")
-        return fig
+        dir = dir_outputs + "/sensitivity_plot.png"
+
+        if os.path.exists(dir):
+            return {"src": dir, "width": "500px"}
+        else:
+            return 
 
 app = App(app_ui, server)
