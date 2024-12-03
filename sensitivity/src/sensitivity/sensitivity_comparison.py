@@ -26,6 +26,6 @@ def sens_comparison(sens_run):
     sens_df = pd.DataFrame(sens_metrics, index = [0])
     sens_df.index.name = "Values"
     # Return the error metrics
-    return(sens_df)
+    return sens_df
 
 # To test, use "../../data_outputs/outputs-for-management.csv" for sens_run
