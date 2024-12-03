@@ -22,6 +22,11 @@ def sens_comparison(sens_run):
     sens_metrics = {'Mean Perc. Error': mean_perc_error, \
     'Min Perc. Error': min_perc_error, 'Max Perc. Error': max_perc_error}
     sens_df = pd.DataFrame(sens_metrics, index = [0])
+    sens_df.index.name = "Values"
+    # sens_df = sens_df.reset_index(drop = True)
+    # sens_df = sens_df.loc[:, ~sens_df.columns.str.contains('^Unnamed')]
     sens_df.to_csv('../../data_outputs/sensitivity_comparison.csv')
+    # Return the error metrics
+    return(sens_df)
 
 # To test, use "../../data_outputs/outputs-for-management.csv" for sens_run
