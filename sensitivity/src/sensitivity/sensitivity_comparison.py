@@ -18,14 +18,13 @@ def sens_comparison(sens_run):
     min_perc_error = biomass_perc_error.min()
     # Calculate maximum percent error
     max_perc_error = biomass_perc_error.max()
-    # Write the error metrics to a csv file
+    # Write the percentage errors to a csv file
+    biomass_perc_error.to_csv('../../data_outputs/sensitivity_comparison.csv')
+    # Prepare the special values to be returned to user
     sens_metrics = {'Mean Perc. Error': mean_perc_error, \
     'Min Perc. Error': min_perc_error, 'Max Perc. Error': max_perc_error}
     sens_df = pd.DataFrame(sens_metrics, index = [0])
     sens_df.index.name = "Values"
-    # sens_df = sens_df.reset_index(drop = True)
-    # sens_df = sens_df.loc[:, ~sens_df.columns.str.contains('^Unnamed')]
-    sens_df.to_csv('../../data_outputs/sensitivity_comparison.csv')
     # Return the error metrics
     return(sens_df)
 
