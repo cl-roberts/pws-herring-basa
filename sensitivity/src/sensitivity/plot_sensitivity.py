@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import pandas as pd
 
 def plot_sensitivity(directory, output_path):
     """
@@ -6,16 +7,23 @@ def plot_sensitivity(directory, output_path):
     
     Parameters:
     directory: string, directory containing the sensitivty and outputs
-    save: boolean, if True the file will be saved instead of returned (save will default to False)
-    output_path: string, the file path to save the plot when save = True
+    output_path: string, the file path to save the plot
 
     Return:
-    plt.Figure: matplotlib figure object (only if save = False)
+    save plt.Figure: matplotlib figure object
     """
 
-    sensitivity_data = read_biomass_sensitivity(directory)
-    base_data = read_biomass_base(directory)
+    # Define the paths for the files
+    sensitivity_file = f"{directory}/outputs-for-management.csv"
+    base_file = f"{directory}/outputs-for-management-base.csv"
 
+    # Read in the csv data
+    try:
+        sensitivity_data = pd.read_csv(sensitivity_file)
+        base_data = pd.read_csv(base_file)
+    except FileNotFoundError as err:
+        raise FileNotFoundError(f"Could not find file: {err.filename}")
+    
     # Verifying necessary columns are present (I'm assuming year ?)
     if not {"year", "biomass"}.issubset(sensitivity_data.columns):
         raise ValueError("Sensitivity data must have 'year' and 'biomass' columns.")
@@ -24,8 +32,17 @@ def plot_sensitivity(directory, output_path):
 
     # Plots
     plt.figure(figsize=(10,6))
-    plt.plot(sensitivity_data["year"], sensitivity_data["biomass"], label = "Sensitivity Model")
-    plt.plot(sensitivity_data["year"], sensitivity_data["biomass"], label = "Base Model")
+    plt.plot(sensitivity_data["year"], 
+             sensitivity_data["biomass"], 
+             label = "Sensitivity Model",
+             linestyle = "-",
+             color = "blue")
+    
+    plt.plot(sensitivity_data["year"], 
+             sensitivity_data["biomass"], 
+             label = "Base Model",
+             linestyle = "--",
+             color = "orange")
 
     plt.xlabel("Year")
     plt.ylabel("Biomass")
@@ -33,4 +50,8 @@ def plot_sensitivity(directory, output_path):
     plt.legend
     plt.grid(True)
 
-    return plt.gcf()
+    if not output_path:
+        raise ValueError("Output path needs to be specified when save = True")
+    else:
+        plt.savefig(output_path, dpi=300)
+        plt.close()
