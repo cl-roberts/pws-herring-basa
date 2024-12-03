@@ -15,15 +15,13 @@ def modify_mortality(new_value, dir_model):
         raise ValueError("Instantaneous natural mortality cannot be negative. Change new_value")
 
     # read .ctl
-    f = open(dir_model + '/PWS_ASA(par).ctl', 'r')  
+    f = open(dir_model + '/PWS_ASA(par).ctl', 'r')
     lines = f.readlines()
     # write new line
     lines[17] = "    " + '%.2f' % new_value + "    0.05    1.50     -2      0      0     0     0   # 3:  Z_0_8\n"
-    f.close()   
+    f.close()
 
     # write ctl
     f = open(dir_model + '/PWS_ASA(par).ctl', 'w')
     f.writelines(lines)
     f.close()
-
-    return 
