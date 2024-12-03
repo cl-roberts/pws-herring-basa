@@ -15,9 +15,7 @@ def plot_sens_comparison(directory, output_path):
     plt.xlabel("Year")
     plt.ylabel("Percentage Error")
     plt.title("Percentage Error of Biomass: Sensitivity vs Base Model")
-    plt.legend
     plt.savefig(output_path, dpi = 300)
-    plt.close
 
 
 # To test, use directory "../../data_outputs/sensitivity_comparison.csv"

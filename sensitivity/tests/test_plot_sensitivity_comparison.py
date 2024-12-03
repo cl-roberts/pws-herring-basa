@@ -1,4 +1,4 @@
-"""This is a test module for sensitivity_comparison.py"""
+"""This is a test module for plot_sensitivity_comparison.py"""
 import pandas as pd
 import pytest
 from sensitivity_comparison import sc
