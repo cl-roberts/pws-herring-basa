@@ -42,4 +42,4 @@ retrospectives/basa-*
 
 data_outputs/*
 
-__pychache__/*
+*/__pycache__/*
