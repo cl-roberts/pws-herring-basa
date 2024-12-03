@@ -1,18 +1,27 @@
-from shiny import App, ui, render
+from shiny import App, ui, render, reactive
 import plotly.express as px
 import pandas as pd
 import numpy as np
 from shinywidgets import output_widget, render_plotly
+import os
+from sensitivity.src import sensitivity
+
+dir_base = os.getcwd()
+dir_sensitivity = dir_base + "/sensitivity"
+dir_model = dir_sensitivity + "/model"
+
+biomass_base = sensitivity.read_biomass(dir_base + '/data_outputs')
 
 app_ui = ui.page_sidebar(
     ui.sidebar(
         ui.input_slider(
             "m",
             "Natural Mortality",
-            min=0.15,
+            min=0.0,
             max=0.5,
             value=0.25,
         ),
+        ui.input_action_button("action_button", "Run Model"),
     ),
     ui.layout_columns(
         ui.value_box(
@@ -37,9 +46,18 @@ app_ui = ui.page_sidebar(
 )
 
 def server(input, output, session):
+
+    @reactive.effect
+    @reactive.event(input.action_button)
+    def run_sensitivity():
+        sensitivity.modify_mortality(new_value=input.m(), dir_model=dir_model)
+        return_value = sensitivity.run_basa(dir_sensitivity=dir_sensitivity)
+        return return_value
+
     @render.text
-    def greeting():
-        return f"Hello, {input.name()}!"
+    def interesting_bit():
+        print(dir_model)
+        return input.m()
     
     @render_plotly
     def compare_biomass():

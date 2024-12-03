@@ -1,0 +1,33 @@
+%%{init: {'theme':'neutral'}}%%
+flowchart TB
+  subgraph UI components;
+  A[Mortality slider]; 
+  Ab[Other UI elements];
+  L[[Tab j]];
+  M[Action Button];
+  I[Value boxes];
+  J[Plots];
+  K[Download button];
+  O[Downloads folder];
+  end;
+  A --> B("modify_mortality()");
+  Ab --x Bb("modify_other_params()");
+  L -.-> M;
+  M -- "Writes <tt>sensitivity-j</tt> dir" ---> C;
+  K --> N;
+  subgraph py modules;
+  B -.-> C("run_basa()");
+  Bb -.-x C;
+  C -- "read_biomass()" ---> G;
+  C -- "read_biomass()" --> F("plot_sensitivity()");
+  G("sensitivity_comparison()") --> H("plot_sensitivity_comparison()"); 
+  G -.-> N("Writes analysis<br>outputs to <tt>csv</tt>")
+  end
+  N --> O;
+  G --> I;
+  H --> J; 
+  F --> J;
+  K --> J;
+  J --> O;
+  classDef big font-size:20pt
+  class C big
