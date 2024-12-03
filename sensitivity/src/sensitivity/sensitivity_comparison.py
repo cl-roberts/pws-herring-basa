@@ -10,16 +10,21 @@ def sens_comparison(sens_run):
     # Pull the median biomass from both datasets
     biomass_base = base['Median Pre-fishery biomass (in 1000s metric tons)']
     biomass_sens = sens['Median Pre-fishery biomass (in 1000s metric tons)']
+    biomass_years = base['Years']
     # Calculate percentage error per year (unit is percent)
     biomass_perc_error = 100*(biomass_base - biomass_sens).abs()/biomass_base
+    # Combine percentage error and years
+    biomass_perc_df = pd.concat([biomass_perc_error, biomass_years], axis = 1)
+    # Update column name for percentage error
+    biomass_perc_df.columns = ['Percentage Error', 'Year']
+    # Save as csv
+    biomass_perc_df.to_csv('../../data_outputs/sensitivity_comparison.csv')
     # Calculate mean percent error
     mean_perc_error = biomass_perc_error.mean()
     # Calculate minimum percent error
     min_perc_error = biomass_perc_error.min()
     # Calculate maximum percent error
     max_perc_error = biomass_perc_error.max()
-    # Write the percentage errors to a csv file
-    biomass_perc_error.to_csv('../../data_outputs/sensitivity_comparison.csv')
     # Prepare the special values to be returned to user
     sens_metrics = {'Mean Perc. Error': mean_perc_error, \
     'Min Perc. Error': min_perc_error, 'Max Perc. Error': max_perc_error}
