@@ -10,7 +10,7 @@ def plot_sensitivity(directory, output_path):
     output_path: string, the file path to save the plot
 
     Return:
-    save plt.Figure: matplotlib figure object
+    none
     """
 
     # Define the paths for the files
@@ -25,33 +25,30 @@ def plot_sensitivity(directory, output_path):
         raise FileNotFoundError(f"Could not find file: {err.filename}")
     
     # Verifying necessary columns are present (I'm assuming year ?)
-    if not {"year", "biomass"}.issubset(sensitivity_data.columns):
+    if not {"Years", "Median Pre-fishery biomass (in 1000s metric tons)"}.issubset(sensitivity_data.columns):
         raise ValueError("Sensitivity data must have 'year' and 'biomass' columns.")
-    if not {"year", "biomass"}.issubset(base_data.columns):
+    if not {"Years", "Median Pre-fishery biomass (in 1000s metric tons)"}.issubset(base_data.columns):
         raise ValueError("Base data must have 'year' and 'biomass' coulmns.")
 
     # Plots
     plt.figure(figsize=(10,6))
-    plt.plot(sensitivity_data["year"], 
-             sensitivity_data["biomass"], 
+    plt.plot(sensitivity_data["Years"], 
+             sensitivity_data["Median Pre-fishery biomass (in 1000s metric tons)"], 
              label = "Sensitivity Model",
              linestyle = "-",
              color = "blue")
     
-    plt.plot(sensitivity_data["year"], 
-             sensitivity_data["biomass"], 
+    plt.plot(sensitivity_data["Years"], 
+             sensitivity_data["Median Pre-fishery biomass (in 1000s metric tons)"], 
              label = "Base Model",
              linestyle = "--",
              color = "orange")
 
-    plt.xlabel("Year")
-    plt.ylabel("Biomass")
+    plt.xlabel("Years")
+    plt.ylabel("Median Biomass")
     plt.title("Biomass Time Series: Sensitivity vs Base Models")
     plt.legend
     plt.grid(True)
 
-    if not output_path:
-        raise ValueError("Output path needs to be specified when save = True")
-    else:
-        plt.savefig(output_path, dpi=300)
-        plt.close()
+    plt.savefig(output_path, dpi=300)
+    plt.close()
