@@ -57,7 +57,8 @@ template.files <- here::here(dir_model)
 print(template.files)
 setwd(template.files)
 
-  inits <- init.admb.params(1)
+system("./PWS_ASA -pinwrite -hbf 1")
+inits <- init.admb.params(1)
 
 if(dir.exists("mcmc_out")){
     system("rm mcmc_out/*.csv")

@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 def plot_sens_comparison(dir_outputs, dir_plot):
     """This function reads a csv file and return a plot"""
     # Read in the csv file
-    perc_df = pd.read_csv(dir_outputs + "sensitivity_comparison.csv")
+    perc_df = pd.read_csv(dir_outputs + "/sensitivity_comparison.csv")
     # Drop the first column (unnecessary index) if present
     if perc_df.shape[1] == 3:
         perc_df = perc_df.drop(perc_df.columns[0], axis = 1)
@@ -16,6 +16,8 @@ def plot_sens_comparison(dir_outputs, dir_plot):
     plt.ylabel("Percentage Error")
     plt.title("Percentage Error of Biomass: Sensitivity vs Base Model")
     plt.savefig(dir_plot, dpi = 300)
+    
+    plt.close()
 
 
 # To test, use dir_outputs "sensitivity/data_outputs"
