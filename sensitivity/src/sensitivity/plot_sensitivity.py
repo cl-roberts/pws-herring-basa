@@ -31,10 +31,12 @@ def plot_sensitivity(dir_outputs, dir_plot):
     # Verifying necessary columns are present (I'm assuming year ?)
     if not {"Years", "Median Pre-fishery biomass (in 1000s metric tons)"
             }.issubset(sensitivity_data.columns):
-        raise ValueError("Sensitivity data must have 'Years' and 'Median Pre-fishery biomass (in 1000s metric tons)' columns.")
+        raise ValueError("""Sensitivity data must have 'Years'
+                          and 'Median Pre-fishery biomass (in 1000s metric tons)' columns.""")
     if not {"Years", "Median Pre-fishery biomass (in 1000s metric tons)"
             }.issubset(base_data.columns):
-        raise ValueError("Base data must have 'Years' and 'Median Pre-fishery biomass (in 1000s metric tons)ss' coulmns.")
+        raise ValueError("""Base data must have 'Years' and
+                          'Median Pre-fishery biomass (in 1000s metric tons)ss' coulmns.""")
 
     # Plots
     plt.figure(figsize=(10,6))
