@@ -16,7 +16,6 @@ def plot_sens_comparison(dir_outputs, dir_plot):
     plt.ylabel("Percentage Error")
     plt.title("Percentage Error of Biomass: Sensitivity vs Base Model")
     plt.savefig(dir_plot, dpi = 300)
-    
     plt.close()
 
 
