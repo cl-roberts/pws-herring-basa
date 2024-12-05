@@ -1,3 +1,8 @@
+"""
+Tests for plot_sensivity to verify that the function works and
+creates a plot correctly
+"""
+
 import os
 import tempfile
 from PIL import Image
@@ -7,6 +12,15 @@ from plot_sensitivity import plot_sensitivity
 # Test Data:
 
 def create_temp_data():
+    """
+    Creates temporary data for running the test for improved reproducibility.
+
+    Parameters: None
+
+    Returns: 
+        temp_dir, tuple - Temporary Directory object containing test files
+        output_path, tuple - path for the plot output
+    """
     sensitivity_testdata = {
         "Years": [2010,2011,2012, 2013],
         "Median Pre-fishery biomass (in 1000s metric tons)": [100, 120, 130, 140]
@@ -25,26 +39,32 @@ def create_temp_data():
 
     pd.DataFrame(sensitivity_testdata).to_csv(sensitivity_testfile, index = False)
     pd.DataFrame(base_testdata).to_csv(base_testfile, index = False)
-    
+
     return(temp_dir, output_path)
 
 # Smoke test: make sure the code actually runs
 def test_smoke_plotsensivity():
+    """
+    Smoke test to make sure the function runs.
+    """
     temp_dir, output_path = create_temp_data()
-    
+
     try:
         plot_sensitivity(temp_dir, output_path)
         print("Smoke test passed!")
     except Exception as e:
-        raise AssertionError(f"Smoke test failed: {e}")
+        raise AssertionError(f"Smoke test failed: {e}") from e
     finally:
         temp_dir.cleanup()
-        
+
 # Test: Verify a plot is created and is valid
-def test_plotcreated_plotsensitivity():
+def test_createdplot_plotsensitivity():
+    """
+    Tests to see if a valid PNG plot file was created.
+    """
 
     temp_dir, output_path = create_temp_data()
-    
+
     try:
         plot_sensitivity(temp_dir, output_path)
 
@@ -57,14 +77,13 @@ def test_plotcreated_plotsensitivity():
             assert image.format == "PNG", "Plot file is not in PNG format"
             print("Test passed: plot created successfully and is a PNG image")
 
-    except Exception as e:
+    except Exception as e: # Catching general Exception for broader error coverage for testing
         print (f"Test failed: {e}")
 
     finally:
         temp_dir.cleanup()
-        
 
-#FUTURE DESIRED TEST: 
+#FUTURE DESIRED TEST:
 
 # Edge tests: check to make sure that errors are being caught
 # def test_filenotfound_plotsensitivity():
