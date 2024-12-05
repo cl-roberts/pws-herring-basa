@@ -4,10 +4,12 @@ creates a plot correctly
 """
 
 import os
+import sys
 import tempfile
 from PIL import Image
 import pandas as pd
-from plot_sensitivity import plot_sensitivity
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
+from sensitivity.plot_sensitivity import plot_sensitivity
 
 # Test Data:
 
@@ -34,7 +36,7 @@ def create_temp_data():
     temp_dir = tempfile.TemporaryDirectory()
 
     sensitivity_testfile = os.path.join(temp_dir.name, "outputs-for-management.csv")
-    base_testfile = os.path.join(temp_dir.name, "outputs-for-management-base.csv")
+    base_testfile = os.path.join(temp_dir.name, "outputs-for-management_base.csv")
     output_path = os.path.join(temp_dir.name, "test_plot.png")
 
     pd.DataFrame(sensitivity_testdata).to_csv(sensitivity_testfile, index = False)
@@ -50,7 +52,7 @@ def test_smoke_plotsensivity():
     temp_dir, output_path = create_temp_data()
 
     try:
-        plot_sensitivity(temp_dir, output_path)
+        plot_sensitivity(temp_dir.name, output_path)
         print("Smoke test passed!")
     except Exception as e:
         raise AssertionError(f"Smoke test failed: {e}") from e
