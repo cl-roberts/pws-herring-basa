@@ -47,3 +47,4 @@ data_outputs/*
 
 sensitivity/src/sensitivity/__pycache__/*
 sensitivity/sensitivity-app/__pycache__/*
+sensitivity/modify_mortality/__pycache__/*

@@ -1,7 +1,6 @@
 from shiny import App, ui, render, reactive
 import os
-
-from sensitivity.src import sensitivity
+import sensitivity
 
 dir_base = os.getcwd()
 dir_sensitivity = dir_base + "/sensitivity"

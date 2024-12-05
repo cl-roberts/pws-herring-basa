@@ -1,0 +1,24 @@
+name = "sensitivity"
+dynamic = ["0.0.1"]
+authors = [
+  {name="CL Roberts", email="clr2112@uw.edu"},
+  {name="Veronica Lee", email="valeeohio@gmail.edu"},
+  {name="Mindy Dai", email="mdai5@uw.edu"},
+  {name="Trinity Hinshaw", email="thinshaw27@gmail.com"},
+]
+maintainers = [
+  {name="CL Roberts", email="clr2112@uw.edu"},
+]
+description = "Helper functions for run BASA sensitivity app"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+	"numpy>=1.25",
+    "pandas>=2.1",
+    "matplotlib>=3.9",
+] 
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
