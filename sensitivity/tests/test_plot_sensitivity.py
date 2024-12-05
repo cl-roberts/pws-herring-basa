@@ -6,7 +6,7 @@ from plot_sensitivity import plot_sensitivity
 
 # Test Data:
 
-def temp_data():
+def create_temp_data():
     sensitivity_testdata = {
         "Years": [2010,2011,2012, 2013],
         "Median Pre-fishery biomass (in 1000s metric tons)": [100, 120, 130, 140]
@@ -17,35 +17,36 @@ def temp_data():
         "Median Pre-fishery biomass (in 1000s metric tons)": [90, 110, 150, 130]
         }
 
-    with tempfile.TemporaryDirectory() as tempdir:
-        sensitivity_testfile = os.path.join(tempdir, "outputs-for-management.csv")
-        base_testfile = os.path.join(tempdir, "outputs-for-management-base.csv")
+    temp_dir = tempfile.TemporaryDirectory()
 
-        pd.DataFrame(sensitivity_testdata, index = False)
-        pd.DataFrame(base_testdata, index = False)
+    sensitivity_testfile = os.path.join(temp_dir.name, "outputs-for-management.csv")
+    base_testfile = os.path.join(temp_dir.name, "outputs-for-management-base.csv")
+    output_path = os.path.join(temp_dir.name, "test_plot.png")
 
-        output_path = os.path.join(tempdir, "test_plot.png")
+    pd.DataFrame(sensitivity_testdata).to_csv(sensitivity_testfile, index = False)
+    pd.DataFrame(base_testdata).to_csv(base_testfile, index = False)
     
-    return(tempdir, output_path)
-    
+    return(temp_dir, output_path)
 
 # Smoke test: make sure the code actually runs
 def test_smoke_plotsensivity():
+    temp_dir, output_path = create_temp_data()
+    
     try:
-        plot_sensitivity(temp_data())
+        plot_sensitivity(temp_dir, output_path)
         print("Smoke test passed!")
     except Exception as e:
         raise AssertionError(f"Smoke test failed: {e}")
+    finally:
+        temp_dir.cleanup()
         
 # Test: Verify a plot is created and is valid
 def test_plotcreated_plotsensitivity():
+
+    temp_dir, output_path = create_temp_data()
     
-    # some code here (test inputs or something)
-
     try:
-        tempdir, output_path = temp_data()
-
-        plot_sensitivity(tempdir, output_path)
+        plot_sensitivity(temp_dir, output_path)
 
         # check that file exists
         assert os.path.exists(output_path), "Plot file was not created"
@@ -59,9 +60,9 @@ def test_plotcreated_plotsensitivity():
     except Exception as e:
         print (f"Test failed: {e}")
 
-    finally: # cleanup and remove test output
-        if os.path.exists(output_path):
-            os.remove(output_path)
+    finally:
+        temp_dir.cleanup()
+        
 
 #FUTURE DESIRED TEST: 
 
