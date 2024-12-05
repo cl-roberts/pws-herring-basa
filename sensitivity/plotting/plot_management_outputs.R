@@ -104,21 +104,21 @@ pfrb.posterior.plot <- plot_pfrb_posterior(pfrb.posterior$biomass.df,
 
 # save individual plots
 
-ggsave(here::here(dir_figures, "recruitment_trajectory.pdf"), plot = recruit.plot, height=8.5, width=11) 
-ggsave(here::here(dir_figures, "biomass_trajectory.pdf"), plot = biomass.plot, height=8.5, width=11) 
-ggsave(here::here(dir_figures, "exploitation_rate.pdf"), plot = exploit.rate.plot, height=8.5, width=11) 
-ggsave(here::here(dir_figures, "pfrb_posterior.pdf"), plot = pfrb.posterior.plot, height=8.5, width=11) 
+# ggsave(here::here(dir_figures, "recruitment_trajectory.pdf"), plot = recruit.plot, height=8.5, width=11) 
+# ggsave(here::here(dir_figures, "biomass_trajectory.pdf"), plot = biomass.plot, height=8.5, width=11) 
+# ggsave(here::here(dir_figures, "exploitation_rate.pdf"), plot = exploit.rate.plot, height=8.5, width=11) 
+# ggsave(here::here(dir_figures, "pfrb_posterior.pdf"), plot = pfrb.posterior.plot, height=8.5, width=11) 
 
 
 # save 4-panel composite plot
 
-management_outputs <- ggarrange(
-    recruit.plot, biomass.plot, exploit.rate.plot, pfrb.posterior.plot,
-    nrow=2,
-    ncol=2
-)
-ggsave(here::here(dir_figures, "management_outputs.pdf"), management_outputs, 
-       height=8.5, width=11)
+# management_outputs <- ggarrange(
+#     recruit.plot, biomass.plot, exploit.rate.plot, pfrb.posterior.plot,
+#     nrow=2,
+#     ncol=2
+# )
+# ggsave(here::here(dir_figures, "management_outputs.pdf"), management_outputs, 
+#        height=8.5, width=11)
 
 
 # save outputs-for-management.csv table

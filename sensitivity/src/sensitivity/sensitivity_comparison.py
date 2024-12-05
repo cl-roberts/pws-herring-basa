@@ -1,12 +1,12 @@
 """This module defines a function for calculating error statistics"""
 import pandas as pd
 
-def sens_comparison(sens_run):
+def sens_comparison(dir_outputs):
     """This function reads csv, calculates error metrics, returns stats"""
     # Read base model outputs from CSV
-    base = pd.read_csv("../../data_outputs/outputs-for-management_base.csv")
+    base = pd.read_csv(dir_outputs + "/outputs-for-management_base.csv")
     # Read the sensitivity output
-    sens = pd.read_csv(sens_run)
+    sens = pd.read_csv(dir_outputs + "/outputs-for-management.csv")
     # Pull the median biomass from both datasets
     biomass_base = base['Median Pre-fishery biomass (in 1000s metric tons)']
     biomass_sens = sens['Median Pre-fishery biomass (in 1000s metric tons)']
@@ -18,7 +18,7 @@ def sens_comparison(sens_run):
     # Update column name for percentage error
     biomass_perc_df.columns = ['Percentage Error', 'Year']
     # Save as csv
-    biomass_perc_df.to_csv('../../data_outputs/sensitivity_comparison.csv')
+    biomass_perc_df.to_csv(dir_outputs + '/sensitivity_comparison.csv')
     # Calculate mean percent error
     mean_perc_error = biomass_perc_error.mean()
     # Calculate minimum percent error
@@ -33,4 +33,4 @@ def sens_comparison(sens_run):
     # Return the error metrics
     return sens_df
 
-# To test, use "../../data_outputs/outputs-for-management.csv" for sens_run
+# To test, use "sensitivity/data-outputs" for dir_outputs

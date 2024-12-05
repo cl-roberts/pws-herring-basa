@@ -42,4 +42,5 @@ retrospectives/basa-*
 
 data_outputs/*
 
-__pychache__/*
+sensitivity/src/sensitivity/__pycache__/*
+sensitivity/sensitivity-app/__pycache__/*

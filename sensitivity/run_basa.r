@@ -51,12 +51,44 @@ library(pwsHerringBasa)
 
 #### compile model, calculate ESS's execute NUTS for parameter posteriors ####
 
+dir_model <- here::here("sensitivity/model")
+
+template.files <- here::here(dir_model)
+print(template.files)
+setwd(template.files)
+
+system("./PWS_ASA -pinwrite -hbf 1")
+inits <- init.admb.params(1)
+
+if(dir.exists("mcmc_out")){
+    system("rm mcmc_out/*.csv")
+}
+
+start.time <- Sys.time()
+fit.1 <- adnuts::sample_nuts(model='./PWS_ASA', 
+                    path=template.files,
+                    iter=1000,
+                    warmup=500,
+                    #warmup=100,
+                    duration = 2,
+                    init=inits, seeds=1867, chains=1, cores=1,
+                    mceval=TRUE,
+                    control=list(
+                        adapt_delta=0.9,
+                        #max_treedepth=16,
+                        metric="mle"
+                    )
+)
+end.time <- Sys.time()
+total.time <- end.time - start.time
+
+run <- list(fit1=fit.1, time=total.time)
 
 # see ?pwsHerringBasa::run.basa() for more details
 
-run <- run.basa(here::here("sensitivity/model"), 
-                n.samples = 1000, n.warmup = 500, 
-                n.chains = 1, n.time = 2)
+# run <- run.basa(here::here("sensitivity/model"), 
+#                 n.samples = 1000, n.warmup = 500, 
+#                 n.chains = 1, n.time = 2)
 
 #-------------------------------------------------------------------------------
 
