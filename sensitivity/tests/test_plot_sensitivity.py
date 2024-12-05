@@ -13,7 +13,7 @@ from sensitivity.plot_sensitivity import plot_sensitivity
 
 # Test Data:
 
-def create_temp_data():
+def create_temp_data(Years, Median):
     """
     Creates temporary data for running the test for improved reproducibility.
 
@@ -24,13 +24,13 @@ def create_temp_data():
         output_path, tuple - path for the plot output
     """
     sensitivity_testdata = {
-        "Years": [2010,2011,2012, 2013],
-        "Median Pre-fishery biomass (in 1000s metric tons)": [100, 120, 130, 140]
+        Years: [2010,2011,2012, 2013],
+        Median: [100, 120, 130, 140]
         }
 
     base_testdata = {
-        "Years": [2010,2011,2012, 2013],
-        "Median Pre-fishery biomass (in 1000s metric tons)": [90, 110, 150, 130]
+        Years: [2010,2011,2012, 2013],
+        Median: [90, 110, 150, 130]
         }
 
     temp_dir = tempfile.TemporaryDirectory()
@@ -49,7 +49,7 @@ def test_smoke_plotsensivity():
     """
     Smoke test to make sure the function runs.
     """
-    temp_dir, output_path = create_temp_data()
+    temp_dir, output_path = create_temp_data("Years", "Median Pre-fishery biomass (in 1000s metric tons)")
 
     try:
         plot_sensitivity(temp_dir.name, output_path)
@@ -65,7 +65,7 @@ def test_createdplot_plotsensitivity():
     Tests to see if a valid PNG plot file was created.
     """
 
-    temp_dir, output_path = create_temp_data()
+    temp_dir, output_path = create_temp_data("Years", "Median Pre-fishery biomass (in 1000s metric tons)")
 
     try:
         plot_sensitivity(temp_dir, output_path)
@@ -85,13 +85,26 @@ def test_createdplot_plotsensitivity():
     finally:
         temp_dir.cleanup()
 
+# Edge tests: check to make sure that errors are being caught
+def test_wrongcolumns_plotsensitivity():
+    """
+    Tests to see if error is raised when wrong column names are given
+    """
+    # data with wrong columns... (ie no biomass or years columns)
+
+    temp_dir, output_path = create_temp_data("Time", "Biomass")
+
+    try:
+        plot_sensitivity(temp_dir.name, output_path)
+    except ValueError as e:
+        assert "must have 'Years' and 'Median Pre-fishery biomass (in 1000s metric tons)'" in str(e), \
+        print("Test passed: correct error for inocorrect column names")
+    finally:
+        temp_dir.cleanup()
+
 #FUTURE DESIRED TEST:
 
-# Edge tests: check to make sure that errors are being caught
 # def test_filenotfound_plotsensitivity():
     # csv file does not exist so check to make sure its caught
-
-# def test_wrongcolumns_plotsensitivity():
-    # data with wrong columns... (ie no biomass or years columns)
 
 # Test that verfies the resulting plot is what the plot should be (ie expected output = output)
