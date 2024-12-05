@@ -54,8 +54,10 @@ def test_smoke_plotsensivity():
     try:
         plot_sensitivity(temp_dir.name, output_path)
         print("Smoke test passed!")
+
     except Exception as e:
         raise AssertionError(f"Smoke test failed: {e}") from e
+
     finally:
         temp_dir.cleanup()
 
@@ -96,9 +98,14 @@ def test_wrongcolumns_plotsensitivity():
 
     try:
         plot_sensitivity(temp_dir.name, output_path)
+        raise AssertionError("Test failed: No error raised for incorrect columns.")
+
     except ValueError as e:
-        assert "must have 'Years' and 'Median Pre-fishery biomass (in 1000s metric tons)'" in str(e), \
+        expected_message = """Sensitivity data must have 'Years'
+                          and 'Median Pre-fishery biomass (in 1000s metric tons)' columns."""
+        assert str(e) == expected_message, "Error message does not match expected format"
         print("Test passed: correct error for inocorrect column names")
+
     finally:
         temp_dir.cleanup()
 
