@@ -15,9 +15,11 @@ def plot_sens_comparison(dir_outputs, dir_plot):
     plt.xlabel("Year")
     plt.ylabel("Percentage Error")
     plt.title("Percentage Error of Biomass: Sensitivity vs Base Model")
+    plt.grid(True)
     plt.savefig(dir_plot, dpi = 300)
     plt.close()
 
 
-# To test, use dir_outputs "sensitivity/data_outputs"
-# And for dir_plot, use "sensitivity/data_outputs/sensitivity_comparison_plot.png"
+# To test, use dir_outputs "../../data_outputs"
+# And for dir_plot, use "../../data_outputs/sensitivity_comparison_plot"
+# Run from within sensitivity/src/sensitivity

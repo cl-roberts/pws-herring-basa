@@ -1,9 +1,15 @@
 """This is a test module for sensitivity_comparison.py"""
-import pandas as pd
-import pytest
-from sensitivity_comparison import sc
+import sys
+sys.path.append('../src/sensitivity')
+import sensitivity_comparison as sc
 
-# Change this to a smoke test -- just to see that the function runs
-# Randomness means that a one-shot test won't work
-def test_oneshot():
-    round(sc.sens_comparison("../../data_outputs/outputs-for-management.csv").iloc[0,0], 10) == 13.0621471667
+# Created a smoke test to see if the function runs
+# Due to randomness, a one-shot test won't work
+
+def test_smoke_sc():
+    """This is an smoke test for the sens_comparison function"""
+    sc.sens_comparison("../data_outputs/")
+
+# In the future, should add edge tests for invalid data paths or issues with the provided csv files
+
+# For this test, run the pytest commmand line prompt in sensitivity\tests
