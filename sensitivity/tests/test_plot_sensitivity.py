@@ -8,8 +8,9 @@ import sys
 import tempfile
 from PIL import Image
 import pandas as pd
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
-from sensitivity.plot_sensitivity import plot_sensitivity
+
+#import module 
+import sensitivity
 
 # Test Data:
 
@@ -52,7 +53,7 @@ def test_smoke_plotsensivity():
     temp_dir, output_path = create_temp_data("Years", "Median Pre-fishery biomass (in 1000s metric tons)")
 
     try:
-        plot_sensitivity(temp_dir.name, output_path)
+        sensitivity.plot_sensitivity(temp_dir.name, output_path)
         print("Smoke test passed!")
 
     except Exception as e:
@@ -70,7 +71,7 @@ def test_createdplot_plotsensitivity():
     temp_dir, output_path = create_temp_data("Years", "Median Pre-fishery biomass (in 1000s metric tons)")
 
     try:
-        plot_sensitivity(temp_dir, output_path)
+        sensitivity.plot_sensitivity(temp_dir, output_path)
 
         # check that file exists
         assert os.path.exists(output_path), "Plot file was not created"
@@ -97,7 +98,7 @@ def test_wrongcolumns_plotsensitivity():
     temp_dir, output_path = create_temp_data("Time", "Biomass")
 
     try:
-        plot_sensitivity(temp_dir.name, output_path)
+        sensitivity.plot_sensitivity(temp_dir.name, output_path)
         raise AssertionError("Test failed: No error raised for incorrect columns.")
 
     except ValueError as e:
