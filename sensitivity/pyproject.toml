@@ -22,3 +22,6 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
+
+[project.urls]
+Homepage = "https://github.com/cl-roberts/pws-herring-basa/tree/sensitivity/sensitivity"
