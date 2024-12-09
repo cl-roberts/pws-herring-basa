@@ -18,10 +18,12 @@ def modify_mortality(new_value, dir_model):
     with open(dir_model + '/PWS_ASA(par).ctl', 'r', encoding="utf-8") as data:
         lines = data.readlines()
         # write new line
-        lines[17] = "    " + f'{new_value:.2f}' + """    0.05    1.50
-                -2      0      0     0     0   # 3:  Z_0_8\n"""
-
+        new_line = "    " + f'{new_value:.2f}' + "    0.05    1.50     -2      0"
+        new_line = new_line + "      0     0     0   # 3:  Z_0_8\n"
+        lines[17] = new_line
+        data.close()
 
     # write ctl
     with open(dir_model + '/PWS_ASA(par).ctl', 'w', encoding="utf-8") as data:
         data.writelines(lines)
+        data.close()
