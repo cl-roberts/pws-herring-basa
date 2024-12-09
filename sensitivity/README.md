@@ -16,9 +16,10 @@ Veronica Lee:
 - Wrote Module 6: plot_sensitivity_comparison.py
 - Wrote test_plot_sensitivity_comparison.py
 - Did pylint code review for Modules 5 and 6
+- Created powerpoint slides for final presentation
 
 Mindy Dai:
-- 
+- Text here
 
 Trinity Hinshaw:
-- 
+- Text here
