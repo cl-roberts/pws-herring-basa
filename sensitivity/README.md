@@ -24,4 +24,7 @@ Mindy Dai:
 - Assisted with pylint code review
 
 Trinity Hinshaw:
-- Insert text
+- Wrote user stories
+- Wrote Module 4: plot_sensitivity.py
+- Wrote test_plot_sensitivity.py
+- Did pylint code review for Module 4 and associated tests file
