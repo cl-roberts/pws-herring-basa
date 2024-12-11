@@ -31,7 +31,7 @@ software <- "ADMB"
 # load packages
 
 library(ggplot2)
-library(ggpubr)
+# library(ggpubr)
 library(pwsHerringBasa)
 library(dplyr)
 

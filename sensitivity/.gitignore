@@ -18,3 +18,6 @@ model/rep_out/*
 model/mcmc_out/*
 
 data_outputs/*
+
+__pycache__/*
+sensitivity/src/sensitivity/__pycache__/*
