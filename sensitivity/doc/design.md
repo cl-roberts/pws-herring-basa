@@ -234,6 +234,7 @@ The following flow chart describes the relationship between UI components and
 `python` modules. Solid lines represent a direct causal relationship between
 components. For example, a function call or necessary consequence of `shiny`'s 
 reactivity. In contrast, dashed lines represent indirect relationships such as
-a function call side effect or optional parameter. X's on arrow heads denote features that are not implemented.
+a function call side effect or optional parameter. X's on arrow heads denote features 
+that are not yet implemented. 
 
 ![](design.png)
