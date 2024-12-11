@@ -9,8 +9,13 @@ and `sensitivity` python package that are provided in this repository
 
 ## Setup
 
-0. Ensure that Python has been downloaded through Anaconda or Miniconda and added 
-   to your system path as relevant. 
+0. Ensure that Python (>=3.10) been downloaded through Anaconda or Miniconda and added 
+   to your system path as relevant. Also ensure that [R](https://cran.rstudio.com/) 
+   (>=4.4.0) is installed and `Rscript.exe` is added to your system path.
+
+```
+PATH="$PATH:~/path/to/R/bin/"
+```
 
 1. Clone the `sensitivity` branch of the `pws-herring-basa` repository and work
    from the repository root directory
