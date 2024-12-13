@@ -7,6 +7,30 @@ time series estimates for biomass change if the assumed instantaneous rate of
 natural mortality is modified. The shiny app calls the `pwsHerringBasa` R package
 and `sensitivity` python package that are provided in this repository
 
+## Future Directions
+
+#### Expanding on the test modules 
+- Implement tests for the Shiny app using the `shinytest` and `runTests()` functionality
+- In the short term, we would focus on mainly Shiny app unit tests to make sure our basic features were working
+- In the long term, we would probably work on [snapshot-based tests](https://shiny.posit.co/r/articles/improve/testing-overview/) to help diagnosis our issues on why the app is running on certain machines but not others
+- BASA is a probabilistic model so our outputs have an inherent degree of randomness, as a result we found it difficult to implement one-shot tests for our `sensitivity_comparison` module. If we had more time, we would have wanted to figured out what would be appropriate tolerance ranges.
+#### Adding additional sensitivity parameters
+- Our original intention was to be able to change multiple parameters simultaneously so in addition to "natural mortality rate", we also wanted to change other parameters such as "birth rate", "disease seroprevalence", "age distribution", among others. 
+- Due to time constraints, we were only able to implement "natural mortality rate", but we tried to write the code in a modular fashion that would allow us to add more parameters following the same pattern that we implemented "natural mortality rate".
+- In future iterations, we would like the Shiny app to have more sliders so it can perform more nuanced sensitivity analyses.
+#### Implement multiple tabs functionality
+- It is very common to want to compare te results of different sensitivity analyses- in fact, one could argue that it's one of the primary purpose of sensitivity analyses. In our current iteration, users can see the result of one sensitivity analysis, but would need to open a new session if they wanted to run a new analysis while also viewing the initial one. 
+- In future iterations, we would like to add a multiple tab function so that users can view and compare different sensitivty runs side by side visually. 
+- Shiny allows for the generation of multiple tabs and panels fairly easily, though it may be more difficult to implement screen splitting so that the user can view plots side by side. 
+#### Implement a download feature
+- In future iterations, we would like to add a button so that users can easily download their current sensitivity run outputs and associated plots onto their local computer.
+#### Speed Up Loading Time
+- Currently, it takes roughly 1-2 minutes for our app to generate output for each input change. This, unfortunately, is primarily due to limitations from the BASA model that our app is based off of. Since it's a simulation based model, it needs to run and analyze a large number of simulations, which is computationally intensive. 
+- However, we understand that this long loading time is a significant barrier for anyone outside of our primary user (who needs to use it for work and research) to actually want to use it. 
+- While we anticipate that this is the hardest "Next Step" to tackle, our team discussed several possible solutions such as decreasing the number of simulations. This would decrease the precision of results, but would speed up the loading time. 
+- In the very long term, rewriting the base package in a faster language such as Julia might be the best solution, but that is beyond the scope of this particular subpackage.
+
+
 ## Setup
 
 0. Ensure that Python (>=3.10) been downloaded through Anaconda or Miniconda and added 
@@ -90,8 +114,9 @@ Veronica Lee:
 - Created powerpoint slides for final presentation
 
 Mindy Dai:
-- Wrote README
+- Updated README with Next Steps
 - Wrote modify_mortality.py and associated tests
+- Added assorted additional edge tests
 - Assisted with pylint code review
 
 Trinity Hinshaw:
