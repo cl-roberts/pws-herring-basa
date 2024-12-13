@@ -7,6 +7,9 @@ def sens_comparison(dir_outputs):
     :param str dir_outputs: path to model outputs
 
     """
+    if isinstance(dir_outputs, str) == False:
+        raise ValueError("The path should be a string.")
+    
     # Read base model outputs from CSV
     base = pd.read_csv(dir_outputs + "/outputs-for-management_base.csv")
     # Read the sensitivity output
