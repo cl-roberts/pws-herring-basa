@@ -16,8 +16,13 @@ def plot_sensitivity(dir_outputs, dir_plot):
     Return:
     none
     """
-
-    # Define the paths for the files; Q: Not sure how I should read in the data? Does this right?
+    if isinstance(dir_outputs, str) == False:
+        raise ValueError("The path should be a string.")
+    
+    if isinstance(dir_plot, str) == False:
+        raise ValueError("The path should be a string.")
+    
+    # Define the paths for the files
     sensitivity_file = f"{dir_outputs}/outputs-for-management.csv"
     base_file = f"{dir_outputs}/outputs-for-management_base.csv"
 
@@ -28,7 +33,7 @@ def plot_sensitivity(dir_outputs, dir_plot):
     except FileNotFoundError as err:
         raise FileNotFoundError(f"Could not find file: {err.filename}") from err
 
-    # Verifying necessary columns are present (I'm assuming year ?)
+    # Verifying necessary columns are present 
     if not {"Years", "Median Pre-fishery biomass (in 1000s metric tons)"
             }.issubset(sensitivity_data.columns):
         raise ValueError("""Sensitivity data must have 'Years'

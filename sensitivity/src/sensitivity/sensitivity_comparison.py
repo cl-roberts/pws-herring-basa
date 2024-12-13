@@ -2,7 +2,11 @@
 import pandas as pd
 
 def sens_comparison(dir_outputs):
-    """This function reads csv, calculates error metrics, returns stats"""
+    """This function reads csv, calculates error metrics, returns statistics
+    
+    :param str dir_outputs: path to model outputs
+
+    """
     # Read base model outputs from CSV
     base = pd.read_csv(dir_outputs + "/outputs-for-management_base.csv")
     # Read the sensitivity output

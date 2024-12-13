@@ -3,7 +3,21 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 def plot_sens_comparison(dir_outputs, dir_plot):
-    """This function reads a csv file and return a plot"""
+    """This function reads a csv file and return a plot
+    
+    Parameters:
+    dir_outputs: string, dir_outputs containing the sensitivity and outputs
+    dir_plot: string, the file path to save the plot
+
+    Return:
+    none
+    """
+    if isinstance(dir_outputs, str) == False:
+        raise ValueError("The path should be a string.")
+    
+    if isinstance(dir_plot, str) == False:
+        raise ValueError("The path should be a string.")
+    
     # Read in the csv file
     perc_df = pd.read_csv(dir_outputs + "/sensitivity_comparison.csv")
     # Drop the first column (unnecessary index) if present

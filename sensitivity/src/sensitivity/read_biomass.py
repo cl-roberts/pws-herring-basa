@@ -10,6 +10,8 @@ def read_biomass(dir_outputs):
 
     :param str dir_outputs: Path to BASA outputs directory
     """
+    if isinstance(dir_outputs, str) == False:
+        raise ValueError("The path should be a string.")
 
     biomass_df = pd.read_csv(dir_outputs + '/outputs-for-management.csv')
     return biomass_df
