@@ -13,6 +13,9 @@ def modify_mortality(new_value, dir_model):
 
     if new_value < 0:
         raise ValueError("Instantaneous natural mortality cannot be negative. Change new_value")
+    
+    if isinstance(dir_model, str) == False:
+        raise ValueError("The path to BASA model directory should be a string.")
 
     # read .ctl
     with open(dir_model + '/PWS_ASA(par).ctl', 'r', encoding="utf-8") as data:

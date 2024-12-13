@@ -14,6 +14,16 @@ def test_lower_zero():
     except (ValueError) as err:
         print("Instantaneous natural mortality cannot be negative. Change new_value")
 
+# edge test checking that "dir_model" is a string
+def test_string():
+    new_value = 2
+    dir_model = 3
+    try:
+        sensitivity.modify_mortality(new_value, dir_model)
+    except (ValueError) as err:
+        print("The path to BASA model directory should be a string.")
+
+
 # smoke test
 def test_smoke():
     new_value = 2
