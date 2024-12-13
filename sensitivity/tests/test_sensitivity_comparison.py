@@ -11,4 +11,12 @@ def test_smoke_sc():
 
 # In the future, should add edge tests for invalid data paths or issues with the provided csv files
 
+# edge test checking that "dir_outputs" is a string
+def test_string():
+    dir_outputs = 2
+    try:
+        sensitivity.sens_comparison(dir_outputs)
+    except (ValueError) as err:
+        print("The path should be a string.")
+
 # For this test, run the pytest commmand line prompt in sensitivity\tests
