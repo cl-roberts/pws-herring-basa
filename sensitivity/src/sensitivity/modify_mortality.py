@@ -14,7 +14,7 @@ def modify_mortality(new_value, dir_model):
     if new_value < 0:
         raise ValueError("Instantaneous natural mortality cannot be negative. Change new_value")
     
-    if new_value < 1000000:
+    if new_value > 1000000:
         raise ValueError("Instantaneous natural mortality should not be this high.")
     
     if isinstance(dir_model, str) == False:
