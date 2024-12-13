@@ -14,6 +14,16 @@ def test_lower_zero():
     except (ValueError) as err:
         print("Instantaneous natural mortality cannot be negative. Change new_value")
 
+
+# edge test checking that having a mortality rate that's over 1 million
+def test_too_high():
+    new_value = 3000000
+    dir_model = "../model"
+    try:
+        sensitivity.modify_mortality(new_value, dir_model)
+    except (ValueError) as err:
+        print("Instantaneous natural mortality cannot be negative. Change new_value")
+
 # edge test checking that "dir_model" is a string
 def test_string():
     new_value = 2
@@ -27,6 +37,13 @@ def test_string():
 # smoke test
 def test_smoke():
     new_value = 2
+    dir_model = "../model"
+    sensitivity.modify_mortality(new_value, dir_model)
+
+
+# smoke test #2
+def test_smoke2():
+    new_value = 5
     dir_model = "../model"
     sensitivity.modify_mortality(new_value, dir_model)
 
