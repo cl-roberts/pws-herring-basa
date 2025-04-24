@@ -2083,8 +2083,8 @@ FUNCTION void calc_nll_components()
     juvenile_llk=0;
     for(int i=1;i<=nyr_tobefit;i++) {
         if(juvenile_survey_index(i)!=-9) {
-            juvenile_llk_ind(i)=dnbinom(juvenile_survey_index(i),juvenile_pred(i),juvenile_overdispersion);
-            juvenile_llk+=juvenile_llk_ind(i);
+            // juvenile_llk_ind(i)=dnbinom(juvenile_survey_index(i),juvenile_pred(i),juvenile_overdispersion);
+            // juvenile_llk+=juvenile_llk_ind(i);
         }
     }
   
