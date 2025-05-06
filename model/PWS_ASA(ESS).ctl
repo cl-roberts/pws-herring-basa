@@ -1,23 +1,25 @@
 # PWS age comp effective sample sizes
-# (Mon Nov  4 09:54:57 2024)
+# (Mon Apr 28 11:37:05 2025)
+ 
+# 5 iterations before ESS's converged
  
 # Determines which ctl file for the age comps and ESS to use (1 uses ESS control to be iteratively estimated)
 -1
  
 # Seine ESS
 14
-6
-16
+7
+17
 22
-35
-49
-150
-97
-177
+37
+51
+155
+100
+184
 -9
-97
-180
-60
+101
+186
+62
 -9
 -9
 -9
@@ -54,49 +56,49 @@
 # Spawn ESS
 -9
 -9
-9
-12
-19
-26
-80
-52
-95
-56
-52
-96
-32
-62
-57
-61
-58
-81
-118
-82
-51
-46
-70
-57
-35
-31
-25
-55
-76
-52
-29
-31
-70
-20
-37
+8
+11
 18
 25
-42
-32
-25
+76
+50
+91
+53
+50
+92
+30
+59
+55
+59
+55
+77
+114
+79
+49
+44
+67
+54
+34
+30
+24
+52
+73
+50
+27
+30
+67
 19
-42
+35
+17
+24
 40
-22
 31
+24
+18
+40
+38
+21
+30
  
 # Sero ESS
 0

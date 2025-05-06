@@ -82,9 +82,9 @@ cvs <- list(
     pwssc.hydro = as.vector(sqrt((raw.data$pwssc_hydro_se[1:nyr]^2) + (add.vars[4]^2)))
 )
 
-juv.overdisp <- read.table(here::here(dir_mcmc_out, "iterations.csv"),  
-                           header = TRUE, sep = ",")[, "juvenile_overdispersion"]
-juv.schools.mask <- c(raw.data$juvenile_survey == -9)[1:nyr]
+# juv.overdisp <- read.table(here::here(dir_mcmc_out, "iterations.csv"),  
+#                            header = TRUE, sep = ",")[, "juvenile_overdispersion"]
+# juv.schools.mask <- c(raw.data$juvenile_survey == -9)[1:nyr]
 
 # save file paths containing model outputs
 
@@ -92,7 +92,7 @@ mdm.fname <- here::here(dir_mcmc_out, "MDM.csv")
 egg.fname <- here::here(dir_mcmc_out, "EGG.csv")
 adfg.hydro.fname <- here::here(dir_mcmc_out, "HYD_ADFG.csv")
 pwssc.hydro.fname <- here::here(dir_mcmc_out, "HYD_PWSSC.csv")
-juv.schools.fname <- here::here(dir_mcmc_out, "juv_schools.csv")
+# juv.schools.fname <- here::here(dir_mcmc_out, "juv_schools.csv")
 
 # calculate posterior predictive intervals for each survey fit
 # see ?pwsHerringBasa::generate.post.pred() for more info
@@ -103,8 +103,8 @@ adfg.hydro.pp <- generate.post.pred(fname = adfg.hydro.fname,
                                     var = variances$adfg.hydro, years = years)
 pwssc.hydro.pp <- generate.post.pred(fname = pwssc.hydro.fname, 
                                      var = variances$pwssc.hydro, years = years)
-juv.schools.pp <- generate.post.pred(fname = juv.schools.fname, var = juv.overdisp, 
-                                     years = years, dist="negbin", mask=juv.schools.mask)
+# juv.schools.pp <- generate.post.pred(fname = juv.schools.fname, var = juv.overdisp, 
+#                                      years = years, dist="negbin", mask=juv.schools.mask)
 
 
 # save and format raw survey data for each annual survey
@@ -113,14 +113,14 @@ mdm.data            <- data.frame(year=as.character(years), data=raw.data$mdm[1:
 egg.data            <- data.frame(year=as.character(years), data=raw.data$egg[1:length(years)], lower=raw.data$egg[1:length(years)]/calc.buck.cv(cvs$egg), upper=raw.data$egg[1:length(years)]*calc.buck.cv(cvs$egg))
 adfg.hydro.data     <- data.frame(year=as.character(years), data=raw.data$adfg_hydro[1:length(years)], lower=raw.data$adfg_hydro[1:length(years)]/calc.buck.cv(cvs$adfg.hydro), upper=raw.data$adfg_hydro[1:length(years)]*calc.buck.cv(cvs$adfg.hydro))
 pwssc.hydro.data    <- data.frame(year=as.character(years), data=raw.data$pwssc_hydro[1:length(years)], lower=raw.data$pwssc_hydro[1:length(years)]/calc.buck.cv(cvs$pwssc.hydro), upper=raw.data$pwssc_hydro[1:length(years)]*calc.buck.cv(cvs$pwssc.hydro))
-aer.juvenile.data   <- data.frame(year=as.character(years), data=raw.data$juvenile_survey[1:length(years)])
+# aer.juvenile.data   <- data.frame(year=as.character(years), data=raw.data$juvenile_survey[1:length(years)])
 
 data <- list(
     mdm = mdm.data,
     egg = egg.data,
     adfg.hydro = adfg.hydro.data,
-    pwssc.hydro = pwssc.hydro.data,
-    juvenile = aer.juvenile.data
+    pwssc.hydro = pwssc.hydro.data
+    # juvenile = aer.juvenile.data
 )
 for(i in 1:length(data)){
     missing <- data[[i]]$data == -9
@@ -136,7 +136,7 @@ mdm.fit.plot <- plot_survey_fits(mdm.pp, data$mdm, y.max=500, title="Mile days o
 egg.fit.plot <- plot_survey_fits(egg.pp, data$egg, y.max=21, title="Egg deposition (trillions)")
 adfg.hydro.fit.plot <- plot_survey_fits(adfg.hydro.pp, data$adfg.hydro, y.max=175000, title="ADF&G hydroacoustic biomass (1000s tons)", scale=1000)
 pwssc.hydro.fit.plot <- plot_survey_fits(pwssc.hydro.pp, data$pwssc.hydro, y.max=205000, title="PWSSC hydroacoustic biomass (1000s tons)", scale=1000)
-aer.juvenile.fit.plot <- plot_survey_fits(juv.schools.pp, data$juvenile, y.max=40000, title="Age-1 schools", cvs=FALSE)
+# aer.juvenile.fit.plot <- plot_survey_fits(juv.schools.pp, data$juvenile, y.max=40000, title="Age-1 schools", cvs=FALSE)
 
 #-------------------------------------------------------------------------------
 
@@ -149,12 +149,12 @@ ggsave(here::here(dir_figures, "mdm_fit.pdf"), plot = mdm.fit.plot, width=12, he
 ggsave(here::here(dir_figures, "egg_fit.pdf"), plot = egg.fit.plot, width=12, height=8, dpi=300)
 ggsave(here::here(dir_figures, "adfg_hydro_fit.pdf"), plot = adfg.hydro.fit.plot, width=12, height=8, dpi=300)
 ggsave(here::here(dir_figures, "pwssc_hydro_fit.pdf"), plot = pwssc.hydro.fit.plot, width=12, height=8, dpi=300)
-ggsave(here::here(dir_figures, "aer_juvenile_fit.pdf"), plot = aer.juvenile.fit.plot, width=12, height=8, dpi=300)
+# ggsave(here::here(dir_figures, "aer_juvenile_fit.pdf"), plot = aer.juvenile.fit.plot, width=12, height=8, dpi=300)
 
 # save 5-panel plot
 
 survey_fits <- ggarrange(
-    mdm.fit.plot, egg.fit.plot, adfg.hydro.fit.plot, pwssc.hydro.fit.plot, aer.juvenile.fit.plot,
+    mdm.fit.plot, egg.fit.plot, adfg.hydro.fit.plot, pwssc.hydro.fit.plot, 
     nrow=3,
     ncol=2,
     common.legend = TRUE, legend="right"
@@ -191,10 +191,10 @@ write.table(
     row.names=FALSE,col.names=c('Year','Median Posterior Prediction','Lower 95th','Upper 95th'),sep=","
 )
 
-cat('\nAge-1 Aerial survey (# of small schools) posterior predictions\n')
-write.table(
-    juv.schools.pp %>% filter(.width==0.95) %>% select(-c(.point, .interval, .width)) %>% rename(median=data) %>% mutate(median=round(median, 3), .lower=round(.lower, 3), .upper=round(.upper, 3)),
-    row.names=FALSE,col.names=c('Year','Median Posterior Prediction','Lower 95th','Upper 95th'),sep=","
-)
+# cat('\nAge-1 Aerial survey (# of small schools) posterior predictions\n')
+# write.table(
+#     juv.schools.pp %>% filter(.width==0.95) %>% select(-c(.point, .interval, .width)) %>% rename(median=data) %>% mutate(median=round(median, 3), .lower=round(.lower, 3), .upper=round(.upper, 3)),
+#     row.names=FALSE,col.names=c('Year','Median Posterior Prediction','Lower 95th','Upper 95th'),sep=","
+# )
 
 sink()

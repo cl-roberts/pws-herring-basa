@@ -1,5 +1,6 @@
 ---
-title: "2024 Bayesian Age-structured Stock Assessment (BASA) Results for Prince William Sound (PWS) herring"
+title: "DRAFT: BASA sensitivity run, aerial age-1 survey data not fit"
+subtitle: "Not to be used for management"
 author:
   - C.L. Roberts
   - Joshua A. Zahner
