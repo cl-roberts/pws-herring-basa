@@ -2004,12 +2004,18 @@ FUNCTION void calc_nll_components()
 
     //Mile-days of milt Likelihood component
     for(int i=1;i<=nyr_tobefit;i++) {
-        mdm_residuals(i)=log(MDM_est(i))-log(mile_days_milt(i));
-        mdm_llk_ind(i)=(mdm_residuals(i)*mdm_residuals(i))/(2*milt_add_var*milt_add_var)+log(milt_add_var);
+        mdm_residuals(i) = 0;
+        mdm_llk_ind(i) = 0;
+        if (mile_days_milt(i) != -9) {
+            mdm_residuals(i)=log(MDM_est(i))-log(mile_days_milt(i));
+            mdm_llk_ind(i)=(mdm_residuals(i)*mdm_residuals(i))/(2*milt_add_var*milt_add_var)+log(milt_add_var);
+        }
     }
+
     MDMtemp_2=norm2(mdm_residuals);
-    //M_VAR=MDMtemp_2/nyr_tobefit+(milt_add_var*milt_add_var);
     mdm_llk=nyr_tobefit*log(milt_add_var)+(.5*MDMtemp_2/(milt_add_var*milt_add_var));
+
+    //M_VAR=MDMtemp_2/nyr_tobefit+(milt_add_var*milt_add_var);
 
     //Egg Deposition Likelihood component
     eggdep_llk=0;
@@ -2017,24 +2023,13 @@ FUNCTION void calc_nll_components()
         egg_sd(i)=0;
         eggdep_residuals(i)=0;
         egg_llk_ind(i)=0;
-    }
-    for(int i=5;i<=5;i++){
-        egg_sd(i)=sqrt((cv_egg(i)*cv_egg(i))+(eggdep_add_var*eggdep_add_var));
-        eggdep_residuals(i)=(log(EGG_est(i))-log(egg_dep(i)));
-        egg_llk_ind(i)=log(egg_sd(i))+(.5*eggdep_residuals(i)*eggdep_residuals(i)/(egg_sd(i)*egg_sd(i)));
-        eggdep_llk+=egg_llk_ind(i);
-    }
-    for(int i=9;i<=13;i++){
-        egg_sd(i)=sqrt((cv_egg(i)*cv_egg(i))+(eggdep_add_var*eggdep_add_var));
-        eggdep_residuals(i)=(log(EGG_est(i))-log(egg_dep(i)));
-        egg_llk_ind(i)=log(egg_sd(i))+(.5*eggdep_residuals(i)*eggdep_residuals(i)/(egg_sd(i)*egg_sd(i)));
-        eggdep_llk+=egg_llk_ind(i);
-    }
-    for(int i=15;i<=18;i++){
-        egg_sd(i)=sqrt((cv_egg(i)*cv_egg(i))+(eggdep_add_var*eggdep_add_var));
-        eggdep_residuals(i)=(log(EGG_est(i))-log(egg_dep(i)));
-        egg_llk_ind(i)=log(egg_sd(i))+(.5*eggdep_residuals(i)*eggdep_residuals(i)/(egg_sd(i)*egg_sd(i)));
-        eggdep_llk+=egg_llk_ind(i);
+
+        if(egg_dep(i) != -9) {
+            egg_sd(i)=sqrt((cv_egg(i)*cv_egg(i))+(eggdep_add_var*eggdep_add_var));
+            eggdep_residuals(i)=(log(EGG_est(i))-log(egg_dep(i)));
+            egg_llk_ind(i)=log(egg_sd(i))+(.5*eggdep_residuals(i)*eggdep_residuals(i)/(egg_sd(i)*egg_sd(i)));
+            eggdep_llk+=egg_llk_ind(i);
+        }
     }
     // egg_llk_ind = egg_llk_ind*10;
 
