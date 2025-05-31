@@ -2034,31 +2034,38 @@ FUNCTION void calc_nll_components()
     // egg_llk_ind = egg_llk_ind*10;
 
     //ADFG Hydroacoustic Survey Biomass Likelihood component
-    for(int i=1;i<=hydADFG_start-1;i++){
-        ADFG_hydro_residuals(i)=0;
-    }
 
     int N_hydADFG=0;
-    for(int i=hydADFG_start;i<=hydADFG_start+4;i++){ 
+    
+    for(int i=1;i<=nyr_tobefit;i++){
         // hyd~_start variable holds index of first year of
         // survey depending on data source
         // UPDATED 07/23/2015 to reflect 2 additional years of missing data
-        ADFG_hydro_residuals(i)=log(ADFG_hydro(i))-log(ADFG_HYDRO_est(i));
-        ADFG_hydro_llk_ind(i)=(ADFG_hydro_residuals(i)*ADFG_hydro_residuals(i))/(ADFG_hydro_add_var*ADFG_hydro_add_var*2)+log(ADFG_hydro_add_var);
-        N_hydADFG+=1;
-    }
-    for(int i=hydADFG_start+4+1;i<=nyr_tobefit;i++){
-        ADFG_hydro_residuals(i)=0;    //missing final 5 years of ADF&G data as of 07/2015
+
+        ADFG_hydro_residuals(i)=0;
         ADFG_hydro_llk_ind(i)=0;
+    
+        if (ADFG_hydro(i) != -9) {
+
+            ADFG_hydro_residuals(i)=log(ADFG_hydro(i))-log(ADFG_HYDRO_est(i));
+            ADFG_hydro_llk_ind(i)=(ADFG_hydro_residuals(i)*ADFG_hydro_residuals(i))/(ADFG_hydro_add_var*ADFG_hydro_add_var*2)+log(ADFG_hydro_add_var);
+
+            N_hydADFG+=1;
+        }
+
     }
+
     HtempADFG_num=norm2(ADFG_hydro_residuals);
+
     ADFG_hydro_llk=(N_hydADFG)*log(ADFG_hydro_add_var)+(0.5*HtempADFG_num/(ADFG_hydro_add_var*ADFG_hydro_add_var));
+    
     // minus 5 to account for the missing final 5 years of ADF&G data
 
     //PWSSC Hydroacoustic Survey Biomass Likelihood component
-    PWSSC_hydro_llk=0;
 
+    PWSSC_hydro_llk=0;
     int N_hydPWWSC=0;
+
     for(int i=1;i<=nyr_tobefit;i++){ // hyd_start variable holds index of first year of survey depending on data source
         if(PWSSC_hydro_cv(i)==-9) {
             PWSSC_sd(i)=0;
