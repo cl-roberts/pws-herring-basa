@@ -36,7 +36,7 @@ library(here)
 # set up directories
 # each survey gets its own directory
 
-survey <- "spawn_age_comp"
+survey <- "disease_covs"
 
 dir_model <- here("cost-of-info/model")
 dir_survey <- here("cost-of-info", survey) 
@@ -62,19 +62,58 @@ n.chains <- 4
 dat_file <- read.data.files(dir_model)
 all_years <- 1980:2024
 
-if (survey != "base") {
-    survey_years <- which(dat_file$PWS_ASA.dat[[survey]][,1] != -9)
-} else {
+if (survey == "base") {
     survey_years <- 1
     to_omit <- "base"
     dir_survey_year <- here("cost-of-info", "base") 
+} else if (survey == "disease_covs") {
+    survey_years <- which(
+        apply(dat_file$PWS_ASA_covariate.ctl[["disease_covs"]], 
+              MARGIN = 1, FUN = \(x) any(x != -9))
+    )
+} else {
+    survey_years <- which(dat_file$PWS_ASA.dat[[survey]][,1] != -9)
 }
 
 # loop through all non-missing years in survey dataset 
 
 for (y in survey_years) {
 
-    if (survey != "base") {
+    if (survey == "disease_covs") {
+
+        # read data to start from full dataset
+        dat_file_omitted <- read.data.files(dir_model)
+
+        # delete year y
+        dat_file_omitted$PWS_ASA_covariate.ctl[[survey]][y,] <- -9
+
+        # identify survey and year to omit
+        to_omit <- paste(survey, all_years[y], sep = "_")
+
+        # make directory for omitted survey and year
+        dir_survey_year <- here("cost-of-info", survey, to_omit) 
+
+        if (!dir.exists(dir_survey_year)) {
+            dir.create(dir_survey_year)
+        }
+
+        # write dat file with omitted year
+        dir_dat_file <- here(dir_model, "PWS_ASA(covariate).ctl")
+        write(paste("#", names(dat_file_omitted$PWS_ASA_covariate.ctl[1])), file = dir_dat_file)
+        write(dat_file$PWS_ASA_covariate.ctl[[1]], file = dir_dat_file, append = TRUE)
+
+        for (i in 2:length(dat_file_omitted$PWS_ASA_covariate.ctl)) {
+
+            write(paste0("\n#", " (", names(dat_file_omitted$PWS_ASA_covariate.ctl[i]), ")"), 
+                file = dir_dat_file, append = TRUE)
+            to_write <- dat_file_omitted$PWS_ASA_covariate.ctl[[i]]
+            write(t(to_write), 
+                ncolumns = ifelse(is.null(dim(to_write)), 1, ncol(to_write)),
+                file = dir_dat_file, append = TRUE)
+
+        }
+
+    } else if (survey != "base") {
 
         # read data to start from full dataset
         dat_file_omitted <- read.data.files(dir_model)
@@ -118,56 +157,81 @@ for (y in survey_years) {
 
     }
 
-    # run model
-    run <- run.basa(dir_model, n.samples = n.samples, n.warmup = n.warmup,
-                    n.time = n.time, n.chains = n.chains)
+    # the following try block runs model
+    # writes log if failure
+    # copies back original data values whether or not model run is a success
 
-    #### extract model run metadata and diagnostics ####
+    tryCatch(
 
-    # Extracts NUTS stats (energy, leapfrog transitions,etc)
-    mon <- monitor(run$fit1$samples, warmup=run$fit1$warmup, print=FALSE)
-    x <- extract_sampler_params(run$fit1)
+        expr = {
 
-    # Quick check for divergences & Gelman-Ruben statistic
-    n.divergences <- sum(x$divergent__)/nrow(x)
-    r.hat <- max(mon[, "Rhat"])<=1.1
+            run <- run.basa(dir_model, n.samples = n.samples, n.warmup = n.warmup,
+                            n.time = n.time, n.chains = n.chains)
 
-    # summarize NUTS/MCMC diagnostics
-    sum.dia <- data.frame(divergences.from.extract.function=sum(x$divergent__)/nrow(x),
-                        min.ESS=min(mon[, "n_eff"]),
-                        which.min.ESS=names(which.min(mon[, "n_eff"])),
-                        max.Rhat=max(mon[, "Rhat"]),
-                        which.max.Rhat=names(which.max(mon[, "Rhat"])),
-                        time.elapsed=run$time)
+            #### extract model run metadata and diagnostics ####
 
-    #### save information from model run ####
+            # Extracts NUTS stats (energy, leapfrog transitions,etc)
+            mon <- monitor(run$fit1$samples, warmup=run$fit1$warmup, print=FALSE)
+            x <- extract_sampler_params(run$fit1)
 
-    # Write summary of parameter posteriors (medians, percentiles, etc)
-    write.csv(as.data.frame(mon), 
-            file = here(dir_survey_year, paste0("posterior_summary_", to_omit, ".csv")))
+            # Quick check for divergences & Gelman-Ruben statistic
+            n.divergences <- sum(x$divergent__)/nrow(x)
+            r.hat <- max(mon[, "Rhat"])<=1.1
 
-    # Write all MCMC samples of the parameters
-    mcmc.samps <- data.frame(matrix(run$fit1$samples, ncol=dim(run$fit1$samples)[3], byrow=FALSE))
-    names(mcmc.samps) <- run$fit1$par_names
-    write.csv(mcmc.samps, 
-            file = here(dir_survey_year, paste0("iterations_", to_omit, ".csv")),
-            row.names=FALSE)
+            # summarize NUTS/MCMC diagnostics
+            sum.dia <- data.frame(divergences.from.extract.function=sum(x$divergent__)/nrow(x),
+                                min.ESS=min(mon[, "n_eff"]),
+                                which.min.ESS=names(which.min(mon[, "n_eff"])),
+                                max.Rhat=max(mon[, "Rhat"]),
+                                which.max.Rhat=names(which.max(mon[, "Rhat"])),
+                                time.elapsed=run$time)
 
-    # write summary file of NUTS/MCMC diagnostics
-    write.table(sum.dia, 
-                file = here(dir_survey_year, paste0("convergence_diagnostics_", to_omit, ".csv")), 
-                sep=",", row.names=FALSE)
-    saveRDS(run$fit1, file = here(dir_survey_year, paste0("NUTS_fit_", to_omit, ".RDS")))
+            #### save information from model run ####
 
-    # copy biomass posterior samples to dir_survey_year
-    file.copy(from = here(dir_model, "mcmc_out/PFRBiomass.csv"),
-            to = here(dir_survey_year, paste0("PFRBiomass_", to_omit, ".csv")),
-            overwrite = TRUE)
+            # Write summary of parameter posteriors (medians, percentiles, etc)
+            write.csv(as.data.frame(mon), 
+                    file = here(dir_survey_year, paste0("posterior_summary_", to_omit, ".csv")))
 
-    # copy back unaltered data file
-    file.copy(from = here("model/PWS_ASA.dat"),
-            to = here(dir_model, "PWS_ASA.dat"),
-            overwrite = TRUE)
+            # Write all MCMC samples of the parameters
+            mcmc.samps <- data.frame(matrix(run$fit1$samples, ncol=dim(run$fit1$samples)[3], byrow=FALSE))
+            names(mcmc.samps) <- run$fit1$par_names
+            write.csv(mcmc.samps, 
+                    file = here(dir_survey_year, paste0("iterations_", to_omit, ".csv")),
+                    row.names=FALSE)
+
+            # write summary file of NUTS/MCMC diagnostics
+            write.table(sum.dia, 
+                        file = here(dir_survey_year, paste0("convergence_diagnostics_", to_omit, ".csv")), 
+                        sep=",", row.names=FALSE)
+            saveRDS(run$fit1, file = here(dir_survey_year, paste0("NUTS_fit_", to_omit, ".RDS")))
+
+            # copy biomass posterior samples to dir_survey_year
+            file.copy(from = here(dir_model, "mcmc_out/PFRBiomass.csv"),
+                    to = here(dir_survey_year, paste0("PFRBiomass_", to_omit, ".csv")),
+                    overwrite = TRUE)
+        },
+
+        error = function(e) {
+
+            message('Model run failed!')
+
+            print(e)
+
+        },
+
+        finally = {
+
+            # copy back unaltered data file
+            file.copy(from = here("model/PWS_ASA.dat"),
+                    to = here(dir_model, "PWS_ASA.dat"),
+                    overwrite = TRUE)
+            file.copy(from = here("model/PWS_ASA(covariate).ctl"),
+                    to = here(dir_model, "PWS_ASA(covariate).ctl"),
+                    overwrite = TRUE)
+
+        }
+
+    )
 
 }
 
