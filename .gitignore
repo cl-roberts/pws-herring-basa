@@ -21,6 +21,8 @@ model/*.obj
 model/*.par
 model/*.psv
 model/*.std
+model/unbounded.csv
+model/PWS_ASA.exe
 
 model/rep_out/*
 model/mcmc_out/*
@@ -42,3 +44,4 @@ retrospectives/basa-*
 
 data_outputs/*
 sensitivity/*
+cost-of-info/*
