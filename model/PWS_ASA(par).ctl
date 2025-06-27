@@ -127,16 +127,16 @@
 ## 10: inf_prob_vhs
    1
    29   29
-#  0.00    1.00   -3   3   1.5  5   0  # Use commented out row for estimating these parameters
-   0.00    1.00   -3   0   0   0   0
-   0.0
+   0.01    1.00    3   3   1.5  5   0  # Use commented out row for estimating these parameters
+#  0.00    1.00   -3   0   0   0   0
+   0.30
 
 ## 11: rec_prob_vhs
    1
    29   29
-#  0.0    0.99   -3   3   4   6   0
-   0.0    0.99   -3   0   0   0   0
-   0.0
+   0.2    0.90    3   3   4   6   0
+#  0.0    0.99   -3   0   0   0   0
+   0.3
 
 ## 12: inf_prob_ich
    1

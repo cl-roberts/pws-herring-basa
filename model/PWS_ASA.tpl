@@ -772,6 +772,8 @@ PARAMETER_SECTION
     vector ADFG_hydro_llk_ind(1,nyr_tobefit)
     vector PWSSC_hydro_llk_ind(1,nyr_tobefit)
     vector juvenile_llk_ind(1,nyr_tobefit) // Aerial juvenile survey (incorporated 12/2019)
+    matrix vhs_llk_ind(1,nyr_tobefit,1,n_age2)
+    matrix ich_llk_ind(1,nyr_tobefit,1,n_age2)
     
     // Variables and vectors for calculating projected final year biomass
     // vector tempWgt(1,nage)
@@ -1863,14 +1865,13 @@ FUNCTION void calc_surveyvalues()
 
     int k = 1;
 
-
     q_immunity = 1.0;
 
     for(int i=vhs_start_est;i<=nyr_tobefit;i++){
         for(int j=1;j<=nage;j++){
-            vhsv_pred(i,k) = Vul_vhs_survey(j)*N_y_a(i,j)*vhsv_immunity_age(i,j)*q_immunity; // This assumes vhsprevalence samples target all mature individuals (i.e. maturity = survey vulnerability)
+            vhsv_pred(i,k) = Vul_vhs_survey(j)*N_y_a(i,j)*vhsv_immunity_age(i,j); // This assumes vhsprevalence samples target all mature individuals (i.e. maturity = survey vulnerability)
             k+=1;
-            vhsv_pred(i,k) = Vul_vhs_survey(j)*N_y_a(i,j)*(1-vhsv_immunity_age(i,j)*q_immunity);
+            vhsv_pred(i,k) = Vul_vhs_survey(j)*N_y_a(i,j)*vhsv_susceptibility_age(i,j);
             k+=1;
         } 
         k=1;
@@ -1917,6 +1918,8 @@ FUNCTION void calc_nll_components()
     ADFG_hydro_llk_ind.initialize();
     PWSSC_hydro_llk_ind.initialize();
     juvenile_llk_ind.initialize();
+    vhs_llk_ind.initialize();
+    ich_llk_ind.initialize();
 
     seine_llk.initialize();
     spawner_llk.initialize();
@@ -2089,8 +2092,8 @@ FUNCTION void calc_nll_components()
     }
   
     // Seroprevalence obs likelihood - binomial (may need to come back to) (01/2021)
-    dvar_matrix vhs_llk_ind(1,nyr_tobefit,1,n_age2);
-    dvar_matrix ich_llk_ind(1,nyr_tobefit,1,n_age2);
+    // dvar_matrix vhs_llk_ind(1,nyr_tobefit,1,n_age2);
+    // dvar_matrix ich_llk_ind(1,nyr_tobefit,1,n_age2);
 
     for(int i=vhs_start;i<=nyr_tobefit;i++){
         // vhs_obs_comp(i)(1,n_age2) = vhs_obs(i)(1,n_age2)/vhs_ss(i);
@@ -2106,20 +2109,27 @@ FUNCTION void calc_nll_components()
         dvariable p_bin;
 
         for(int j=1;j<=nage;j++){
-            if(vhs_obs_comp(j*2-1)<0 | (vhs_pred_comp(j*2-1)==0 && vhs_obs_comp(j*2-1)==0)){
-                vhs_llk_ind(i,j)=0;
-            }else if(vhs_pred_comp(j*2-1)==0 && vhs_obs_comp(j*2-1)>0){
-                if(pars_2_ctl(10,4)>0){
-                    vhs_llk_ind(i,j)=1000;
-                }else{
-                    vhs_llk_ind(i,j)=0; // Means infection parameter is fixed at 0, so should not contribute to likelihood
-                }
-            }else{
+            // if(vhs_obs_comp(j*2-1)<0 | (vhs_pred_comp(j*2-1)==0 && vhs_obs_comp(j*2-1)==0)){
+            //     vhs_llk_ind(i,j)=0;
+            // }
+            // else if(vhs_pred_comp(j*2-1)==0 && vhs_obs_comp(j*2-1)>0){
+            //     if(pars_2_ctl(10,4)>0){
+            //         vhs_llk_ind(i,j)=1000;
+            //     }else{
+            //         vhs_llk_ind(i,j)=0; // Means infection parameter is fixed at 0, so should not contribute to likelihood
+            //     }
+            // }
+            if(vhs_obs_comp(j*2-1)<=0 | vhs_pred_comp(j*2-1)==0){
+              vhs_llk_ind(i,j)=0;
+            } else {
                 // Binomial
                 x_bin = vhs_obs_comp(j*2-1)*vhsv_antibody_ess(i);
                 n_bin = (vhs_obs_comp(j*2-1)+vhs_obs_comp(j*2))*vhsv_antibody_ess(i);
                 p_bin = vhs_pred_comp(j*2-1)/(vhs_pred_comp(j*2-1) + vhs_pred_comp(j*2));
+                // vhs_llk_ind(i,j) += dbinom(10, 20, .5);
+                // vhs_llk_ind(i,j) = 2;
                 vhs_llk_ind(i,j) = dbinom(x_bin,n_bin,p_bin);
+
             }
         }
         // cout << vhs_llk_ind << endl;
@@ -2744,6 +2754,11 @@ REPORT_SECTION
   report1 << "Projected total pre-fishery biomass" << endl << projected_prefishery_biomass << endl;
   //report1 << "Projected pre-fishery biomass by age" << endl << projected_Early_Sp_biomass << endl;
   report1 << "Projected numbers at age" << endl << projected_N_y_a << endl << endl;
+
+  report1 << "SEROPREVALENCE QUANTITIES" << endl << endl;
+  report1 << "VHSV observed" << endl << vhs_obs << endl << endl;
+  report1 << "VHSV predicted" << endl << vhsv_pred << endl << endl;
+  report1 << "VHSV likelihood by year" << endl << vhs_llk_ind << endl << endl;
 
   report1.close();
 
