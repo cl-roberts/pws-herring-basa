@@ -26,6 +26,10 @@ model/rep_out/*
 model/mcmc_out/*
 model/mcmc_out_tmb/*
 
+data_outputs/*
+cost-of-info/*
+references/*
+
 *.tex
 
 *~
