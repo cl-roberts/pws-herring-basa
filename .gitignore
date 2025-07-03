@@ -29,6 +29,7 @@ model/mcmc_out_tmb/*
 data_outputs/*
 cost-of-info/*
 references/*
+sensitivity/*
 
 *.tex
 
