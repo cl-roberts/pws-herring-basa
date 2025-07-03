@@ -55,10 +55,6 @@ if (!dir.exists(dir_figures)) {
     dir.create(dir_figures)
 }
 
-if (!dir.exists(dir_outputs)) {
-    dir.create(dir_outputs)
-}
-
 # read model input data
 
 raw.data <- read.data.files(dir_model)
@@ -80,23 +76,22 @@ years <- seq(start.year, curr.year+nyr.sim-1)
 # for more details
 
 recruit.df <- compute.recruitment(dir_mcmc_out, nyr, years)
-recruit.plot <- plot_recruitment_posterior(recruit.df, years, legend=FALSE) 
+recruit.plot <- plot_recruitment_posterior(recruit.df, years, legend=FALSE)
 
-biomass.df <- compute.biomass.traj(dir_mcmc_out, nyr) |>
-    filter(year != "forecast")
-biomass.plot <- plot_biomass_trajectory(biomass.df, c(years, curr.year), legend=FALSE) 
+biomass.df <- compute.biomass.traj(dir_mcmc_out, nyr)
+biomass.plot <- plot_biomass_trajectory(biomass.df, c(years, curr.year), legend=FALSE)
 
 exploit.df <- compute.exploit.rate(dir_mcmc_out, nyr)
 exploit.rate.plot <- plot_exploit_rate(exploit.df$exploit.rate.df,
                                        exploit.df$exploit.zeros,
-                                       years) 
+                                       years)
 
 pfrb.posterior <- compute.pfrb.posterior(dir_mcmc_out, nyr+1)
 pfrb.posterior.plot <- plot_pfrb_posterior(pfrb.posterior$biomass.df, 
                                            pfrb.posterior$biomass.quants, 
                                            pfrb.posterior$prob.below.threshold,
                                            curr.year,
-                                           font.size=5)  
+                                           font.size=5)
 
 #-------------------------------------------------------------------------------
 
@@ -119,7 +114,8 @@ management_outputs <- ggarrange(
 )
 ggsave(here::here(dir_figures, "management_outputs.pdf"), management_outputs, 
        height=8.5, width=11)
-
+ggsave(here::here(dir_figures, "management_outputs.png"), management_outputs, 
+       height=8.5, width=10)
 
 # save outputs-for-management.csv table
 

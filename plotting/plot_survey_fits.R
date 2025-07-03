@@ -48,10 +48,6 @@ if (!dir.exists(dir_figures)) {
     dir.create(dir_figures)
 }
 
-if (!dir.exists(dir_outputs)) {
-    dir.create(dir_outputs)
-}
-
 # load data
 
 raw.data <- read.data.files(dir_model)$PWS_ASA.dat
@@ -132,11 +128,11 @@ for(i in 1:length(data)){
 # plot survey fits 
 # see pwsHerringBasa::plot_survey_fits()
 
-mdm.fit.plot <- plot_survey_fits(mdm.pp, data$mdm, y.max=500, title="Mile days of milt")
-egg.fit.plot <- plot_survey_fits(egg.pp, data$egg, y.max=21, title="Egg deposition (trillions)")
-adfg.hydro.fit.plot <- plot_survey_fits(adfg.hydro.pp, data$adfg.hydro, y.max=175000, title="ADF&G hydroacoustic biomass (1000s tons)", scale=1000)
-pwssc.hydro.fit.plot <- plot_survey_fits(pwssc.hydro.pp, data$pwssc.hydro, y.max=205000, title="PWSSC hydroacoustic biomass (1000s tons)", scale=1000)
-aer.juvenile.fit.plot <- plot_survey_fits(juv.schools.pp, data$juvenile, y.max=40000, title="Age-1 schools", cvs=FALSE)
+mdm.fit.plot <- plot_survey_fits(mdm.pp, data$mdm, y.max=500, title="Mile Days of Milt")
+egg.fit.plot <- plot_survey_fits(egg.pp, data$egg, y.max=21, title="Egg Deposition (trillions)")
+adfg.hydro.fit.plot <- plot_survey_fits(adfg.hydro.pp, data$adfg.hydro, y.max=175000, title="ADF&G Hydroacoustic Biomass (1000s tons)", scale=1000)
+pwssc.hydro.fit.plot <- plot_survey_fits(pwssc.hydro.pp, data$pwssc.hydro, y.max=205000, title="PWSSC Hydroacoustic Biomass (1000s tons)", scale=1000)
+aer.juvenile.fit.plot <- plot_survey_fits(juv.schools.pp, data$juvenile, y.max=40000, title="Age 1 Schools", cvs=FALSE)
 
 #-------------------------------------------------------------------------------
 
@@ -162,7 +158,7 @@ survey_fits <- ggarrange(
 
 # CLR: added / to file path
 ggsave(here::here(dir_figures, "survey_fits.pdf"), survey_fits, width=12, height=8, dpi=300)
-
+ggsave(here::here(dir_figures, "survey_fits.png"), survey_fits, height=10, width=8)
 
 # save .csv table with clean survey fits
 
