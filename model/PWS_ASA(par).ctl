@@ -91,7 +91,7 @@
 ## 4: beta_mortality
    1
    1   1
-   -30.00 30.00  2   0   0   0   0
+   0 1  2   0   0   0   0
    0.2
 
 ## 5: annual_mortdevs

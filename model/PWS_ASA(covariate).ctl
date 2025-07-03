@@ -122,14 +122,14 @@
 # Turn on covariates
 1
 1
-1
+0
  
 # Which age (row) does the covariate (column) impact?
 0 0 0
 0 0 0
 0 0 0
-0 0 1
-0 0 1
+1 1 1
+1 1 1
 1 1 0
 1 1 0
 1 1 0
@@ -178,11 +178,11 @@
 -9	0.172222222	0
 -9	0.133333333	0 
 -9	0.190001883	0
--9	0.190001883	0 
--9  -9         -9 
--9  -9         -9
--9  -9         -9
--9  -9         -9
+-9  0.1702128 0 
+-9	0.1944444 -9 
+-9  0.1939799 0
+-9  0.2194093 0
+-9  0.3277778 0.005617978
                                        
 # Observed WINTER Natural mortality deviates for year to be forecast (average of 3 preceding years)
 -9
