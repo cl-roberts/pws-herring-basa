@@ -712,6 +712,7 @@ PARAMETER_SECTION
     number meanLgRec
     number projected_prefishery_biomass //is an sdreport variable
 
+
     // Scalar for seroprevalence - scales down total immunity to account for
     // likely underestimation of immunity by current serological assays
     number q_immunity
@@ -776,7 +777,7 @@ PARAMETER_SECTION
     // Variables and vectors for calculating projected final year biomass
     // vector tempWgt(1,nage)
     // vector avgWgt5Yr(1,nage)
-    vector projected_N_y_a(1,nage)
+    // vector projected_N_y_a(1,nage)
     // vector projected_Early_Sp_biomass(1,nage)
 
     vector Mean_Age0(1,nyr_tobefit) 
@@ -1123,7 +1124,8 @@ FUNCTION void calc_naturalmortality()
             }else if(mor_season(beta_mortality_ind(k))==2){
                 forecast_winter_survival_effect(j) += (M_change(nyr_tobefit)*beta_mortality_offset(k)+beta_mortality(k))*mor_turn_on(beta_mortality_ind(k))*nyr_tobefit_winter_covariate(beta_mortality_ind(k))*covariate_effect_byage(j,beta_mortality_ind(k));
             }else if(mor_season(beta_mortality_ind(k))==3){
-                forecast_winter_survival_effect(j) += (M_change(nyr_tobefit)*beta_mortality_offset(k)+beta_mortality(k))*mor_turn_on(beta_mortality_ind(k))*nyr_tobefit_winter_covariate(beta_mortality_ind(k))*covariate_effect_byage(j,beta_mortality_ind(k));
+                // forecast_winter_survival_effect(j) += (M_change(nyr_tobefit)*beta_mortality_offset(k)+beta_mortality(k))*mor_turn_on(beta_mortality_ind(k))*nyr_tobefit_winter_covariate(beta_mortality_ind(k))*covariate_effect_byage(j,beta_mortality_ind(k));
+                forecast_winter_survival_effect(j) += (M_change(nyr_tobefit)*beta_mortality_offset(k)+beta_mortality(k))*mor_turn_on(beta_mortality_ind(k))*mor_covariates(nyr_tobefit,beta_mortality_ind(k))*covariate_effect_byage(j,beta_mortality_ind(k));
             }
         }
     }
@@ -2332,7 +2334,7 @@ FUNCTION project_biomass
     //Use the average differences across the last 5 years...
     dvector tempWgt(1,nage);
     dvector avgWgt5Yr(1,nage);
-    //dvar_vector projected_N_y_a(1, nage);
+    dvar_vector projected_N_y_a(1, nage);
     dvar_vector projected_Early_Sp_biomass(1, nage);
 
     for (int a=1; a<=nage; a++){
@@ -2360,9 +2362,13 @@ FUNCTION project_biomass
     projected_Early_Sp_biomass(4) = maturity(nyr_tobefit,4)*meanLgRec*avgWgt5Yr(4);
     
     // Fill in half-year survival rates for forecast year
-    for(int j=1;j<=nage;j++){
+    for(int j=1;j<=nage-1;j++){
         forecast_survival_winter(j)=exp(-(0.5*Z_0_8+forecast_winter_survival_effect(j)));
+        // forecast_survival_winter(j)=exp(-(0.5*Z_0_8));
     }
+
+    // plus group
+    forecast_survival_winter(nage)=exp(-(0.5*Z_9+forecast_winter_survival_effect(nage)));
 
     // Call numbers this year using last year's info for ages 4-8
     for(int j=5;j<=nage-1;j++){
@@ -2404,7 +2410,6 @@ FUNCTION write_chain_results
     ofstream LLikReport("mcmc_out/llikcomponents.csv",ios::app);
     ofstream PriorReport("mcmc_out/priordensities.csv",ios::app);
     ofstream PFRReport("mcmc_out/PFRBiomass.csv",ios::app);
-    ofstream projected_naa_report("mcmc_out/Num_at_age_proj.csv",ios::app);    
     ofstream indiv_LLikReport("mcmc_out/llik_observations.csv",ios::app);
     ofstream recruit_effect_report("mcmc_out/recruitment_effects.csv",ios::app);
     ofstream summer_survival_report("mcmc_out/adult_survival_effects_summer.csv",ios::app);
@@ -2583,12 +2588,6 @@ FUNCTION write_chain_results
      PFRReport << prefishery_biomass (nyr_tobefit)<< ",";
      PFRReport << projected_prefishery_biomass << endl; // Projected pre-fishery run biomass for the upcoming year
 
-    // Output projected numbers-at-age matrix
-    for (int j=1; j<=nage-1; j++){
-        projected_naa_report << projected_N_y_a(j) << ","; 
-    }
-    projected_naa_report << projected_N_y_a(nage) << endl; 
-
     if(DD_Mat==1){
     	ofstream maturity_report("density_dependent_maturity.csv",ios::app);
     	for (int i=1; i<=nyr_tobefit; i++){
@@ -2739,11 +2738,11 @@ REPORT_SECTION
   report1 << "Fatality rate of infection in spawning population (numbers):" << endl << fatal_sp_ich << endl << endl;
   report1 << "I. hoferi infection prevalence in spawning population (numbers):" << endl << ichprev_sp << endl << endl;
 
-  report1 << "PROJECTED MANAGEMENT QUANTITIES" << endl;
-  report1 << "Mean recruits from past 10 years" << endl << meanLgRec << endl;
-  report1 << "Projected total pre-fishery biomass" << endl << projected_prefishery_biomass << endl;
+  //report1 << "PROJECTED MANAGEMENT QUANTITIES" << endl;
+  //report1 << "Mean recruits from past 10 years" << endl << meanLgRec << endl;
+  //report1 << "Projected total pre-fishery biomass" << endl << projected_prefishery_biomass << endl;
   //report1 << "Projected pre-fishery biomass by age" << endl << projected_Early_Sp_biomass << endl;
-  report1 << "Projected numbers at age" << endl << projected_N_y_a << endl << endl;
+  //report1 << "Projected numbers at age" << endl << projected_N_y_a << endl << endl;
 
   report1.close();
 
