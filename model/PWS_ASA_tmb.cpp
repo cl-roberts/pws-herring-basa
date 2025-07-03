@@ -142,10 +142,10 @@ Type objective_function<Type>::operator() ()
     PARAMETER(pk);                      // pound spawn-on-kelp mortality proportion
     PARAMETER(egg_add);                 // egg deposition additional variance term
     PARAMETER(Z_0_8);                   // background mortality, ages 0-8
-    PARAMETER(log_MeanAge0);            // mean recruits, log-space
     PARAMETER(sigma_age0devs);          // variance term for recruitment deviates
-
+    
     // ---- estimated parameters ---- //
+    PARAMETER(log_MeanAge0);            // mean recruits, log-space
     PARAMETER_VECTOR(annual_age0devs);  // recruitment deviates
     PARAMETER(log_juvenile_q);          // aerial juvenile survey scalar, log-space
     PARAMETER_VECTOR(loginit_pop);      // 1980 numbers-at-age, ages 1-5, log-space
@@ -155,27 +155,26 @@ Type objective_function<Type>::operator() ()
     PARAMETER(logmdm_c);                // milt scalar, log-space                        
     PARAMETER(adfg_hydro_q);            // hydroacoustic scalar (ADFG)
     PARAMETER(pwssc_hydro_q);           // hydroacoustic scalar (PWSSC)
-
+    
     PARAMETER(VHSV_age3_4_mort_93);     // additional mortality 1992-93 ages 3-4 (VHSV)
     PARAMETER(ICH_age5_8_mort_93);      // additional mortality 1992-93 ages 5-8 (I. hoferi)
     PARAMETER(mat_age3);                // maturity prop age 3 (as frac of age 4 prop)
     PARAMETER(mat_age4);                // maturity proportion age 4
-
+    
     PARAMETER(seine_selex_alpha);       // purse-seine selectivity logistic alpha parameter
     PARAMETER(seine_selex_beta);        // purse-seine selectivity logistic beta parameter
-
+    
     PARAMETER(milt_add_var);            // milt additional variance
     PARAMETER(adfg_hydro_add_var);      // hydroacoustic additional variance (ADFG)
     PARAMETER(pwssc_hydro_add_var);     // hydroacoustic additional variance (PWSSC)
     PARAMETER(juvenile_overdispersion); // aerial juvenile additional variance
-
-
+    
+    
     // ------------------------------------------------------------------ //
     //                        Procedure Section                           //
     // ------------------------------------------------------------------ //
 
     // ---- convert some parameters from log-space ---- //
-    Type MeanAge0 = exp(log_MeanAge0);                  // mean recruitment
     vector<Type> init_pop = exp(loginit_pop);           // initial population vector
 
     // --------------------- POPULATION DYNAMICS ------------------------ //
@@ -207,12 +206,10 @@ Type objective_function<Type>::operator() ()
                 } else if (disease_covs(y, b) != -9) {
                     disease_covs_calc(y, b) = disease_covs(y, b);
                 }
-                if(y == nyr-1){
-                    summer_mortality_effect(y, a) += beta_mortality(b)*disease_covs_calc(y, b)*mort_age_impact(a, b);
-                } else {
-                    summer_mortality_effect(y, a) += beta_mortality(b)*disease_covs_calc(y, b)*mort_age_impact(a, b);
+                summer_mortality_effect(y, a) += beta_mortality(b)*disease_covs_calc(y, b)*mort_age_impact(a, b);
+                if(y < nyr-1) {
                     winter_mortality_effect(y+1, a) += beta_mortality(b)*disease_covs_calc(y, b)*mort_age_impact(a, b);
-                }             
+                }              
             }
         }
     }
@@ -220,13 +217,15 @@ Type objective_function<Type>::operator() ()
     for (int y = 0; y < nyr; y++) {
         for (int a = 0; a < (nage-1); a++) {
             // ages 0-8
-            summer_survival(y, a) = exp(-0.5*Z_0_8);
-            winter_survival(y, a) = exp(-0.5*Z_0_8);
-            for(int b = 0; b < n_covs; b++) {
-                // if (disease_covs(y, b) == -9) continue; 
-                summer_survival(y, a) *= exp(-summer_mortality_effect(y, a));
-                winter_survival(y, a) *= exp(-winter_mortality_effect(y, a));
-            }
+            summer_survival(y, a) = exp(-0.5*Z_0_8 - summer_mortality_effect(y, a));
+            winter_survival(y, a) = exp(-0.5*Z_0_8 - winter_mortality_effect(y, a));
+            // summer_survival(y, a) = exp(-0.5*Z_0_8);
+            // winter_survival(y, a) = exp(-0.5*Z_0_8);
+            // for(int b = 0; b < n_covs; b++) {
+            //     // if (disease_covs(y, b) == -9) continue; 
+            //     summer_survival(y, a) *= exp(-summer_mortality_effect(y, a));
+            //     winter_survival(y, a) *= exp(-winter_mortality_effect(y, a));
+            // }
             if (a >= 3 && y == index_1992) {
                 if (a <= 4) {
                     summer_survival(y, a) *= exp(-VHSV_age3_4_mort_93);
@@ -252,13 +251,13 @@ Type objective_function<Type>::operator() ()
         // plus group (9+)
         int a = nage-1;
         if (y == 0) {
-            summer_survival(y, a) = exp(-0.5*Z_9);
-            winter_survival(y, a) = exp(-0.5*Z_9);
-            for(int b = 0; b < n_covs; b++) {
-                // if (disease_covs(y, b) == -9) continue; 
-                summer_survival(y, a) *= exp(-summer_mortality_effect(y, a));
-                winter_survival(y, a) *= exp(-winter_mortality_effect(y, a));
-            }                             
+            summer_survival(y, a) = exp(-0.5*Z_9 - summer_mortality_effect(y, a));
+            winter_survival(y, a) = exp(-0.5*Z_9 - winter_mortality_effect(y, a));
+            // for(int b = 0; b < n_covs; b++) {
+            //     // if (disease_covs(y, b) == -9) continue; 
+            //     summer_survival(y, a) *= exp(-summer_mortality_effect(y, a));
+            //     winter_survival(y, a) *= exp(-winter_mortality_effect(y, a));
+            // }                             
         } else if (y > 0) {
             summer_survival(y, a) = summer_survival(y-1, a) * (summer_survival(y, a-1)/summer_survival(y-1, a-1));
             winter_survival(y, a) = winter_survival(y-1, a) * (winter_survival(y, a-1)/winter_survival(y-1, a-1));
@@ -311,14 +310,15 @@ Type objective_function<Type>::operator() ()
 
     // ---- recruitment ---- //
     vector<Type> age_0(nyr);
-    for (int y = 0; y < nyr-1; y++) {
-        age_0(y) = MeanAge0 * exp(annual_age0devs(y) - 0.5*pow(sigma_age0devs, 2));
+    for (int y = 0; y < nyr; y++) {
+        // age_0(y) = exp(log_MeanAge0 + annual_age0devs(y) - 0.5*pow(sigma_age0devs, 2));
+        age_0(y) = exp(log_MeanAge0 + annual_age0devs(y)/sigma_age0devs);
         // age_0(y) = exp(annual_age0devs(y));
     }
     // note: the TPL model sets the final recruitment deviation to 0, effectively
     // forecasting the age-0 herring in the terminal year of the model to be
     // the MeanAge0 (currently a fixed parameter) 
-    age_0(nyr-1) = MeanAge0;                                       
+    // age_0(nyr-1) = exp(log_MeanAge0);                                       
 
 
     // ---- initialize pop dynamics objects and fill in first year ---- //
@@ -516,7 +516,7 @@ Type objective_function<Type>::operator() ()
     }
 
     // ---- biomass estimates ---- //
-
+    
     vector<Type> B_y(nyr);                              // pre-fishery total biomass
     matrix<Type> Btilde_y(nyr, nage);                   // pre-fishery spawning biomass
     vector<Type> Btilde_post_y(nyr);                    // post-fishery spawning biomass
@@ -534,12 +534,29 @@ Type objective_function<Type>::operator() ()
     
     // set up winter survival forecast vector
     for (int a = 0; a < nage; a++) {
+
         if(a < nage - 1) {
             winter_survival_forecast(a) = exp(-0.5*Z_0_8);
-        } else if (a == nage-1) { 
+        } else if (a == nage - 1) { 
             winter_survival_forecast(a) = exp(-0.5*Z_9);            
         }
+
+        for (int b = 0; b < n_covs; b++) {
+            winter_survival_forecast(a) *= exp(-beta_mortality(b)*disease_covs_calc(nyr-1, b)*mort_age_impact(a, b));
+        }
+        
     }
+    
+    
+    // for (int a = 0; a < nage; a++) {
+    //     if(a < nage - 1) {
+    //         // beta_mortality(b)*disease_covs_calc(y, b)*mort_age_impact(a, b)
+    //         winter_survival_forecast(a) = exp(-0.5*Z_0_8);
+    //     } else if (a == nage-1) { 
+    //         winter_survival_forecast(a) = exp(-0.5*Z_9);            
+    //     }
+    // }
+
 
     // project naa matrix forward 1 year
     for (int a = 0; a < nage; a++) {
@@ -774,36 +791,57 @@ Type objective_function<Type>::operator() ()
     // ---- total likelihood ---- //
 
     Type negLogLik = 0.0;                               
-    negLogLik = L1 + L2 + L3 + L4 + L5 + L6 + L7 + 1000*naa_pen + 1000*ntilde_pen + 1000*winter_surv_pen + 1000*summer_surv_pen;
+    // negLogLik = L1 + L2 + L3 + L4 + L5 + L6 + L7 + 1000*naa_pen + 1000*ntilde_pen + 1000*winter_surv_pen + 1000*summer_surv_pen;
+    negLogLik = L1 + L2 + L3 + L4 + L5 + L6 + L7;
 
     // ---- incorporate prior densities ---- //
 
-    for (int y = 0; y < nyr-1; y++) {
-        negLogLik -= dunif(annual_age0devs(y), Type(-10), Type(10), true);
+    // using namespace density;
+
+    // matrix<Type> Sigma(nyr, nyr);
+
+    // for (int i = 0; i < nyr; i++) {
+    //     for (int j = 0; j < nyr; j++) {
+    //         if (i == j) {
+    //             Sigma(i, j) = Type(1.0);
+    //         } else if (abs(i-j) < 5) {
+    //             Sigma(i, j) = Type(0.5);
+    //         } else if (abs(i-j) < 10) {
+    //             Sigma(i, j) = Type(0.25);
+    //         } else {
+    //             Sigma(i, j) = Type(0.0);
+    //         }
+    //     }
+    // }
+
+    // negLogLik += MVNORM(Sigma)(annual_age0devs);
+
+    for (int y = 0; y < nyr; y++) {
+        negLogLik -= dnorm(annual_age0devs(y), Type(0.0), Type(1.0), true);
     }
-    for (int y = 0; y < 5; y++) {
-        negLogLik -= dunif(loginit_pop(y), Type(3.00), Type(8.00), true);
-    }
-    // negLogLik -= dnorm(MeanAge0, Type(0), Type(sigma_age0devs), true);
+    // for (int y = 0; y < 5; y++) {
+    //     negLogLik -= dunif(loginit_pop(y), Type(3.00), Type(8.00), true);
+    // }
+    // negLogLik -= dnorm(log_MeanAge0, Type(5.0), Type(3.0), true);
     // negLogLik -= dunif(sigma_age0devs, Type(0.00), Type(2.0), true);
-    negLogLik -= dunif(log_juvenile_q, Type(-5), Type(8.0), true);
-    negLogLik -= dunif(Z_9, Type(0.3), Type(1.6), true);
-    for (int b = 0; b < n_covs; b++) {
-        negLogLik -= dunif(beta_mortality(b), Type(-10.00), Type(10.00), true);
-    }
-    negLogLik -= dunif(logmdm_c, Type(2.3), Type(9.0), true);
-    negLogLik -= dunif(adfg_hydro_q , Type(-5), Type(5), true);
-    negLogLik -= dunif(pwssc_hydro_q, Type(-5), Type(5), true);
-    negLogLik -= dunif(VHSV_age3_4_mort_93, Type(0.0), Type(5.0), true);
-    negLogLik -= dunif(ICH_age5_8_mort_93, Type(0.0), Type(5.0), true);
+    // negLogLik -= dunif(log_juvenile_q, Type(-5), Type(8.0), true);
+    // negLogLik -= dunif(Z_9, Type(0.3), Type(1.6), true);
+    // for (int b = 0; b < n_covs; b++) {
+    //     negLogLik -= dnorm(beta_mortality(b), Type(0.0), Type(6.0), true);
+    // }
+    // negLogLik -= dunif(logmdm_c, Type(2.3), Type(9.0), true);
+    // negLogLik -= dunif(adfg_hydro_q , Type(-5), Type(5), true);
+    // negLogLik -= dunif(pwssc_hydro_q, Type(-5), Type(5), true);
+    // negLogLik -= dunif(VHSV_age3_4_mort_93, Type(0.0), Type(5.0), true);
+    // negLogLik -= dunif(ICH_age5_8_mort_93, Type(0.0), Type(5.0), true);
     negLogLik -= dbeta(mat_age3, Type(9.0), Type(11.0), true);
     negLogLik -= dbeta(mat_age4, Type(18.0), Type(2.0), true);
-    negLogLik -= dunif(seine_selex_alpha, Type(3.0), Type(5.0), true);
-    negLogLik -= dunif(seine_selex_beta, Type(1.0), Type(7.0), true);
+    // negLogLik -= dunif(seine_selex_alpha, Type(3.0), Type(5.0), true);
+    // negLogLik -= dunif(seine_selex_beta, Type(1.0), Type(7.0), true);
     negLogLik -= dnorm(milt_add_var, Type(0.33), Type(0.10), true);
     negLogLik -= dnorm(adfg_hydro_add_var, Type(0.30), Type(0.08), true);
     negLogLik -= dnorm(pwssc_hydro_add_var, Type(0.32), Type(0.08), true);
-    negLogLik -= dunif(juvenile_overdispersion, Type(0.01), Type(4.00), true);
+    // negLogLik -= dunif(juvenile_overdispersion, Type(0.01), Type(4.00), true);
 
 
     // ------------------------------------------------------------------ //

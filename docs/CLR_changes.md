@@ -86,3 +86,17 @@ Every R function in the `pwsHerringBasa` package has an associated .rd file. The
 
 
 
+## TMB model 
+
+## 7/1/2025
+
+- Fixed bug in estimation model for juvenile schools, now better fits
+- Estimate `log_MeanAge0`, previously a fixed parameter (as is in ADMB model)
+- Estimate age0 deviate for last year in model instead of fixing to 0
+- Made age0 deviates random effects
+- scaled age0 deviates by sigma_age0devs in attempt to decorrelate deviates
+ 
+## 7/2/2025
+
+- Added disease prevalence data from 2020-2024
+- 
