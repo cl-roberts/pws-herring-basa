@@ -75,23 +75,35 @@ beta_posteriors <- read.csv(here(dir_mcmc_out, "iterations.csv")) |>
 #### plot mortality time series ####
 
 # calculate mortalities
-summer_mortality <- -log(summer_survival)
-winter_mortality <- -log(winter_survival)
+
+summer_mortality_age_3 <- -log(summer_survival)[seq(4, ncol(summer_survival), by = 10)]
+winter_mortality_age_3 <- -log(winter_survival)[seq(4, ncol(winter_survival), by = 10)]
+
+summer_mortality_age_5 <- -log(summer_survival)[seq(6, ncol(summer_survival), by = 10)]
+winter_mortality_age_5 <- -log(winter_survival)[seq(6, ncol(winter_survival), by = 10)]
 
 # combine mortalities into a single matrix for annual mortality rate 
-annual_mortality_post <- summer_mortality + winter_mortality 
 
+annual_mortality_post_age_3 <- cbind(
+    summer_mortality_age_3[,1:(nyr-1)] + winter_mortality_age_3[,2:nyr], 
+    summer_mortality_age_3[,nyr] + winter_mortality_age_3[,(nyr+1)]
+)
+annual_mortality_post_age_5 <- cbind(
+    summer_mortality_age_5[,1:(nyr-1)] + winter_mortality_age_5[,2:nyr], 
+    summer_mortality_age_5[,nyr] + winter_mortality_age_5[,(nyr+1)]
+)
 
 # calculate 50% and 95% intervals from posterior
-annual_mortality <- expand.grid(1:nage-1, years)
+annual_mortality <- expand.grid(years, c(3, 5))
 
 quants <- c(.025, .25, .5, .75, .975)
 for (q in seq(quants)) {
-    mortality_quantiles <- apply(annual_mortality_post, MARGIN = 2, FUN = \(x) quantile(x, probs = quants[q]))    
-    annual_mortality <- cbind(annual_mortality, mortality_quantiles)
+    quantiles_age_3 <- apply(annual_mortality_post_age_3, MARGIN = 2, FUN = \(x) quantile(x, probs = quants[q]))    
+    quantiles_age_5 <- apply(annual_mortality_post_age_5, MARGIN = 2, FUN = \(x) quantile(x, probs = quants[q]))    
+    annual_mortality <- cbind(annual_mortality, c(quantiles_age_3, quantiles_age_5))
 }
 
-colnames(annual_mortality) <- c("age", "year", quants)
+colnames(annual_mortality) <- c("year", "age", quants)
 
 # filter by the only relevant ages
 mortality <- annual_mortality |>
@@ -109,10 +121,9 @@ disease <- rbind(ich, vhs)
 disease$disease <- ifelse(disease$disease == -9, NA, disease$disease)
 
 mortality <- merge(mortality, disease)
+rownames(mortality) <- 1:nrow(mortality)
 
-# plot
-
-vhs_scalar <- 10*max(mortality$`0.975`)
+vhs_scalar <- 15*max(mortality$`0.975`)
 vhs_mortality_ts <- ggplot(data = filter(mortality, age == 3), aes(x = year)) +
     geom_ribbon(aes(ymin = `0.025`, ymax = `0.975`), fill = "grey5", alpha = .25) +
     geom_ribbon(aes(ymin = `0.25`, ymax = `0.75`), fill = "grey5", alpha = .25) +
@@ -125,12 +136,13 @@ vhs_mortality_ts <- ggplot(data = filter(mortality, age == 3), aes(x = year)) +
         sec.axis = sec_axis(~./vhs_scalar, name="VHSV Prevalence")
     )
 
-ich_scalar <- max(mortality$`0.975`)
+ich_scalar <- .75*max(mortality$`0.975`)
 ich_mortality_ts <- ggplot(data = filter(mortality, age == 5), aes(x = year)) +
     geom_ribbon(aes(ymin = `0.025`, ymax = `0.975`), fill = "grey5", alpha = .25) +
     geom_ribbon(aes(ymin = `0.25`, ymax = `0.75`), fill = "grey5", alpha = .25) +
     geom_line(aes(y = `0.5`)) +
     geom_line(aes(y = disease*ich_scalar)) +
+    geom_vline(aes(xintercept = 2007), color = "red") +
     xlab("Year") + ylab("Instantaneous Mortality") +
     labs(subtitle = "Ages 5-8") +
     scale_y_continuous(
@@ -141,7 +153,6 @@ ich_mortality_ts <- ggplot(data = filter(mortality, age == 5), aes(x = year)) +
 mortality_ts <- ggarrange(vhs_mortality_ts, ich_mortality_ts, ncol = 1, heights = c(1,.875))
 # ggsave(here::here(dir_figures, "mortality_ts.pdf"), mortality_ts, height=8.5, width=11)
 ggsave(here::here(dir_figures, "mortality_ts.png"), mortality_ts, height=5, width=7)
-
 
 #-------------------------------------------------------------------------------
 
@@ -171,5 +182,5 @@ beta_mortality_posteriors <- ggarrange(
     ncol = 2
 )
 # ggsave(here::here(dir_figures, "beta_mortality_posteriors.pdf"), beta_mortality_posteriors, height=8.5, width=11)
-# ggsave(here::here(dir_figures, "beta_mortality_posteriors.png"), beta_mortality_posteriors, height=5, width=7)
-ggsave(here::here(dir_figures, "beta_mortality_posteriors.png"), beta_mortality_posteriors, height=2.5, width=7)
+ggsave(here::here(dir_figures, "beta_mortality_posteriors.png"), beta_mortality_posteriors, height=5, width=7)
+# ggsave(here::here(dir_figures, "beta_mortality_posteriors.png"), beta_mortality_posteriors, height=2.5, width=7)

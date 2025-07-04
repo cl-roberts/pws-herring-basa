@@ -1117,16 +1117,21 @@ FUNCTION void calc_naturalmortality()
     // covariate effect info for the year being forecasted.
 
     for(int j=1;j<=nage;j++){
+
+        forecast_winter_survival_effect(j) = 0;
+
         for(int k=1;k<=mortality_covariate_counter;k++){
-            if(beta_mortality_ind(k)==0){
-            }else if(nyr_tobefit_winter_covariate(k)==-9){
-                forecast_winter_survival_effect(j) += 0;
-            }else if(mor_season(beta_mortality_ind(k))==2){
-                forecast_winter_survival_effect(j) += (M_change(nyr_tobefit)*beta_mortality_offset(k)+beta_mortality(k))*mor_turn_on(beta_mortality_ind(k))*nyr_tobefit_winter_covariate(beta_mortality_ind(k))*covariate_effect_byage(j,beta_mortality_ind(k));
-            }else if(mor_season(beta_mortality_ind(k))==3){
-                // forecast_winter_survival_effect(j) += (M_change(nyr_tobefit)*beta_mortality_offset(k)+beta_mortality(k))*mor_turn_on(beta_mortality_ind(k))*nyr_tobefit_winter_covariate(beta_mortality_ind(k))*covariate_effect_byage(j,beta_mortality_ind(k));
-                forecast_winter_survival_effect(j) += (M_change(nyr_tobefit)*beta_mortality_offset(k)+beta_mortality(k))*mor_turn_on(beta_mortality_ind(k))*mor_covariates(nyr_tobefit,beta_mortality_ind(k))*covariate_effect_byage(j,beta_mortality_ind(k));
-            }
+            // if(beta_mortality_ind(k)==0){
+            // }else if(nyr_tobefit_winter_covariate(k)==-9){
+            //     forecast_winter_survival_effect(j) += 0;
+            // }else if(mor_season(beta_mortality_ind(k))==2){
+            //     forecast_winter_survival_effect(j) += (M_change(nyr_tobefit)*beta_mortality_offset(k)+beta_mortality(k))*mor_turn_on(beta_mortality_ind(k))*nyr_tobefit_winter_covariate(beta_mortality_ind(k))*covariate_effect_byage(j,beta_mortality_ind(k));
+            // }else if(mor_season(beta_mortality_ind(k))==3){
+            //     // forecast_winter_survival_effect(j) += (M_change(nyr_tobefit)*beta_mortality_offset(k)+beta_mortality(k))*mor_turn_on(beta_mortality_ind(k))*mor_covariates(nyr_tobefit,beta_mortality_ind(k))*covariate_effect_byage(j,beta_mortality_ind(k));
+            // }
+
+            if(mor_covariates(nyr_tobefit,k)==-9){continue;}
+            forecast_winter_survival_effect(j) += beta_mortality(k)*mor_turn_on(k)*mor_covariates(nyr_tobefit,k)*covariate_effect_byage(j,k);
         }
     }
   
@@ -2492,8 +2497,11 @@ FUNCTION write_chain_results
       winter_survival_report << winter_survival(nyr_tobefit,j) << ",";
     }
     summer_survival_report << summer_survival(nyr_tobefit,nage) << endl;
-    winter_survival_report << winter_survival(nyr_tobefit,nage) << endl;
-
+    winter_survival_report << winter_survival(nyr_tobefit,nage) << ",";
+    for (int j=1; j<=nage-1; j++){
+      winter_survival_report << forecast_survival_winter(j) << ",";
+    }
+    winter_survival_report << forecast_survival_winter(nage) << endl;
 
     // Now output the loglikelihood components
     LLikReport << -seine_llk << "," << -spawner_llk << "," << eggdep_llk << "," << ADFG_hydro_llk << "," << PWSSC_hydro_llk << "," << mdm_llk << ",";
@@ -2737,6 +2745,9 @@ REPORT_SECTION
   report1 << "Incidence rate of infection in spawning population (numbers):" << endl << inf_inc_sp_ich << endl << endl;
   report1 << "Fatality rate of infection in spawning population (numbers):" << endl << fatal_sp_ich << endl << endl;
   report1 << "I. hoferi infection prevalence in spawning population (numbers):" << endl << ichprev_sp << endl << endl;
+
+  report1 << "FORECAST WINTER SURVIVAL" << endl;
+  report1 << "forecast winter mortality effect" << endl << forecast_winter_survival_effect << endl << endl;
 
   //report1 << "PROJECTED MANAGEMENT QUANTITIES" << endl;
   //report1 << "Mean recruits from past 10 years" << endl << meanLgRec << endl;
