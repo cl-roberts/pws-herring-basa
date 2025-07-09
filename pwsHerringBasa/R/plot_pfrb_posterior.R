@@ -29,13 +29,17 @@ plot_pfrb_posterior <- function(df, quants, prob, curr.year, font.size=1){
     # CLR: changed ..density.. to after_stat(density) to address deprecation warning
     scale_fill_grey(start=0.8, end=0.6)+
     geom_vline(xintercept = quants, linetype=c("dashed", "solid", "dashed"), size=c(0.5, 1, 0.5))+
-    geom_text(data=extra, aes(x=58, y=0.14, label=paste("Median:", q2)), size=font.size, hjust=1)+
-    geom_text(data=extra, aes(x=58, y=0.12, label=paste0("95% interval:\n", "(", q1, ", ", q3, ")")), size=font.size, hjust=1)+
-    geom_text(data=extra, aes(x=58, y=0.09, label=paste("Probability below\nthreshold:", prob)), size=font.size, hjust=1)+
-    scale_x_continuous(paste(curr.year, "Pre-Fishery Biomass (mt)"), breaks=seq(0, 60, 5), expand=c(0, 0))+
-    scale_y_continuous("Probability density", breaks=seq(0, 0.15, 0.05), expand=c(0, 0))+
-    coord_cartesian(ylim=c(0, 0.15), xlim=c(0, 60))+
-    ggtitle(paste(curr.year, "Pre-fishery Biomass Posterior Probability Density"))+
+    geom_text(data=extra, aes(x=75, y=0.05, label=paste("Median:", q2)), size=font.size, hjust=1)+
+    geom_text(data=extra, aes(x=75, y=0.035, label=paste0("95% interval:\n", "(", q1, ", ", q3, ")")), size=font.size, hjust=1)+
+    geom_text(data=extra, aes(x=75, y=0.02, label=paste("Probability below\nthreshold:", prob)), size=font.size, hjust=1)+
+    # scale_x_continuous(paste(curr.year, "spawning biomass (mt)"), breaks=seq(0, 60, 5), expand=c(0, 0))+
+    # scale_y_continuous("Probability density", breaks=seq(0, 0.10, 0.025), expand=c(0, 0))+
+    # coord_cartesian(ylim=c(0, 0.15), xlim=c(0, 60))+
+    xlab(paste(curr.year, "spawning biomass (mt)")) + 
+    ylab("Probability density") +
+    ggtitle(paste(curr.year, "spawning biomass"),
+            subtitle = "Posterior probability density")+
+    theme_bw(base_size = 12) +    
     theme(
       panel.grid.minor = element_blank(),
       panel.grid.major = element_blank(),
