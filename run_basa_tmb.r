@@ -10,11 +10,11 @@
 
 #### front matter ####
 
-## controls
+## MCMC controls
 
-chains <- 4
-set.seed(8558)
-seeds <- sample(1:1e4, size = chains)
+seed <- 406
+set.seed(seed)
+chains <- 1
 iter <- 2000
 warmup <- 700
 control <- list(adapt_delta = 0.95)
@@ -44,16 +44,33 @@ dyn.load(dynlib(here(dir_model, "PWS_ASA_tmb")))
 
 # model data
 PWS_ASA <- read.data.files(dir_model)$"PWS_ASA.dat"  
+
 # recruitment and natural mortality deviate formulations
 PWS_ASA_covariate <- read.data.files(dir_model)$"PWS_ASA_covariate.ctl"
+
 # disease data
 PWS_ASA_disease <- read.data.files(dir_model)$"PWS_ASA_disease.dat"
+
 # age composition sample sizes   
 agecomp_samp_sizes <- read.data.files(dir_model)$"agecomp_samp_sizes.txt"
-# initial effective sample sizes
+
+# effective sample size
+# initially fit model using raw sample sizes
+# iteratively compute ESS's below
 PWS_ASA_ESS <- agecomp_samp_sizes
+
+seine_ac <- PWS_ASA$seine_age_comp
+seine_missing <- apply(seine_ac, MARGIN = 1, FUN = \(x) any(x == -9))
+
+# identify missing data in raw sample sizes with -9's
+spawn_ac <- PWS_ASA$spawn_age_comp
+spawn_missing <- apply(spawn_ac, MARGIN = 1, FUN = \(x) any(x == -9))
+
+PWS_ASA_ESS$seine_sample_size[seine_missing,] <- -9
+PWS_ASA_ESS$spawn_sample_size[spawn_missing,] <- -9
+
 names(PWS_ASA_ESS) <- c("seine_ess", "spawn_ess", "vhsv_ess", "ich_ess")
-# PWS_ASA_ESS <- read.data.files(dir_model)$"PWS_ASA_ESS.ctl"
+
 # forecast controls
 forecast_controls <- list(
     recruitment_average_years = 10,
@@ -129,7 +146,7 @@ map <- list(
     # # ------------------------------------------------------------------
     # mat_age3 = factor(NA), mat_age4 = factor(NA),                   # maturity pars
     # # ------------------------------------------------------------------
-    # seine_selex_alpha = factor(NA), seine_selex_beta = factor(NA),  # select pars
+    # seine_selex_alpha = factor(NA), seine_selex_beta = factor(NA),  # selectivity pars
     # # ------------------------------------------------------------------
     # logmdm_c = factor(NA), milt_add_var = factor(NA),
     # adfg_hydro_q = factor(NA), adfg_hydro_add_var = factor(NA),     # survey pars
@@ -137,7 +154,7 @@ map <- list(
     # log_juvenile_q = factor(NA), 
     # juvenile_overdispersion = factor(NA),   
     # # ------------------------------------------------------------------
-    # annual_age0devs = rep(factor(NA), Y-1)                           # recruit pars
+    # annual_age0devs = rep(factor(NA), Y-1)                           # recruit deviates
     # # ------------------------------------------------------------------
     # loginit_pop = rep(factor(NA), 5)                                # init pop size (ages 1-5)
 ) 
@@ -182,15 +199,15 @@ est_parameters <- unlist(
 # make model object
 # model <- MakeADFun(model_data, parameters, map = map, DLL = "PWS_ASA_tmb", 
 #                    silent = TRUE, random = "annual_age0devs")
-model <- MakeADFun(model_data, parameters, map = map, DLL = "PWS_ASA_tmb", 
-                   silent = FALSE)
+# model <- MakeADFun(model_data, parameters, map = map, DLL = "PWS_ASA_tmb", 
+#                    silent = FALSE)
 
-before.optim <- c(
-    last.par = model$env$last.par,
-    par = model$par,
-    fn = model$fn(),
-    gr = model$gr()
-)
+# before.optim <- c(
+#     last.par = model$env$last.par,
+#     par = model$par,
+#     fn = model$fn(),
+#     gr = model$gr()
+# )
 
 
 # ------------------------------------------------------------------------------
@@ -200,22 +217,127 @@ before.optim <- c(
 
 # estimate age comps --> calculate ESS's --> estimate age comps --> repeat until convergence
 
+convergence <- FALSE 
 
+seine_samp_size <- model_data$seine_sample_size
+spawn_samp_size <- model_data$spawn_sample_size
 
+its <- 0
+max_iter <- 10
 
+while (!convergence) {
+
+    its <- its+1
+
+    # stop while loop if ESS's haven't converged
+    if (its > max_iter) {
+        stop(
+            paste("ESS calculation hasn't converged after", max_iter, "iterations")
+        )
+    }
+
+    # fit model using agecomp sample sizes of current iteration 
+    model_iteration <- MakeADFun(
+        model_data, parameters, map = map, DLL = "PWS_ASA_tmb", 
+        silent = TRUE, hessian = FALSE
+    )
+
+    # optimize model 
+    fit_iteration <- nlminb(
+        start = model_iteration$par, 
+        objective = model_iteration$fn, 
+        gradient = model_iteration$gr, 
+        lower = lower, upper = upper, 
+        control = list(eval.max = 10000, iter.max = 1000, rel.tol = 1e-10)
+    )
+
+    # obtain estimated seine and spawner age comps
+    seine_ac_est <- model_iteration$report(model_iteration$env$last.par.best)$seine_age_comp_est
+    spawn_ac_est <- model_iteration$report(model_iteration$env$last.par.best)$spawn_age_comp_est
+
+    # calculate the ESS's
+    seine_ess_numer <- rowSums(seine_ac_est[!seine_missing,]*(1-seine_ac_est[!seine_missing,])) 
+    seine_ess_denom <- rowSums((seine_ac[!seine_missing,]-seine_ac_est[!seine_missing,])^2) 
+    seine_ess <- seine_ess_numer / seine_ess_denom
+        
+    spawn_ess_numer <- rowSums(spawn_ac_est[!spawn_missing,]*(1-spawn_ac_est[!spawn_missing,])) 
+    spawn_ess_denom <- rowSums((spawn_ac[!spawn_missing,]-spawn_ac_est[!spawn_missing,])^2) 
+    spawn_ess <- spawn_ess_numer / spawn_ess_denom
+
+    # calculate the ratio of ESS's to raw sample sizes
+    seine_ratio <- seine_ess/seine_samp_size[!seine_missing,]
+    spawn_ratio <- spawn_ess/spawn_samp_size[!spawn_missing,]
+
+    # calculate harmonic means (see Muradian et al. 2017 and Stewart & Hamel 2014)
+    seine_hm <- 1 / mean(1/seine_ratio)
+    spawn_hm <- 1 / mean(1/spawn_ratio)
+
+    # compare this harmonic mean to the previous using a convergence criteria
+    if(its > 1) {
+
+        seine_test <- 100*abs(seine_hm_last - seine_hm) / seine_hm_last
+        spawn_test <- 100*abs(spawn_hm_last - spawn_hm) / spawn_hm_last
+
+        # this criteria was arbitrarily chosen (0.1% change)
+        convergence <- all(seine_test < 0.09, spawn_test < 0.09) 
+
+    }
+
+    seine_hm_last <- seine_hm
+    spawn_hm_last <- spawn_hm
+
+    # multiply the current harmonic mean by the sample size to get the new ESS
+    seine_ess <- round(seine_hm*seine_samp_size)
+    spawn_ess <- round(spawn_hm*spawn_samp_size)
+
+    # identify the missing years
+    seine_ess[seine_missing,] <- -9
+    spawn_ess[spawn_missing,] <- -9
+
+    model_data$seine_ess <- seine_ess
+    model_data$spawn_ess <- spawn_ess
+
+}
+
+exit_message <- paste("ESS calculations converged after", its, "iterations")
+
+print(exit_message)
+
+write(
+    c(exit_message, 
+      "\n#seine_ess", model_data$seine_ess, 
+      "\n#spawn_ess", model_data$spawn_ess),
+    file = here(dir_model, "agecomp_effective_sample_size.txt"),
+    sep = "\n"
+)
+
+# ------------------------------------------------------------------------------
+
+#### fit model with ML using final effective sample sizes ####
+
+# fit model using agecomp sample sizes of current iteration 
+model <- MakeADFun(
+    model_data, parameters, map = map, DLL = "PWS_ASA_tmb", 
+    silent = TRUE, hessian = TRUE
+)
 
 # fit with ML
-fit_ML <- nlminb(start = model$par, objective = model$fn, gradient = model$gr, 
-                 lower = lower, upper = upper,
-              control = list(eval.max = 10000, iter.max = 1000, rel.tol = 1e-10))
+fit_ML <- nlminb(
+    start = model$par, objective = model$fn, gradient = model$gr, 
+    lower = lower, upper = upper,
+    control = list(eval.max = 10000, iter.max = 1000, rel.tol = 1e-10)
+)
 
 sdreport(model)
 rep <- model$report(fit_ML$par)
 
 
 # calculate initial values for mcmc chains
-init_tmb_params <- function(chains, start, lower, upper){
-    par_names <- names(model$env$last.par.best) 
+init_tmb_params <- function(chains, start, lower, upper, seed){
+
+    set.seed(seed)
+
+    par_names <- names(lower) 
     sd <- abs(.75*start)
 
     inits <- list()
@@ -234,27 +356,32 @@ init_tmb_params <- function(chains, start, lower, upper){
     return(inits)
 }
 
-
-inits <- init_tmb_params(chains = chains, start = model$env$last.par, 
-                lower = lower, upper = upper)
+# randomize initial values for all chains
+inits <- init_tmb_params(
+    chains = chains, seed = seed,
+    start = model$env$last.par.best, 
+    lower = lower, upper = upper
+)
 
 
 # run NUTS
 mcmc_start_time <- Sys.time()
-fit <- tmbstan(model, chains = chains, cores = chains, init = inits, iter = iter, 
-               control = control, 
-                warmup = warmup, seed = seeds[1], algorithm = "NUTS", silent = FALSE,
-                lower = lower, upper = upper)
+fit <- tmbstan(
+    model, chains = chains, lower = lower, upper = upper, 
+    cores = chains, init = inits, iter = iter, 
+    control = control, warmup = warmup, seed = seed, algorithm = "NUTS", 
+    silent = FALSE
+)
 mcmc_end_time <- Sys.time()
 time <- mcmc_end_time - mcmc_start_time
 
 
-# # save parameter posteriors
+# save parameter posteriors
 mcmc_results <- as.data.frame(fit) |> select(!lp__)
 apply(mcmc_results, MARGIN = 2, FUN = median)
 
+# cool shiny app for mcmc chain diagnostics
 # shinystan::launch_shinystan(fit)
-
 
 
 # ------------------------------------------------------------------------------ 
