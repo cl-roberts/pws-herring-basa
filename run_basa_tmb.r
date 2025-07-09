@@ -12,7 +12,7 @@
 
 ## controls
 
-chains <- 1
+chains <- 4
 set.seed(8558)
 seeds <- sample(1:1e4, size = chains)
 iter <- 2000
@@ -27,27 +27,18 @@ library(tmbstan)
 library(rstan)
 library(pwsHerringBasa)
 library(dplyr)
+library(here)
 
 ## directory handling
 
-dir_model <- here::here("model")
+dir_model <- here("model")
 
-## TODO - calculate effective sample sizes
-
-# IMPORTANT: insert code here to calculate effective sample sizes once model
-# .cpp file is finished. This procedure is an iterative reweighting procedure 
-# which calculates ESS's based on a ratio of observed and estimated age 
-# compositions, I.e.
-#
-# estimate age comps --> calculate ESS's --> estimate age comps --> repeat until convergence
-#
-# Thus, model implementation must be finished in order estimate age comps for 
-# calculating ESS's.
-#
-# For now, we will use the values in PWS_ASA(ESS).ctl calculated in the ADMB
-# version of the model
-
-PWS_ASA_ESS <- read.data.files(dir_model)$"PWS_ASA_ESS.ctl" 
+# compile model
+if("PWS_ASA_tmb" %in% names(getLoadedDLLs())) {
+    dyn.unload(dynlib(here(dir_model, "PWS_ASA_tmb")))
+}
+compile(here(dir_model, "PWS_ASA_tmb.cpp"))
+dyn.load(dynlib(here(dir_model, "PWS_ASA_tmb")))
 
 ## read data
 
@@ -55,13 +46,25 @@ PWS_ASA_ESS <- read.data.files(dir_model)$"PWS_ASA_ESS.ctl"
 PWS_ASA <- read.data.files(dir_model)$"PWS_ASA.dat"  
 # recruitment and natural mortality deviate formulations
 PWS_ASA_covariate <- read.data.files(dir_model)$"PWS_ASA_covariate.ctl"
-# age composition sample sizes   
-agecomp_samp_sizes <- read.data.files(dir_model)$"agecomp_samp_sizes.txt"
 # disease data
 PWS_ASA_disease <- read.data.files(dir_model)$"PWS_ASA_disease.dat"
+# age composition sample sizes   
+agecomp_samp_sizes <- read.data.files(dir_model)$"agecomp_samp_sizes.txt"
+# initial effective sample sizes
+PWS_ASA_ESS <- agecomp_samp_sizes
+names(PWS_ASA_ESS) <- c("seine_ess", "spawn_ess", "vhsv_ess", "ich_ess")
+# PWS_ASA_ESS <- read.data.files(dir_model)$"PWS_ASA_ESS.ctl"
+# forecast controls
+forecast_controls <- list(
+    recruitment_average_years = 10,
+    waa_average_years = 5
+)
 
-model_data <- c(PWS_ASA_ESS, PWS_ASA, PWS_ASA_covariate, 
-                agecomp_samp_sizes, PWS_ASA_disease)
+model_data <- c(
+    PWS_ASA, PWS_ASA_covariate, PWS_ASA_disease, 
+    agecomp_samp_sizes, PWS_ASA_ESS,
+    forecast_controls
+)
 
 ## local vars
 
@@ -76,259 +79,182 @@ A <- model_data$nage
 
 #### Compile Model and load DLL ####
 
-fixed_pars <- list(pk = 0.75, egg_add = 0.4, Z_0_8 = 0.25, 
-                    # log_MeanAge0 = 6.2, 
-                    sigma_age0devs = 1.8)
+fixed_pars <- list(
+    pk = 0.75, egg_add = 0.4, Z_0_8 = 0.25, 
+    log_MeanAge0 = 6.2 
+    # sigma_age0devs = 0
+)
 
 phase1_pars <- list(
-                    log_MeanAge0 = 6.2, 
-                    annual_age0devs = rep(0, Y), 
-                    log_juvenile_q = 4.22, 
-                    loginit_pop = c(6.35,  5.66,  5.92,  6.74,  4.74)
-                    )
-phase2_pars <- list(Z_9 = 0.93, beta_mortality = rep(.2, 3), 
-                    logmdm_c = 5.87, adfg_hydro_q = -0.38, pwssc_hydro_q = -0.21)
-phase3_pars <- list(VHSV_age3_4_mort_93 = 0.08, ICH_age5_8_mort_93 = 0.22,
-                    mat_age3 = 0.60, mat_age4 = 0.99)
-phase4_pars <- list(seine_selex_alpha = 3.66, seine_selex_beta = 2.83)
-phase5_pars <- list(milt_add_var = 0.33,
-                    adfg_hydro_add_var = 0.30, pwssc_hydro_add_var = 0.32,
-                    juvenile_overdispersion = 1.00)
+    # log_MeanAge0 = 6.2, 
+    annual_age0devs = rep(0, Y-1), 
+    log_juvenile_q = 4.22, 
+    loginit_pop = c(6.35,  5.66,  5.92,  6.74,  4.74)
+)
+phase2_pars <- list(
+    Z_9 = 0.93, beta_mortality = rep(.2, 3), 
+    logmdm_c = 5.87, adfg_hydro_q = -0.38, pwssc_hydro_q = -0.21
+)
+phase3_pars <- list(
+    VHSV_age3_4_mort_93 = 0.08, ICH_age5_8_mort_93 = 0.22,
+    mat_age3 = 0.60, mat_age4 = 0.99
+)
+phase4_pars <- list(
+    seine_selex_alpha = 3.66, seine_selex_beta = 2.83
+)
+phase5_pars <- list(
+    milt_add_var = 0.33,
+    adfg_hydro_add_var = 0.30, pwssc_hydro_add_var = 0.32,
+    juvenile_overdispersion = 1.00
+)
 
-parameters <- c(fixed_pars, phase1_pars, phase2_pars, phase3_pars, 
-                phase4_pars, phase5_pars, unconstrained_cor_params=rep(0, 45*(45-1)/2)) 
+parameters <- c(
+    fixed_pars, phase1_pars, phase2_pars, 
+    phase3_pars, phase4_pars, phase5_pars
+) 
 
 # ------------------------------------------------------------------------------
 
-#### Fit and optimize model without phases ####
+#### Create model object ####
 
 # fix some parameters
-map <- list(pk = factor(NA), egg_add = factor(NA), Z_0_8 = factor(NA),       # fixed pars
-            # log_MeanAge0 = factor(NA), 
-            sigma_age0devs = factor(NA)                                   
-            # # ------------------------------------------------------------------ 
-            # Z_9 = factor(NA), VHSV_age3_4_mort_93 = factor(NA),             
-            # ICH_age5_8_mort_93 = factor(NA),                                # mort pars
-            # beta_mortality = rep(factor(NA), 3)
-            # # ------------------------------------------------------------------
-            # mat_age3 = factor(NA), mat_age4 = factor(NA),                   # maturity pars
-            # # ------------------------------------------------------------------
-            # seine_selex_alpha = factor(NA), seine_selex_beta = factor(NA),  # select pars
-            # # ------------------------------------------------------------------
-            # logmdm_c = factor(NA), milt_add_var = factor(NA),
-            # adfg_hydro_q = factor(NA), adfg_hydro_add_var = factor(NA),     # survey pars
-            # pwssc_hydro_q = factor(NA), pwssc_hydro_add_var = factor(NA),
-            # log_juvenile_q = factor(NA), 
-            # juvenile_overdispersion = factor(NA),   
-            # # ------------------------------------------------------------------
-            # annual_age0devs = rep(factor(NA), Y-1)                           # recruit pars
-            # # ------------------------------------------------------------------
-            # loginit_pop = rep(factor(NA), 5)                                # init pop size (ages 1-5)
-            ) 
+map <- list(
+    pk = factor(NA), egg_add = factor(NA), Z_0_8 = factor(NA),       # fixed pars
+    log_MeanAge0 = factor(NA)
+    # sigma_age0devs = factor(NA)                                   
+    # # ------------------------------------------------------------------ 
+    # Z_9 = factor(NA), VHSV_age3_4_mort_93 = factor(NA),             
+    # ICH_age5_8_mort_93 = factor(NA),                                # mort pars
+    # beta_mortality = rep(factor(NA), 3)
+    # # ------------------------------------------------------------------
+    # mat_age3 = factor(NA), mat_age4 = factor(NA),                   # maturity pars
+    # # ------------------------------------------------------------------
+    # seine_selex_alpha = factor(NA), seine_selex_beta = factor(NA),  # select pars
+    # # ------------------------------------------------------------------
+    # logmdm_c = factor(NA), milt_add_var = factor(NA),
+    # adfg_hydro_q = factor(NA), adfg_hydro_add_var = factor(NA),     # survey pars
+    # pwssc_hydro_q = factor(NA), pwssc_hydro_add_var = factor(NA),
+    # log_juvenile_q = factor(NA), 
+    # juvenile_overdispersion = factor(NA),   
+    # # ------------------------------------------------------------------
+    # annual_age0devs = rep(factor(NA), Y-1)                           # recruit pars
+    # # ------------------------------------------------------------------
+    # loginit_pop = rep(factor(NA), 5)                                # init pop size (ages 1-5)
+) 
 
 # parameter bounds
 lower <- c(
-            log_MeanAge0 = 2, 
-            annual_age0devs = rep(-10, Y), 
-            log_juvenile_q = -5,
-            loginit_pop = rep(3, 5), 
-            Z_9 = 0.3,  
-            beta_mortality = rep(-30, 3), 
-            logmdm_c = 2.3,  adfg_hydro_q = -5, pwssc_hydro_q = -5,     
-            VHSV_age3_4_mort_93 = 0, ICH_age5_8_mort_93 = 0, 
-            mat_age3 = 0.01, mat_age4 = 0.3,     
-            seine_selex_alpha = 3, seine_selex_beta = 1,
-            milt_add_var = 0.01, 
-            adfg_hydro_add_var = 0.01, pwssc_hydro_add_var = 0.01,
-            juvenile_overdispersion = 0.01) 
+    # log_MeanAge0 = 2, 
+    annual_age0devs = rep(-10, Y-1), 
+    log_juvenile_q = -5,
+    loginit_pop = rep(3, 5), 
+    Z_9 = 0.3,  
+    beta_mortality = rep(-30, 3), 
+    logmdm_c = 2.3,  adfg_hydro_q = -5, pwssc_hydro_q = -5,     
+    VHSV_age3_4_mort_93 = 0, ICH_age5_8_mort_93 = 0, 
+    mat_age3 = 0.01, mat_age4 = 0.3,     
+    seine_selex_alpha = 3, seine_selex_beta = 1,
+    milt_add_var = 0.01, 
+    adfg_hydro_add_var = 0.01, pwssc_hydro_add_var = 0.01,
+    juvenile_overdispersion = 0.01
+) 
 upper <- c(
-            log_MeanAge0 = 20, 
-            annual_age0devs = rep(10, Y), 
-            log_juvenile_q = 8,
-            loginit_pop = rep(8, 5), 
-            Z_9 = 1.6, 
-            beta_mortality = rep(30, 3), 
-            logmdm_c = 9, adfg_hydro_q = 5, pwssc_hydro_q = 5,     
-            VHSV_age3_4_mort_93 = 5, ICH_age5_8_mort_93 = 5, 
-            mat_age3 = 0.9, mat_age4 = 1, 
-            seine_selex_alpha = 5, seine_selex_beta = 7,
-            milt_add_var = 0.9,  
-            adfg_hydro_add_var = 0.7, pwssc_hydro_add_var = 0.6,
-            juvenile_overdispersion = 4)
+    # log_MeanAge0 = 20, 
+    annual_age0devs = rep(10, Y-1), 
+    log_juvenile_q = 8,
+    loginit_pop = rep(8, 5), 
+    Z_9 = 1.6, 
+    beta_mortality = rep(30, 3), 
+    logmdm_c = 9, adfg_hydro_q = 5, pwssc_hydro_q = 5,     
+    VHSV_age3_4_mort_93 = 5, ICH_age5_8_mort_93 = 5, 
+    mat_age3 = 0.9, mat_age4 = 1, 
+    seine_selex_alpha = 5, seine_selex_beta = 7,
+    milt_add_var = 0.9,  
+    adfg_hydro_add_var = 0.7, pwssc_hydro_add_var = 0.6,
+    juvenile_overdispersion = 4
+)
 
-est_parameters <- unlist(c(phase1_pars, phase2_pars, phase3_pars, 
-                phase4_pars, phase5_pars)) 
+est_parameters <- unlist(
+    c(phase1_pars, phase2_pars, phase3_pars, phase4_pars, phase5_pars)
+) 
                 
 
-# compile 
-if("PWS_ASA_tmb" %in% names(getLoadedDLLs())) {
-    dyn.unload(dynlib(here::here(dir_model, "PWS_ASA_tmb")))
-}
-compile(here::here(dir_model, "PWS_ASA_tmb.cpp"))
-dyn.load(dynlib(here::here(dir_model, "PWS_ASA_tmb")))
-
-
 # make model object
+# model <- MakeADFun(model_data, parameters, map = map, DLL = "PWS_ASA_tmb", 
+#                    silent = TRUE, random = "annual_age0devs")
 model <- MakeADFun(model_data, parameters, map = map, DLL = "PWS_ASA_tmb", 
-                   silent = TRUE, random = "annual_age0devs")
+                   silent = FALSE)
 
-# pre-MCMC ML model optimization 
+before.optim <- c(
+    last.par = model$env$last.par,
+    par = model$par,
+    fn = model$fn(),
+    gr = model$gr()
+)
 
+
+# ------------------------------------------------------------------------------
+
+
+#### calculate effective sample sizes ####
+
+# estimate age comps --> calculate ESS's --> estimate age comps --> repeat until convergence
+
+
+
+
+
+# fit with ML
 fit_ML <- nlminb(start = model$par, objective = model$fn, gradient = model$gr, 
                  lower = lower, upper = upper,
               control = list(eval.max = 10000, iter.max = 1000, rel.tol = 1e-10))
 
-fit_ML$par
 sdreport(model)
+rep <- model$report(fit_ML$par)
 
-# generate initial values for MCMC chains
-# lower_init <- lower
-# upper_init <- upper
 
-# lower_init[grep("annual_age0devs", names(lower))] <- -0.2
-# upper_init[grep("annual_age0devs", names(upper))] <- 0.2
-# lower_init["VHSV_age3_4_mort_93"] <- .01
-# upper_init["VHSV_age3_4_mort_93"] <- .5
-# lower_init["ICH_age5_8_mort_93"] <- .01
-# upper_init["ICH_age5_8_mort_93"] <- .5
+# calculate initial values for mcmc chains
+init_tmb_params <- function(chains, start, lower, upper){
+    par_names <- names(model$env$last.par.best) 
+    sd <- abs(.75*start)
 
-# lower_init <- c(annual_age0devs = rep(-.1, Y-1), 
-# 				log_juvenile_q = -1,
-# 				loginit_pop = rep(4.5, 5), 
-# 				Z_9 = 0.4,  
-# 				beta_mortality = rep(-5, 3), 
-# 				logmdm_c = 3,  adfg_hydro_q = -1, pwssc_hydro_q = -1,     
-# 				VHSV_age3_4_mort_93 = 0.15, ICH_age5_8_mort_93 = 0.1, 
-# 				mat_age3 = 0.4, mat_age4 = 0.8,     
-# 				seine_selex_alpha = 3, seine_selex_beta = 4,
-# 				milt_add_var = 0.3, 
-# 				adfg_hydro_add_var = 0.1, pwssc_hydro_add_var = 0.2,
-# 				juvenile_overdispersion = 0.1) 
-# upper_init <- c(annual_age0devs = rep(.1, Y-1), 
-# 				log_juvenile_q = 3,
-# 				loginit_pop = rep(6, 5), 
-# 				Z_9 = 1.1, 
-# 				beta_mortality = rep(5, 3), 
-# 				logmdm_c = 6, adfg_hydro_q = 1, pwssc_hydro_q = 1,     
-# 				VHSV_age3_4_mort_93 = .25, ICH_age5_8_mort_93 = .4, 
-# 				mat_age3 = 0.6, mat_age4 = .9, 
-# 				seine_selex_alpha = 5, seine_selex_beta = 5,
-# 				milt_add_var = 0.6,  
-# 				adfg_hydro_add_var = 0.3, pwssc_hydro_add_var = 0.3,
-# 				juvenile_overdispersion = 2)
-
-# inits <- init_tmb_params(chains = chains, lower = lower_init, upper = upper_init)
-
-inits_pin <- c(log_MeanAge0 = 6.2, annual_age0devs = rep(0, Y), 
-				log_juvenile_q = 4.22,
-				loginit_pop = c(6.35, 5.66, 5.92, 6.74, 4.74), 
-				Z_9 = 0.93,  
-				beta_mortality = c(0.2, 0.2, 0.2), 
-				logmdm_c = 5.87,  adfg_hydro_q = -0.38, pwssc_hydro_q = -0.21,     
-				VHSV_age3_4_mort_93 = 0.08, ICH_age5_8_mort_93 = 0.22, 
-				mat_age3 = 0.6, mat_age4 = 0.99,     
-				seine_selex_alpha = 3.66, seine_selex_beta = 2.83,
-				milt_add_var = 0.33, 
-				adfg_hydro_add_var = 0.3, pwssc_hydro_add_var = 0.32,
-				juvenile_overdispersion = 1) 
-
-# pars <- read.admbFit('PWS_ASA')
-# names(pars)
-# pars$names
-
-# init.tmb.params <- function(reps, model){
-#     par_names <- rownames(summary(sdreport(model))) 
-#     est <- summary(sdreport(model))[,1]
-#     std <- summary(sdreport(model))[,2]
-#     inits <- list()
+    inits <- list()
     
-#     for(j in 1:reps){
+    for(j in 1:chains){
 
-#         # This is a check on the CV of pars - basically high uncertainty indicates parameter is fixed or uninformed
-#         # attempts to avoid boundary issues in further estimation
-#         if(std[1]/est[1]<100 | !is.infinite(std[1]/est[1])) {
-#             inits[[j]] <- rnorm(1, est[1], sd = .1)
-#         } else { 
-#             inits[[j]] <- est[1]
-#         }
-        
-#         for(k in 2:length(est)){
-#             if(std[k]/est[k]<100 | !is.infinite(std[k] / est[k])) {
-#                 inits[[j]] <- c(inits[[j]], rnorm(1, est[k], sd = .1))  
-#             } else {
-#                 inits[[j]] <- c(inits[[j]], est[k])
-#             }
-#         }        
+        inits[[j]] <- rnorm(length(start), start, sd = sd)
+
+        while (any(inits[[j]] < lower) | any(inits[[j]] > upper)) {
+            inits[[j]] <- rnorm(length(start), start, sd = sd)
+        }
     
-#     names(inits[[j]]) <- par_names
-#     }
+        names(inits[[j]]) <- par_names
+    }
 
-#     return(inits)
-# }
+    return(inits)
+}
 
-# inits <- vector("list", chains)
-# for (i in 1:length(inits)) {
-# 	inits[[i]] <- inits_pin + rnorm(length(est_parameters), mean = 0, sd = .1)
-# }
 
-# inits <- init.tmb.params(chains, model = model)
+inits <- init_tmb_params(chains = chains, start = model$env$last.par, 
+                lower = lower, upper = upper)
+
 
 # run NUTS
 mcmc_start_time <- Sys.time()
-fit <- tmbstan(model, chains = chains, cores = chains, init = "last.par.best", iter = iter, 
+fit <- tmbstan(model, chains = chains, cores = chains, init = inits, iter = iter, 
                control = control, 
                 warmup = warmup, seed = seeds[1], algorithm = "NUTS", silent = FALSE,
                 lower = lower, upper = upper)
 mcmc_end_time <- Sys.time()
 time <- mcmc_end_time - mcmc_start_time
 
-# mon <- monitor(fit)
-# print(max(mon$Rhat))
-# print(min(mon$Bulk_ESS))
-# print(min(mon$Tail_ESS))
-# check_treedepth(fit)
-# check_divergences(fit)
 
-
-# save parameter posteriors
+# # save parameter posteriors
 mcmc_results <- as.data.frame(fit) |> select(!lp__)
 apply(mcmc_results, MARGIN = 2, FUN = median)
 
 # shinystan::launch_shinystan(fit)
 
-
-# try sparse sampling -----------------------------------------------------------
-
-# devtools::install_github('Cole-Monnahan-NOAA/adnuts', ref='sparse_M')
-# adnuts::sample_sparse_tmb
-# install.packages("RTMB")
-
-# names(sdreport(model, getJointPrecision=TRUE))
-# sdreport(model, getJointPrecision=TRUE)$jointPrecision
-
-# Q <- sdreport(model, getJointPrecision=TRUE)$jointPrecision
-# M <- solve(as.matrix(Q))
-# n <- nrow(Q)
-
-# adnuts::sample_sparse_tmb requires library but doesn't point to functions tril and drop0
-# library(Matrix) 
-# library(adnuts)
-# fit <- sample_sparse_tmb(model, rotation_only = FALSE, iter=2000, warmup=warmup, chains=chains,
-#                          cores=chains, metric="auto", Q=Q, Qinv=M, control = control)
-
-# as.data.frame(summary(fit))
-# pairs_admb(fit, pars=46:67)
-
-# mcmc_results <- as.data.frame(fit) |> select(!lp__)
-# apply(mcmc_results, MARGIN = 2, FUN = median)
-
-# ------------------------------------------------------------------------------ 
-
-#### Model diagnostics ####
-
-mon <- monitor(fit)
-print(max(mon$Rhat))
-print(min(mon$Tail_ESS))
 
 
 # ------------------------------------------------------------------------------ 
@@ -347,18 +273,29 @@ juv_schools <- matrix(NA, nrow = n_iters, ncol = Y)
 
 SpAC <- matrix(NA, nrow = n_iters, ncol = A*Y)
 SeAC <- matrix(NA, nrow = n_iters, ncol = A*Y)
-N <- matrix(NA, nrow = n_iters, ncol = A*Y)
 
-Btilde_y <- vector(mode = "list", length = nrow(mcmc_results))
-Btilde_post_y <- vector(mode = "list", length = nrow(mcmc_results))
-age_3 <- vector(mode = "list", length = nrow(mcmc_results))
+N <- matrix(NA, nrow = n_iters, ncol = A*Y)
+Ntilde <- matrix(NA, nrow = n_iters, ncol = A*Y)
+
+Btilde_y <- vector(mode = "list", length = n_iters)
+Btilde_post_y <- vector(mode = "list", length = n_iters)
+age_3 <- vector(mode = "list", length = n_iters)
+
+mean_log_rec <- matrix(NA, nrow = n_iters, ncol = 1)
 Btilde_forecast <- matrix(NA, nrow = n_iters, ncol = 1)
+
+winter_survival <- vector(mode = "list", length = n_iters)
+summer_survival <- vector(mode = "list", length = n_iters)
 
 VARSreport <- matrix(NA, nrow = n_iters, ncol = 4)
 
-likelihoods <- matrix(NA, nrow = nrow(mcmc_results), ncol = 8)
+likelihoods <- matrix(NA, nrow = n_iters, ncol = 8)
 
-for(i in 1:nrow(mcmc_results)){
+penalties <- matrix(NA, nrow = n_iters, ncol = 5)
+
+priors <- matrix(NA, nrow = n_iters, ncol = 1)
+
+for(i in 1:n_iters){
 
     other_posteriors <- model$report(mcmc_results[i,])
 
@@ -370,12 +307,19 @@ for(i in 1:nrow(mcmc_results)){
 
     SpAC[i,] <- other_posteriors$spawn_age_comp_est |> t() |> c()
     SeAC[i,] <- other_posteriors$seine_age_comp_est |> t() |> c()
+
     N[i, ] <- other_posteriors$N_y_a |> t() |> c()
+    Ntilde[i, ] <- other_posteriors$Ntilde_y_a |> t() |> c()
 
     Btilde_y[[i]] <- other_posteriors$Btilde_y
     Btilde_post_y[[i]] <- other_posteriors$Btilde_post_y
     age_3[[i]] <- other_posteriors$N_y_a[,4]
+
+    mean_log_rec[i,] <- other_posteriors$mean_log_rec
     Btilde_forecast[i,] <- other_posteriors$Btilde_forecast
+
+    winter_survival[[i]] <- other_posteriors$winter_survival
+    summer_survival[[i]] <- other_posteriors$summer_survival
 
     VARSreport[i,] <- unlist(c(mcmc_results[i, c("milt_add_var")],
                         fixed_pars["egg_add"],
@@ -391,7 +335,99 @@ for(i in 1:nrow(mcmc_results)){
     likelihoods[i,7] <- other_posteriors$L7
     likelihoods[i,8] <- other_posteriors$negLogLik
 
+    penalties[i,] <- c(
+        other_posteriors$penCount, other_posteriors$naa_pen, other_posteriors$ntilde_pen,
+        other_posteriors$winter_surv_pen, other_posteriors$summer_surv_pen
+    )
+
+    priors[i,] <- other_posteriors$priors
+
 }
+
+# ---------------------------
+
+dir_mcmc_out <- here("model/mcmc_out")
+
+# investigate likelihoods
+
+# tmb_lllk <- likelihoods
+# admb_llik <- read.csv(here(dir_mcmc_out, "llikcomponents.csv"))
+
+# # 3, 4, 5, 6, 7, 8/10
+# llik <- data.frame(admb = admb_llik[,3], tmb = tmb_llik[-1,3])
+
+# ggplot(llik) +
+#     geom_histogram(aes(x = admb, fill = "admb"), alpha = .25) +
+#     geom_histogram(aes(x = tmb, fill = "tmb"), alpha = .25) +
+#     geom_vline(aes(xintercept = median(admb)), color = "firebrick") +
+#     geom_vline(aes(xintercept = median(tmb)), color = "#404080") +
+#     scale_fill_manual(values=c("firebrick", "#404080")) +
+#     xlab("Total Negative Log-Likelihood")
+
+# ---------------------------
+
+# investigate priors
+
+
+# tmb_priors <- priors 
+# admb_priors_tmp <- read.csv(here(dir_mcmc_out, "priordensities.csv"), header = FALSE) |>
+#     as.matrix() |>
+#     t() |>
+#     na.omit()
+# admb_priors <- matrix(admb_priors_tmp, ncol = 45, byrow = TRUE) |>
+#     apply(MARGIN = 1, FUN = sum)
+
+# compare_priors <- data.frame(admb = admb_priors, tmb = tmb_priors)
+
+# ggplot(compare_priors) +
+#     geom_histogram(aes(x = admb, fill = "admb"), alpha = .25) +
+#     geom_histogram(aes(x = tmb, fill = "tmb"), alpha = .25) +
+#     geom_vline(aes(xintercept = median(admb)), color = "firebrick") +
+#     geom_vline(aes(xintercept = median(tmb)), color = "#404080") +
+#     scale_fill_manual(values=c("firebrick", "#404080")) +
+#     xlab("Prior densities")
+
+# ---------------------------
+
+# check to see if penalties worked
+
+sapply(age_3, FUN = median)
+
+sapply(winter_survival, \(x) all((x>0) & (x<1))) |>
+    all()
+
+sapply(summer_survival, \(x) all((x>0) & (x<1))) |>
+    all()
+
+sapply(SpAC, \(x) all((x>=0) & (x<=1))) |>
+    all()
+
+sapply(SeAC, \(x) all((x>=0) & (x<=1))) |>
+    all()
+
+sapply(N, \(x) all(x >= 0)) |>
+    all()
+
+sapply(Ntilde, \(x) all(x >= 0)) |>
+    all()
+
+sapply(Btilde_y, \(x) all(x >= 0)) |>
+    all()
+
+sapply(Btilde_post_y, \(x) all(x >= 0)) |>
+    all()
+
+# pens_admb <- read.csv(here(dir_mcmc_out, "penalties.csv"))[,1:3]
+# apply(pens_admb, MARGIN = 2, sum)
+apply(penalties, MARGIN = 2, sum)
+
+# age3_admb <- read.csv(here(dir_mcmc_out, "Age3.csv"))
+
+# dim(age3_admb)
+
+
+# ---------------------------
+
 
 ## create directories for tmb outputs
 
@@ -488,4 +524,5 @@ print(min(mon$Bulk_ESS))
 print(min(mon$Tail_ESS))
 check_treedepth(fit)
 check_divergences(fit)
+
 
