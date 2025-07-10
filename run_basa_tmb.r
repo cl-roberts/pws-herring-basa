@@ -4,11 +4,12 @@
 
 # CL Roberts
 
-# This script compiles the BASA TMB model 
+# This script compiles the BASA TMB model, calculates effective sample sizes,
+# and  
 
 ################################################################################
 
-#### front matter ####
+#### set up ####
 
 ## MCMC controls
 
@@ -33,14 +34,33 @@ library(here)
 
 dir_model <- here("model")
 
-# compile model
+dir_mcmc_tmb <- here::here(dir_model, "mcmc_out_tmb")
+if(!dir.exists(dir_mcmc_tmb)) {
+  dir.create(dir_mcmc_tmb)
+}
+dir_rep_tmb <- here::here(dir_model, "rep_out_tmb")
+if(!dir.exists(dir_rep_tmb)) {
+  dir.create(dir_rep_tmb)
+}
+dir_figures <- here::here("figures/tmb")
+if(!dir.exists(dir_figures)) {
+  dir.create(dir_figures)
+}
+dir_outputs <- here::here("data_outputs/tmb")
+if(!dir.exists(dir_outputs)) {
+  dir.create(dir_outputs)
+}
+
+## compile model
 if("PWS_ASA_tmb" %in% names(getLoadedDLLs())) {
     dyn.unload(dynlib(here(dir_model, "PWS_ASA_tmb")))
 }
 compile(here(dir_model, "PWS_ASA_tmb.cpp"))
 dyn.load(dynlib(here(dir_model, "PWS_ASA_tmb")))
 
-## read data
+# ------------------------------------------------------------------------------ 
+
+#### data section ####
 
 # model data
 PWS_ASA <- read.data.files(dir_model)$"PWS_ASA.dat"  
@@ -83,18 +103,26 @@ model_data <- c(
     forecast_controls
 )
 
-## local vars
+## global variables
 
 Y <- model_data$nyr
 start.year <- 1980
 curr.year <- start.year+Y
-
 A <- model_data$nage
 
+## sections of report files
+
+llik <- c(paste0("L", 1:7), "penCount", "priors") 
+derived <- c("Btilde_y", "Btilde_post_y", "Ntilde_y_a", 
+             "winter_survival", "summer_survival")
+survey <- c("seine_age_comp_est", "spawn_age_comp_est", "Ehat_y", 
+            "That_y", "Hhat_adfg_y", "Hhat_pwssc_y", "Jhat_y")
+forecast <- c("Btilde_forecast", "waa_forecast", 
+              "mean_log_rec", "projected_N_y_a")
 
 # ------------------------------------------------------------------------------ 
 
-#### Compile Model and load DLL ####
+#### Parameter section ####
 
 fixed_pars <- list(
     pk = 0.75, egg_add = 0.4, Z_0_8 = 0.25, 
@@ -134,7 +162,7 @@ parameters <- c(
 
 #### Create model object ####
 
-# fix some parameters
+# the map object is used to fix parameters
 map <- list(
     pk = factor(NA), egg_add = factor(NA), Z_0_8 = factor(NA),       # fixed pars
     log_MeanAge0 = factor(NA)
@@ -191,23 +219,19 @@ upper <- c(
     juvenile_overdispersion = 4
 )
 
-est_parameters <- unlist(
-    c(phase1_pars, phase2_pars, phase3_pars, phase4_pars, phase5_pars)
-) 
-                
 
 # make model object
 # model <- MakeADFun(model_data, parameters, map = map, DLL = "PWS_ASA_tmb", 
 #                    silent = TRUE, random = "annual_age0devs")
-# model <- MakeADFun(model_data, parameters, map = map, DLL = "PWS_ASA_tmb", 
-#                    silent = FALSE)
+model <- MakeADFun(model_data, parameters, map = map, DLL = "PWS_ASA_tmb", 
+                   silent = TRUE)
 
-# before.optim <- c(
-#     last.par = model$env$last.par,
-#     par = model$par,
-#     fn = model$fn(),
-#     gr = model$gr()
-# )
+# write pre-optimization report
+write_report(
+    obj = model, par = model$par, 
+    file = here(dir_rep_tmb, "pre-optim-report.txt"),
+    llik = llik, derived = derived, survey = survey, forecast = forecast
+)
 
 
 # ------------------------------------------------------------------------------
@@ -253,9 +277,12 @@ fit_ML <- nlminb(
     control = list(eval.max = 10000, iter.max = 1000, rel.tol = 1e-10)
 )
 
-sdreport(model)
-rep <- model$report(fit_ML$par)
-
+# write maximum likelihood report
+write_report(
+    obj = model, par = fit_ML$par, 
+    file = here(dir_rep_tmb, "ml-report.txt"),
+    llik = llik, derived = derived, survey = survey, forecast = forecast
+)
 
 # ------------------------------------------------------------------------------
 
@@ -282,7 +309,22 @@ time <- mcmc_end_time - mcmc_start_time
 
 # save parameter posteriors
 mcmc_results <- as.data.frame(fit) |> select(!lp__)
-apply(mcmc_results, MARGIN = 2, FUN = median)
+
+# parameter estimates are taken to be posterior medians
+fit_mcmc_par <- apply(mcmc_results, MARGIN = 2, FUN = median)
+
+# this bit is so that the write_report function does not insert a line break after 
+# each element in vector parameters. to be improved another day
+names(fit_mcmc_par)[grep("annual_age0devs", names(fit_mcmc_par))] <- "annual_age0devs"
+names(fit_mcmc_par)[grep("loginit_pop", names(fit_mcmc_par))] <- "loginit_pop"
+names(fit_mcmc_par)[grep("beta_mortality", names(fit_mcmc_par))] <- "beta_mortality"
+
+# write mcmc report
+write_report(
+    obj = model, par = fit_mcmc_par, 
+    file = here(dir_rep_tmb, "mcmc-report.txt"),
+    llik = llik, derived = derived, survey = survey, forecast = forecast
+)
 
 # cool shiny app for mcmc chain diagnostics
 # shinystan::launch_shinystan(fit)
@@ -459,21 +501,6 @@ apply(penalties, MARGIN = 2, sum)
 
 # ---------------------------
 
-
-## create directories for tmb outputs
-
-dir_mcmc_tmb <- here::here(dir_model, "mcmc_out_tmb")
-if(!dir.exists(dir_mcmc_tmb)) {
-  dir.create(dir_mcmc_tmb)
-}
-dir_figures <- here::here("figures/tmb")
-if(!dir.exists(dir_figures)) {
-  dir.create(dir_figures)
-}
-dir_outputs <- here::here("data_outputs/tmb")
-if(!dir.exists(dir_outputs)) {
-  dir.create(dir_outputs)
-}
 
 ## write results to .csv files
 

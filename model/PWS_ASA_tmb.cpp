@@ -20,19 +20,13 @@
 //                                                                            //
 // -------------------------------------------------------------------------- //
 //                                                                            //
-// Program file:  PWS_ASA_tmb.cpp                                             //
-// Input Data files                                                           //
+// C++ program file:  PWS_ASA_tmb.cpp                                         //
+// R control file:  run_basa_tmb.r                                            //
+//                                                                            //
+// Input Data files:                                                           //
 //        PWS_ASA.dat:             Model input (surveys, catches, etc.)       //
-//        PWS_ASA(phases):         Parameter phases                           //
-//        PWS_ASA(ESS).ctl:        Effective sample sizes iteratively         //
-//                                 estimated (in R) and used in obj function  //
-//        pws_asa.PIN:             Included to test different starting values //
 //                                                                            //
 // Output files:                                                              //
-//        PWS_ASA.rep: Customizable file in the REPORT_SECTION, useful for    //
-//                     trouble-shooting                                       //
-//        PWS_ASA.std: Default ADMB report file with Hessian derived SE's     //
-//        PWS_ASA.par: ADMB parameter estimates                               //
 //                                                                            //
 // -------------------------------------------------------------------------- //
 //                                                                            //
