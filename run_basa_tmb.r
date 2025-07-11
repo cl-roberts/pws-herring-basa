@@ -15,11 +15,10 @@
 
 seed <- 406
 set.seed(seed)
-chains <- 1
+chains <- 4
 iter <- 2000
 warmup <- 700
 control <- list(adapt_delta = 0.95)
-# control <- list(adapt_delta = 0.9, max_treedepth = 12)
 
 ## attach packages
 
@@ -113,8 +112,8 @@ A <- model_data$nage
 ## sections of report files
 
 llik <- c(paste0("L", 1:7), "penCount", "priors") 
-derived <- c("Btilde_y", "Btilde_post_y", "Ntilde_y_a", 
-             "winter_survival", "summer_survival")
+derived <- c("Btilde_y", "Btilde_post_y", "N_y_a", "Ntilde_y_a", 
+             "winter_survival", "summer_survival", "maturity")
 survey <- c("seine_age_comp_est", "spawn_age_comp_est", "Ehat_y", 
             "That_y", "Hhat_adfg_y", "Hhat_pwssc_y", "Jhat_y")
 forecast <- c("Btilde_forecast", "waa_forecast", 
@@ -160,7 +159,7 @@ parameters <- c(
 
 # ------------------------------------------------------------------------------
 
-#### Create model object ####
+#### set up other model attributes ####
 
 # the map object is used to fix parameters
 map <- list(
@@ -187,7 +186,7 @@ map <- list(
     # loginit_pop = rep(factor(NA), 5)                                # init pop size (ages 1-5)
 ) 
 
-# parameter bounds
+# estimated parameter lower bounds
 lower <- c(
     # log_MeanAge0 = 2, 
     annual_age0devs = rep(-10, Y-1), 
@@ -203,6 +202,8 @@ lower <- c(
     adfg_hydro_add_var = 0.01, pwssc_hydro_add_var = 0.01,
     juvenile_overdispersion = 0.01
 ) 
+
+# estimated parameter upper bounds
 upper <- c(
     # log_MeanAge0 = 20, 
     annual_age0devs = rep(10, Y-1), 
@@ -223,16 +224,8 @@ upper <- c(
 # make model object
 # model <- MakeADFun(model_data, parameters, map = map, DLL = "PWS_ASA_tmb", 
 #                    silent = TRUE, random = "annual_age0devs")
-model <- MakeADFun(model_data, parameters, map = map, DLL = "PWS_ASA_tmb", 
-                   silent = TRUE)
-
-# write pre-optimization report
-write_report(
-    obj = model, par = model$par, 
-    file = here(dir_rep_tmb, "pre-optim-report.txt"),
-    llik = llik, derived = derived, survey = survey, forecast = forecast
-)
-
+# model <- MakeADFun(model_data, parameters, map = map, DLL = "PWS_ASA_tmb", 
+#                    silent = TRUE)
 
 # ------------------------------------------------------------------------------
 
@@ -260,15 +253,27 @@ write(
 model_data$seine_ess <- ess$seine_ess
 model_data$spawn_ess <- ess$spawn_ess
 
+
 # ------------------------------------------------------------------------------
 
-#### fit model with ML using final effective sample sizes ####
+#### create model object and write pre-optimization report ####
 
-# fit model using agecomp sample sizes of current iteration 
+# fit model with iteratively re-weighted effective sample sizes 
 model <- MakeADFun(
     model_data, parameters, map = map, DLL = "PWS_ASA_tmb", 
     silent = TRUE, hessian = TRUE
 )
+
+# write pre-optimization report
+write_report(
+    obj = model, par = model$par, 
+    file = here(dir_rep_tmb, "pre-optim-report.txt"),
+    llik = llik, derived = derived, survey = survey, forecast = forecast
+)
+
+# ------------------------------------------------------------------------------
+
+#### fit model with ML ####
 
 # fit with ML
 fit_ML <- nlminb(

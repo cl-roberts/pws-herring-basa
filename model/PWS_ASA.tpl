@@ -719,6 +719,11 @@ PARAMETER_SECTION
 
     number priors
 
+    // dummy variables used for debugging
+    number dummy
+    vector dummy_vector(1,nyr_tobefit)
+    matrix dummy_matrix(1,nyr_tobefit,1,nage)
+
     // |---------------------------------------------------------------------------|
     // | CALCULATED VECTORS
     // |---------------------------------------------------------------------------|
@@ -957,15 +962,51 @@ PRELIMINARY_CALCS_SECTION
         }
 
         ofstream deterministic_run("rep_out/deterministic_run.rep",ios::trunc);
-
+        
         // Aerial juvenile survey (incorporated 12/2019)
         deterministic_run << "# Posterior Probability" << endl;
         deterministic_run << seine_llk +spawner_llk +eggdep_llk +ADFG_hydro_llk +PWSSC_hydro_llk +mdm_llk +age0_devs_penllk +mort_devs_penllk +priors +juvenile_llk +vhsv_llk +ich_llk << endl << endl;
 
+        deterministic_run << "dummy" << endl;
+        deterministic_run << dummy << endl << endl;
+
+        deterministic_run << "dummy vector" << endl;
+        deterministic_run << dummy_vector << endl << endl;
+
+        deterministic_run << "dummy matrix" << endl;
+        deterministic_run << dummy_matrix << endl << endl;
+
         // Aerial juvenile survey (incorporated 12/2019)
-        deterministic_run << "# Likelihood Components & Priors" << endl;
+        deterministic_run << "# Likelihood Components" << endl;
         deterministic_run << "# seine_llk  spawner_llk  eggdep_llk  ADFG_hydro_llk  PWSSC_hydro_llk  mdm_llk  age0_devs_penllk  mort_devs_penllk  juvenile_llk  vhsv_llk  ich_llk" << endl;
         deterministic_run << seine_llk << "  " << spawner_llk << "  " << eggdep_llk << "  " << ADFG_hydro_llk << "  " << PWSSC_hydro_llk << "  " << mdm_llk << "  " << age0_devs_penllk << "  " << mort_devs_penllk << "  " << juvenile_llk <<  " " <<  vhsv_llk << " " <<  ich_llk << endl << endl;
+
+        deterministic_run << "# Priors" << endl;
+        deterministic_run << priors << endl << endl;
+
+        deterministic_run << "# penalty count" << endl;
+        deterministic_run << penCount << endl << endl;
+        
+        deterministic_run << "Numbers-at-age" << endl;
+        deterministic_run << N_y_a << endl << endl;
+
+        deterministic_run << "maturity-at-age" << endl;
+        deterministic_run << maturity << endl << endl;
+
+        deterministic_run << "Spawning numbers-at-age" << endl;
+        deterministic_run << N_spawners_age << endl << endl;
+
+        deterministic_run << "# seine age comp estimates" << endl;
+        deterministic_run << seine_age_comp << endl << endl;
+
+        deterministic_run << "# spawn age comp estimates" << endl;
+        deterministic_run << spawning_age_comp << endl << endl;
+
+        deterministic_run << "Summer survival" << endl;
+        deterministic_run << summer_survival << endl << endl;
+
+        deterministic_run << "Winter survival" << endl;
+        deterministic_run << winter_survival << endl << endl;
 
         deterministic_run << "# Pre-fishery Spawning Biomass (metric tons)" << endl;
         deterministic_run << prefishery_biomass  << endl << endl;
@@ -1357,7 +1398,7 @@ FUNCTION void calc_selectivity()
     for (int j=4;j<=nage;j++) {
         survey_vuln(j)=1/(1+exp(-1.0*survey_vuln_beta*(j-1-survey_vuln_alpha)));
     }
-
+    
 FUNCTION void calc_statevariables()
     N_y_a.initialize();
     vuln_pop_age.initialize();
@@ -1472,8 +1513,10 @@ FUNCTION void calc_statevariables()
     vuln_pop_age(1)(1,nage)=elem_prod(seine_vuln,N_y_a(1)(1,nage));
     seine_avilable_pop(1)=sum(vuln_pop_age(1)(1,nage)); 
 
-    seine_age_comp(1)(1,nage)=vuln_pop_age(1)(1,nage)/seine_avilable_pop(1);
+    seine_age_comp(1)(1,nage)=vuln_pop_age(1)(1,nage) / seine_avilable_pop(1);
+
     seine_biomass_age(1)(1,nage)=elem_prod(seine_age_comp(1)(1,nage),weight_at_age(1)(1,nage));
+
     seine_biomass=sum(seine_biomass_age(1));
 
     if(maturity_model_type!=4){
@@ -1499,7 +1542,17 @@ FUNCTION void calc_statevariables()
     postfishery_spawn_biomass(1)=0;
     dvar_vector total_catch = seine_age_comp(1)(4,6)*seine_catch(1)+
                               gillnet_catch(1)(4,6)+
-                              pk*pound_catch(1)(4,6);
+                              pound_catch(1)(4,6);
+
+    // lump age-7 to age-9+ catches in with age-6 catches
+    // since age-6 is the initial plus group 
+    for (int j=7; j<=nage; j++) {
+        total_catch(6) += seine_age_comp(1)(j)*seine_catch(1)+
+                                    gillnet_catch(1)(j)+
+                                    pound_catch(1)(j);
+    }
+
+    dummy_matrix(1)(4,6) = total_catch;
 
     N_spawners_age(1)(4,6)=elem_prod(maturity(1)(4,6),N_y_a(1)(4,6)-total_catch);
 
@@ -1565,7 +1618,7 @@ FUNCTION void calc_statevariables()
 
             dvariable seine_catch_sum = seine_age_comp(i-1,j-1)*seine_catch(i-1);
             total_spring_catch = seine_catch_sum+gillnet_catch_sum+pk*pound_catch_sum;
-
+            
             // Ignore disease survival here because no disease data
             N_y_a(i,j)=(((N_y_a(i-1,j-1)-(total_spring_catch))*summer_survival(i-1,j-1))-food_bait_catch_sum)*winter_survival(i,j-1); 
 
@@ -1746,6 +1799,8 @@ FUNCTION void calc_statevariables()
             dvariable total_catch = seine_age_comp(i,j)*seine_catch(i)+gillnet_catch(i,j)+pound_catch(i,j);
             N_spawners_age(i,j)=maturity(i,j)*(N_y_a(i,j)-(total_catch));
             
+            dummy_matrix(i,j) = total_catch;
+
             dvariable pen4=0.0;
             N_spawners_age(i,j)=posfun(N_spawners_age(i,j), .01, pen4);
             if(N_spawners_age(i,j)<=not_below_this){
@@ -1761,6 +1816,8 @@ FUNCTION void calc_statevariables()
         m++;
         
     }
+
+    dummy_vector = seine_catch;
 
     // Infection incidence, fatality, and immunity of spawning population
     inf_inc_sp.initialize();

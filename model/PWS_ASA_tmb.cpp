@@ -149,6 +149,13 @@ Type objective_function<Type>::operator() ()
     // ---- penalty objects ---- //
     int penCount = 0;           // count instances of penalties
 
+    // ---- dummy objects ---- //
+    Type dummy = 0;                             // scalar for saving dummy variables for debugging
+    vector<Type> dummy_vector(nyr);             // dummy vector
+    dummy_vector.setZero();
+    matrix<Type> dummy_matrix(nyr, nage);       // dummy matrix
+    dummy_matrix.setZero();
+
     // --------------------- POPULATION DYNAMICS ------------------------ //
 
     // ---- survival from natural mortality ---- //
@@ -158,17 +165,20 @@ Type objective_function<Type>::operator() ()
 
     // 2 matrices (summer and winter) will be used to store half-year survival 
     matrix<Type> summer_survival(nyr, nage);
-    summer_survival = summer_survival.setZero();
+    summer_survival.setZero();
     matrix<Type> summer_mortality_effect(nyr, nage);
-    summer_mortality_effect = summer_mortality_effect.setZero(); 
+    summer_mortality_effect.setZero(); 
+    
     matrix<Type> winter_survival(nyr, nage);
-    winter_survival = winter_survival.setZero();
+    winter_survival.setZero();
     matrix<Type> winter_mortality_effect(nyr, nage);
-    winter_mortality_effect = winter_mortality_effect.setZero(); 
+    winter_mortality_effect.setZero(); 
+    
     int index_1992 = 1992-1980;                 // index for 1992
     int n_covs = beta_mortality.size();
     
     matrix<Type> disease_covs_calc(nyr, n_covs);
+    disease_covs_calc.setZero();
 
     Type min_mortality = .01;
     Type winter_surv_pen = 0.0;
@@ -260,6 +270,7 @@ Type objective_function<Type>::operator() ()
         }
     }
 
+
     // ---- maturation schedule ---- //
     vector<Type> maturity(nage);                        // age-varying maturity proportion
     for (int a = 0; a < nage; a++) {
@@ -276,6 +287,8 @@ Type objective_function<Type>::operator() ()
 
     // ---- recruitment ---- //
     vector<Type> age_0(nyr);
+    age_0.setZero();
+
     for (int y = 0; y < nyr-1; y++) {
         // age_0(y) = exp(log_MeanAge0 + annual_age0devs(y) - 0.5*pow(sigma_age0devs, 2));
         // age_0(y) = exp(log_MeanAge0 + annual_age0devs(y)/sigma_age0devs);
@@ -292,6 +305,7 @@ Type objective_function<Type>::operator() ()
     // pre-fishery numbers-at-age matrix, first row
     matrix<Type> N_y_a(nyr, nage);
     N_y_a = N_y_a.setZero(nyr, nage);              
+
     N_y_a(0, 0) = age_0(0);
     for (int a = 1; a < 6; a++) {
         N_y_a(0,a) = init_pop(a-1);
@@ -299,7 +313,10 @@ Type objective_function<Type>::operator() ()
 
     // estimate seine age comps, first year
     matrix<Type> seine_age_comp_est(nyr, nage);         // seine age composition
+    seine_age_comp_est.setZero();
     vector<Type> seine_selected(nyr);
+    seine_selected.setZero();
+    
     // estimate fully selected seine catch to calculate age comp estimate
     seine_selected(0) = N_y_a.row(0).dot(seine_selex.matrix().transpose());      
     for (int a = 0; a < nage; a++) {
@@ -309,11 +326,14 @@ Type objective_function<Type>::operator() ()
 
     // estimate seine catch,  first year
     vector<Type> seine_catch_est(nyr);
+    seine_catch_est.setZero();
+
     seine_catch_est(0) = seine_yield(0) / (seine_age_comp_est.row(0).dot(waa.row(0))); 
 
     // total spring catch-at-age, first year
     matrix<Type> spring_removals(nyr, nage);
-    spring_removals = spring_removals.setZero(nyr, nage);
+    spring_removals.setZero(nyr, nage);
+
     spring_removals.row(0) += seine_age_comp_est.row(0)*seine_catch_est(0); 
     spring_removals.row(0) += pk*pound_catch.row(0); 
     spring_removals.row(0) += gillnet_catch.row(0);
@@ -339,8 +359,8 @@ Type objective_function<Type>::operator() ()
         N_y_a(y,0) = age_0(y);    
 
         // calculate plus group catch (increments from age-6 to age-9+)
-        Type spring_removals_sum = spring_removals.row(y-1).tail(nage-plus_group_index).sum();
-        Type foodbait_sum = foodbait_catch.row(y-1).tail(nage-plus_group_index).sum();
+        Type spring_removals_sum = spring_removals.row(y-1).tail(nage-plus_group_index+1).sum();
+        Type foodbait_sum = foodbait_catch.row(y-1).tail(nage-plus_group_index+1).sum();
 
         // populate age classes
         for (int a = 1; a < nage; a++) {
@@ -381,7 +401,9 @@ Type objective_function<Type>::operator() ()
         seine_catch_est(y) = seine_yield(y) / (seine_age_comp_est.row(y).dot(waa.row(y))); 
 
         // total spring catch-at-age
-        spring_removals.row(y) = seine_age_comp_est.row(y)*seine_catch_est(y) + pk*pound_catch.row(y) + gillnet_catch.row(y);
+        spring_removals.row(y) = seine_age_comp_est.row(y)*seine_catch_est(y); 
+        spring_removals.row(y) += pk*pound_catch.row(y); 
+        spring_removals.row(y) += gillnet_catch.row(y);
 
     }
 
@@ -419,7 +441,9 @@ Type objective_function<Type>::operator() ()
         seine_catch_est(y) = seine_yield(y) / (seine_age_comp_est.row(y).dot(waa.row(y))); 
 
         // total spring catch-at-age
-        spring_removals.row(y) = seine_age_comp_est.row(y)*seine_catch_est(y) + pk*pound_catch.row(y) + gillnet_catch.row(y);
+        spring_removals.row(y) = seine_age_comp_est.row(y)*seine_catch_est(y); 
+        spring_removals.row(y) += pk*pound_catch.row(y); 
+        spring_removals.row(y) += gillnet_catch.row(y);
 
     }
 
@@ -431,12 +455,14 @@ Type objective_function<Type>::operator() ()
     // harvested 
 
     matrix<Type> Ntilde_y_a(nyr, nage);
+    Ntilde_y_a.setZero();
+
     matrix<Type> spawn_removals(nyr, nage);
-    spawn_removals = spawn_removals.setZero();
+    spawn_removals.setZero();
+
     Type ntilde_pen = 0.00;
 
-
-    // ---- 1981 to 1984 ---- //
+    // ---- 1980 to 1984 ---- //
     for (int y = 0; y < index_1984; y++) {
         int plus_group_index = 5 + y;                   // index of plus group
 
@@ -445,12 +471,13 @@ Type objective_function<Type>::operator() ()
         Type pound_sum = pound_catch.row(y).tail(nage-plus_group_index).sum(); 
         Type gillnet_sum = gillnet_catch.row(y).tail(nage-plus_group_index).sum();
 
-        for(int a = 0; a < nage; a++) {
+        for(int a = 3; a < nage; a++) {
             if (a < plus_group_index) {
 
                 spawn_removals(y, a) = seine_age_comp_est(y,a)*seine_catch_est(y);
                 spawn_removals(y, a) += pound_catch(y,a); 
                 spawn_removals(y, a) += gillnet_catch(y,a);
+                
                 Ntilde_y_a(y, a) = maturity(a)*(N_y_a(y, a) - spawn_removals(y, a));
 
                 // penalize negative naa
@@ -477,7 +504,7 @@ Type objective_function<Type>::operator() ()
 
     // ---- 1985 to nyr ---- //
     for (int y = index_1984; y < nyr; y++) {
-        for(int a = 0; a < nage; a++) {
+        for(int a = 3; a < nage; a++) {
 
             spawn_removals(y, a) = seine_age_comp_est(y,a)*seine_catch_est(y);
             spawn_removals(y, a) += pound_catch(y,a); 
@@ -491,11 +518,19 @@ Type objective_function<Type>::operator() ()
         }
     }
 
+    dummy_matrix = spring_removals;
+    dummy_vector = seine_catch_est;
+
     // ---- biomass estimates ---- //
     
     vector<Type> B_y(nyr);                              // pre-fishery total biomass
+    B_y.setZero();
+
     matrix<Type> Btilde_y(nyr, nage);                   // pre-fishery spawning biomass
+    Btilde_y.setZero();
+
     vector<Type> Btilde_post_y(nyr);                    // post-fishery spawning biomass
+    Btilde_post_y.setZero();
 
     B_y = (N_y_a.array() * waa.array()).rowwise().sum();
     Btilde_y = (N_y_a.array() * waa.array()).matrix() * maturity.matrix();
@@ -504,9 +539,15 @@ Type objective_function<Type>::operator() ()
     // ---- biomass forecast ---- //
 
     vector<Type> projected_N_y_a(nage);                 // numbers-at-age forecast
+    projected_N_y_a.setZero();
+
     vector<Type> waa_forecast(nage);                    // weight-at-age forecast
+    waa_forecast.setZero();
+                        
     vector<Type> winter_survival_forecast(nage);        // winter survival for forecast
-    Type Btilde_forecast;                               // spawning biomass forecast
+    winter_survival_forecast.setZero();
+    
+    Type Btilde_forecast = 0.0;                         // spawning biomass forecast
     
     // set up winter survival forecast vector
     for (int a = 0; a < nage; a++) {
@@ -562,7 +603,10 @@ Type objective_function<Type>::operator() ()
     // ---- estimate spawning age compositions ---- //
 
     matrix<Type> spawn_age_comp_est(nyr, nage);         // spawning age composition
+    spawn_age_comp_est.setZero();
     vector<Type> total_spawners(nyr);                   // all spawners across ages
+    total_spawners.setZero();
+    
     total_spawners = N_y_a * maturity; 
 
     for (int y = 0; y < nyr; y++) {
@@ -582,8 +626,10 @@ Type objective_function<Type>::operator() ()
     // ---- estimate naturally spawned eggs ---- //
 
     vector<Type> Ehat_y(nyr);
+    Ehat_y.setZero();
+
     vector<int> fecundity_years(nyr);
-    fecundity_years = fecundity_years.setZero();
+    fecundity_years.setZero();
 
     // the following finds for which years the fecundity index exists 
     for (int y = 0; y < nyr; y++) {
@@ -593,7 +639,6 @@ Type objective_function<Type>::operator() ()
         if (fecundity_years(y) > 0) fecundity_years(y) = 1; 
     }
 
-    Ehat_y = Ehat_y.setZero();
     for (int y = 0; y < nyr; y++) {
         if (fecundity_years(y) == 0) continue;          // skip years with no fecundity index
         Ehat_y(y) = pow(10, -6) * perc_female(y) * Ntilde_y_a.row(y).dot(fecundity.row(y));
@@ -602,6 +647,8 @@ Type objective_function<Type>::operator() ()
     // ---- estimate mile-days milt ---- //
 
     vector<Type> That_y(nyr);
+    That_y.setZero();
+
     for (int y = 0; y < nyr; y++) {
         That_y(y) = ((1 - perc_female(y)) * Btilde_post_y(y)) / exp(logmdm_c);
     }
@@ -609,7 +656,8 @@ Type objective_function<Type>::operator() ()
     // ---- estimate juvenile aerial survey ---- //
 
     vector<Type> Jhat_y(nyr);
-
+    Jhat_y.setZero();
+    
     for (int y = 0; y < nyr; y++){
         Jhat_y(y) = N_y_a(y,1) * exp(log_juvenile_q); 
     }
@@ -624,7 +672,7 @@ Type objective_function<Type>::operator() ()
 
     Type L1 = 0.0;
     vector<Type> L1_years(nyr);
-    L1_years = L1_years.setZero();
+    L1_years.setZero();
 
     for (int y = 0; y < index_1984; y++) {
         if (seine_ess(y) == -9) continue;               // skip years with no fishery
@@ -658,7 +706,7 @@ Type objective_function<Type>::operator() ()
 
     Type L2 = 0.0;
     vector<Type> L2_years(nyr);
-    L2_years = L2_years.setZero();
+    L2_years.setZero();
 
     for (int y = 0; y < index_1984; y++) {
         if (spawn_ess(y) == -9) continue;               // skip years with no survey
@@ -688,13 +736,12 @@ Type objective_function<Type>::operator() ()
 
     Type L3 = 0.0;
     vector<Type> L3_total_var(nyr);
-    L3_total_var = L3_total_var.setZero();
+    L3_total_var.setZero();
 
 
     // number of years in egg index
     int n_egg = 0;
 
-    L3_total_var = L3_total_var.setZero();
     for (int y = 0; y < nyr; y++) {
         if (egg(y) == -9) continue;                     // skip years with no egg index
         L3_total_var(y) = pow(egg_se(y), 2) + pow(egg_add, 2);
@@ -722,7 +769,7 @@ Type objective_function<Type>::operator() ()
 
     Type L5 = 0.0;
     vector<Type> L5_total_var(nyr);
-    L5_total_var = L5_total_var.setZero();
+    L5_total_var.setZero();
 
     // number of years in PWSSC hydroacoustic survey
     int n_pwssc_hydro = 0;
@@ -754,6 +801,7 @@ Type objective_function<Type>::operator() ()
 
     Type L7 = 0.0;
     vector<Type> L7_var(nyr);
+    L7_var.setZero();
 
     for (int y = 0; y < nyr; y++) {
         L7_var(y) = Jhat_y(y) + (pow(Jhat_y(y), 2)/juvenile_overdispersion);
@@ -802,6 +850,7 @@ Type objective_function<Type>::operator() ()
     REPORT(spawn_age_comp_est);
     REPORT(age_0);
     REPORT(N_y_a);
+    REPORT(maturity);
     REPORT(Ntilde_y_a);
     REPORT(B_y);
     REPORT(Btilde_y);
@@ -846,6 +895,11 @@ Type objective_function<Type>::operator() ()
     REPORT(waa_forecast);
     REPORT(Btilde_forecast);    
     
+    // dummy objects
+    REPORT(dummy);
+    REPORT(dummy_vector);
+    REPORT(dummy_matrix);
+
     return negLogLik;
   
 }

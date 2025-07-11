@@ -53,8 +53,7 @@ library(pwsHerringBasa)
 
 # see ?pwsHerringBasa::run.basa() for more details
 
-# run <- run.basa(here::here("model"), n.chains = 1)
-run <- run.basa(here::here("model"))
+run <- run.basa(here::here("model"), n.chains = 4)
 
 #-------------------------------------------------------------------------------
 
