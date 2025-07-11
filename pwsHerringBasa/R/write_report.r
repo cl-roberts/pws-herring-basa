@@ -6,20 +6,22 @@
 #' @param obj A list object returned by `MakeADFun`
 #' @param par A list of parameter values to generate report
 #' @param file File path to write report
+#' @param dummy Character vector of names of dummy variables for debugging
 #' @param llik Character vector of names of log-likelihood components
 #' @param derived Character vector of names of derived quantities
 #' @param survey Character vector of names of survey quantities
 #' @param forecast Character vector of names of forecast quantities
 #'
 
-write_report <- function(obj, par, file, llik = NULL, derived = NULL, 
-                         survey = NULL, forecast = NULL) {
+write_report <- function(obj, par, file, dummy = NULL, llik = NULL, 
+                         derived = NULL, survey = NULL, forecast = NULL) {
 
     # local vars
     nyr <- obj$env$data$nyr
 
     # report sections
     report <- obj$report(par)
+    dummy_report <- report[names(report) %in% dummy]
     llik_report <- report[names(report) %in% llik]
     derived_report <- report[names(report) %in% derived]
     survey_report <- report[names(report) %in% survey]
@@ -76,6 +78,21 @@ write_report <- function(obj, par, file, llik = NULL, derived = NULL,
         "# -------- PWS_ASA TMB Report File -------- #", 
         file = file
     )
+
+    if (!is.null(dummy)) {
+
+        write(
+            "\n\n# Debugging section ---- \n", 
+            file = file, append = TRUE
+        )
+
+        lapply(
+            reporter(dummy_report), 
+            FUN = \(x) write_section(x, file = file)
+        )
+        
+    }
+
 
     write(
         "\n\n# General information ---- \n", 

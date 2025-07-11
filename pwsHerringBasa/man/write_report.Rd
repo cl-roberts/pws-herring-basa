@@ -8,6 +8,7 @@ write_report(
   obj,
   par,
   file,
+  dummy = NULL,
   llik = NULL,
   derived = NULL,
   survey = NULL,
@@ -20,6 +21,8 @@ write_report(
 \item{par}{A list of parameter values to generate report}
 
 \item{file}{File path to write report}
+
+\item{dummy}{Character vector of names of dummy variables for debugging}
 
 \item{llik}{Character vector of names of log-likelihood components}
 
