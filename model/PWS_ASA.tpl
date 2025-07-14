@@ -720,9 +720,9 @@ PARAMETER_SECTION
     number priors
 
     // dummy variables used for debugging
-    number dummy
-    vector dummy_vector(1,nyr_tobefit)
-    matrix dummy_matrix(1,nyr_tobefit,1,nage)
+    // number dummy
+    // vector dummy_vector(1,nyr_tobefit)
+    // matrix dummy_matrix(1,nyr_tobefit,1,nage)
 
     // |---------------------------------------------------------------------------|
     // | CALCULATED VECTORS
@@ -967,14 +967,14 @@ PRELIMINARY_CALCS_SECTION
         deterministic_run << "# Posterior Probability" << endl;
         deterministic_run << seine_llk +spawner_llk +eggdep_llk +ADFG_hydro_llk +PWSSC_hydro_llk +mdm_llk +age0_devs_penllk +mort_devs_penllk +priors +juvenile_llk +vhsv_llk +ich_llk << endl << endl;
 
-        deterministic_run << "dummy" << endl;
-        deterministic_run << dummy << endl << endl;
+        // deterministic_run << "dummy" << endl;
+        // deterministic_run << dummy << endl << endl;
 
-        deterministic_run << "dummy vector" << endl;
-        deterministic_run << dummy_vector << endl << endl;
+        // deterministic_run << "dummy vector" << endl;
+        // deterministic_run << dummy_vector << endl << endl;
 
-        deterministic_run << "dummy matrix" << endl;
-        deterministic_run << dummy_matrix << endl << endl;
+        // deterministic_run << "dummy matrix" << endl;
+        // deterministic_run << dummy_matrix << endl << endl;
 
         // Aerial juvenile survey (incorporated 12/2019)
         deterministic_run << "# Likelihood Components" << endl;
@@ -1552,8 +1552,6 @@ FUNCTION void calc_statevariables()
                                     pound_catch(1)(j);
     }
 
-    dummy_matrix(1)(4,6) = total_catch;
-
     N_spawners_age(1)(4,6)=elem_prod(maturity(1)(4,6),N_y_a(1)(4,6)-total_catch);
 
     for(int j=4;j<=6;j++){
@@ -1797,9 +1795,17 @@ FUNCTION void calc_statevariables()
         postfishery_spawn_biomass(i)=0;
         for(int j=4;j<=m;j++){
             dvariable total_catch = seine_age_comp(i,j)*seine_catch(i)+gillnet_catch(i,j)+pound_catch(i,j);
-            N_spawners_age(i,j)=maturity(i,j)*(N_y_a(i,j)-(total_catch));
             
-            dummy_matrix(i,j) = total_catch;
+            // lump in catches of age classes older than plus group
+            if (j == m) {
+                for (int jplus = m+1; jplus <= nage; jplus++) {
+                    total_catch += seine_age_comp(i,jplus)*seine_catch(i)+gillnet_catch(i,jplus)+pound_catch(i,jplus);
+                }
+            }
+            
+            N_spawners_age(i,j)=maturity(i,j)*(N_y_a(i,j)-(total_catch));
+
+
 
             dvariable pen4=0.0;
             N_spawners_age(i,j)=posfun(N_spawners_age(i,j), .01, pen4);
@@ -1816,8 +1822,6 @@ FUNCTION void calc_statevariables()
         m++;
         
     }
-
-    dummy_vector = seine_catch;
 
     // Infection incidence, fatality, and immunity of spawning population
     inf_inc_sp.initialize();
@@ -2028,15 +2032,28 @@ FUNCTION void calc_nll_components()
     }
 
 
+    // seine age comp likelihood
+    dvar_matrix seine_plus_group(1, nyr_tobefit, 1, nage);
+    seine_plus_group = purse_seine_age_comp;
+
+    // sum true seine age comps for the moving plus groups in the first five years
+    for (int i = 1; i < 5; i++) {
+        int plus_group_index = 5 + i;                   
+        for (int j = plus_group_index + 1; j <= nage; j++) {
+            seine_plus_group(i, plus_group_index) += purse_seine_age_comp(i, j);
+            seine_plus_group(i, j) = 0;
+        }
+    } 
+
     //Seine Age Composition - this data set is very patchy
     for(int i=1;i<=nyr_tobefit;i++){
         for(int j=1;j<=nage;j++){
-            if(purse_seine_age_comp(i,j)<=0){
+            if(seine_plus_group(i,j)<=0){
                 seine_comp_residuals(i,j)=0;
             }else if(seine_age_comp(i,j)==0){
                 seine_comp_residuals(i,j)=0;
             }else{
-                seine_comp_residuals(i,j)=purse_seine_age_comp(i,j)*(log(seine_age_comp(i,j))-log(purse_seine_age_comp(i,j)));
+                seine_comp_residuals(i,j)=seine_plus_group(i,j)*(log(seine_age_comp(i,j))-log(seine_plus_group(i,j)));
             }
         }
     }
@@ -2046,7 +2063,20 @@ FUNCTION void calc_nll_components()
         seine_temp3(i)=seine_ess(i)*seine_temp2(i);
     }
     seine_llk=-sum(seine_temp3);
-  
+ 
+    // spawn age comp likelihood
+    dvar_matrix spawn_plus_group(1, nyr_tobefit, 1, nage);
+    spawn_plus_group = spawner_age_comp;
+
+    // sum true spawn age comps for the moving plus groups in the first five years
+    for (int i = 1; i < 5; i++) {
+        int plus_group_index = 5 + i;                   
+        for (int j = plus_group_index + 1; j <= nage; j++) {
+            spawn_plus_group(i, plus_group_index) += spawner_age_comp(i, j);
+            spawn_plus_group(i, j) = 0;
+        }
+    }     
+    
     //Spawning Age Composition
     for(int i=1;i<=nyr_tobefit;i++){
         for(int j=1;j<=nage;j++){
@@ -2055,7 +2085,7 @@ FUNCTION void calc_nll_components()
             }else if(spawning_age_comp(i,j)==0){
                 spawner_comp_residuals(i,j)=0;
             }else{
-                spawner_comp_residuals(i,j)=spawner_age_comp(i,j)*(log(spawning_age_comp(i,j))-log(spawner_age_comp(i,j)));
+                spawner_comp_residuals(i,j)=spawn_plus_group(i,j)*(log(spawning_age_comp(i,j))-log(spawn_plus_group(i,j)));
             }
         }
     }
@@ -2065,7 +2095,7 @@ FUNCTION void calc_nll_components()
         spawn_temp3(i)=spawner_ess(i)*spawn_temp2(i);
     }
     spawner_llk=-sum(spawn_temp3);
-
+    
     //Mile-days of milt Likelihood component
     for(int i=1;i<=nyr_tobefit;i++) {
         mdm_residuals(i)=log(MDM_est(i))-log(mile_days_milt(i));

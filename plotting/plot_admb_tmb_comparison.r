@@ -14,6 +14,10 @@
 
 ################################################################################
 
+## controls ----
+
+method <- "MCMC"
+
 ## set up ----
 
 # attach packages
@@ -28,8 +32,13 @@ library(ggpubr)
 # dir
 
 dir_model <- here("model")
+
 dir_mcmc <- here(dir_model, "mcmc_out")
 dir_mcmc_tmb <- here(dir_model, "mcmc_out_tmb")
+
+dir_rep <- here(dir_model, "rep_out")
+dir_rep_tmb <- here(dir_model, "rep_out_tmb")
+
 dir_outputs <- here("data_outputs")
 dir_fig_tmb <- here("figures/tmb")
 
@@ -44,32 +53,60 @@ start.year <- 1980
 curr.year <- start.year+Y
 years <- start.year:(start.year + Y - 1)
 
+## Read data ----
+
+# admb <- read.csv(here(dir_outputs, "outputs-for-management.csv"))
+
+# admb_biomass <- 1000*admb$Median.Pre.fishery.biomass..in.1000s.metric.tons.
+# admb_recruitment <- admb$Median.Age.3..in.millions.
+
+if (method == "MCMC") {
+
+    admb_biomass_raw <- read.csv(here(dir_mcmc, "PFRBiomass.csv"))[-(Y+1)]
+    admb_recruitment_raw <- read.csv(here(dir_mcmc, "Age3.csv"))
+
+    admb_biomass <- admb_biomass_raw |>
+        apply(MARGIN = 2, FUN = median)
+    admb_recruitment <- admb_recruitment_raw |>
+        apply(MARGIN = 2, FUN = median)
+
+    admb_biomass_ci <- admb_biomass_raw |>
+        apply(MARGIN = 2, FUN = \(x) quantile(x, .975) - quantile(x, .025))
+    admb_recruitment_ci <- admb_recruitment_raw |>
+        apply(MARGIN = 2, FUN = \(x) quantile(x, .975) - quantile(x, .025))
+
+    tmb_biomass_raw <- read.csv(here(dir_mcmc_tmb, "PFRBiomass.csv"))[-(Y+1)]
+    tmb_recruitment_raw <- read.csv(here(dir_mcmc_tmb, "Age3.csv"))
+
+    tmb_biomass <- tmb_biomass_raw |>
+        apply(MARGIN = 2, FUN = median)
+    tmb_recruitment <- tmb_recruitment_raw |>
+        apply(MARGIN = 2, FUN = median)
+
+    tmb_biomass_ci <- tmb_biomass_raw |>
+        apply(MARGIN = 2, FUN = \(x) quantile(x, .975) - quantile(x, .025))
+    tmb_recruitment_ci <- tmb_recruitment_raw |>
+        apply(MARGIN = 2, FUN = \(x) quantile(x, .975) - quantile(x, .025))
+
+}
+
+if (method == "ML") {
+
+    admb_biomass <- data.reader(here(dir_rep, "PWS_ASA.rep"))[[37]]
+    admb_recruitment <- data.reader(here(dir_rep, "PWS_ASA.rep"))[[42]] |>
+        unlist()
+
+    tmb_biomass <- data.reader(here(dir_rep_tmb, "ml-report.txt"))[[28]] |>
+        unlist()
+    tmb_recruitment <- data.reader(here(dir_rep_tmb, "ml-report.txt"))[[33]][,4] |>
+        unlist()
+
+}
 
 ## Make plots ----
 
 # plot percent differences between biomass and recruitment time series
 
-admb <- read.csv(here(dir_outputs, "outputs-for-management.csv"))
-
-admb_biomass <- 1000*admb$Median.Pre.fishery.biomass..in.1000s.metric.tons.
-admb_recruitment <- admb$Median.Age.3..in.millions.
-
-admb_biomass_ci <- 1000*admb$Upper.95th.Biomass..in.1000s.metric.tons. - 
-    1000*admb$Lower.95th.Biomass..in.1000s.metric.tons.
-admb_recruitment_ci <- admb$Upper.95th.Age.3..in.millions. -
-    admb$Lower.95th.Age.3..in.millions. 
-
-tmb_biomass <- apply(do.call(cbind, Btilde_y), MARGIN = 1, FUN = median)
-tmb_recruitment <- apply(do.call(cbind, age_3), MARGIN = 1, FUN = median)
-
-tmb_biomass_ci <- apply(
-    do.call(cbind, Btilde_y), MARGIN = 1, 
-    FUN = \(x) quantile(x, .975) - quantile(x, .025)
-)
-tmb_recruitment_ci <- apply(
-    do.call(cbind, age_3), MARGIN = 1, 
-    FUN = \(x) quantile(x, .975) - quantile(x, .025)
-)
 
 # comparison <- rbind(
 #     data.frame(year = years,
@@ -100,20 +137,36 @@ comparison <- data.frame(
     recruitment_ci = 100 * (admb_recruitment_ci - tmb_recruitment_ci) / admb_recruitment_ci
 )
 
-comparison_median <- ggplot(comparison) +
-    geom_line(aes(x = year, y = biomass, color = "biomass")) +
-    geom_line(aes(x = year, y = recruitment, color = "recruitment")) +
-    ylab("percent difference") +
-    labs(title = "ADMB vs. TMB model comparison", subtitle = "Posterior median")
+if (method == "MCMC") {
 
-comparison_ci <- ggplot(comparison) +
-    geom_line(aes(x = year, y = biomass_ci, color = "biomass")) +
-    geom_line(aes(x = year, y = recruitment_ci, color = "recruitment")) +
-    ylab("percent difference") +
-    labs(title = "", subtitle = "95% credible interval width")
+    comparison_median <- ggplot(comparison) +
+        geom_line(aes(x = year, y = biomass, color = "biomass")) +
+        geom_line(aes(x = year, y = recruitment, color = "recruitment")) +
+        ylab("percent difference") +
+        labs(title = "ADMB vs. TMB model comparison", subtitle = "Posterior median")
 
-ggarrange(comparison_median, comparison_ci, ncol = 2, common.legend = TRUE, legend = "bottom")
-ggsave(here(dir_fig_tmb, "admb_tmb_comparison.png"), width = 8, height = 3.5)
+    comparison_ci <- ggplot(comparison) +
+        geom_line(aes(x = year, y = biomass_ci, color = "biomass")) +
+        geom_line(aes(x = year, y = recruitment_ci, color = "recruitment")) +
+        ylab("percent difference") +
+        labs(title = "", subtitle = "95% credible interval width")
+
+    ggarrange(comparison_median, comparison_ci, ncol = 2, common.legend = TRUE, legend = "bottom")
+    ggsave(here(dir_fig_tmb, "admb_tmb_comparison_mcmc.png"), width = 8, height = 3.5)
+
+}
+
+if (method == "ML") {
+
+    comparison_mean <- ggplot(comparison) +
+        geom_line(aes(x = year, y = biomass, color = "biomass")) +
+        geom_line(aes(x = year, y = recruitment, color = "recruitment")) +
+        ylab("percent difference") +
+        labs(title = "ADMB vs. TMB model comparison", subtitle = "Maximum Likelihood")
+
+    ggsave(here(dir_fig_tmb, "admb_tmb_comparison_ml.png"), width = 6, height = 3.5)
+
+}
 
 
 # plot likelihood histograms

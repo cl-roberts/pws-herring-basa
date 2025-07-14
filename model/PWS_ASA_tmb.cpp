@@ -367,7 +367,7 @@ Type objective_function<Type>::operator() ()
             if (a < plus_group_index) {                
                 
                 // age-1 to plus group
-                N_y_a(y, a) = (((N_y_a(y-1,a-1) - spring_removals(y-1,a-1)) * summer_survival(y-1,a-1)) - foodbait_catch(y-1,a-1)) * winter_survival(y,a-1);
+                N_y_a(y, a) = (((N_y_a(y-1,a-1) - spring_removals(y-1,a-1)) * summer_survival(y-1,a-1)) - foodbait_catch(y-1,a-1)) * winter_survival(y, a-1);
                       
                 // penalize negative naa
                 N_y_a(y, a) = posfun(N_y_a(y, a), naa_min, naa_pen);
@@ -377,7 +377,7 @@ Type objective_function<Type>::operator() ()
             } else if (a == plus_group_index) {
 
                 // plus group
-                N_y_a(y, a) = (((N_y_a(y-1,a-1) - spring_removals_sum) * summer_survival(y-1,a-1)) - foodbait_sum) * winter_survival(y,a-1);
+                N_y_a(y, a) = (((N_y_a(y-1,a-1) - spring_removals_sum) * summer_survival(y-1,a-1)) - foodbait_sum) * winter_survival(y, a-1);
 
                 // penalize negative naa
                 N_y_a(y, a) = posfun(N_y_a(y, a), naa_min, naa_pen);
@@ -386,7 +386,7 @@ Type objective_function<Type>::operator() ()
             } else if (a > plus_group_index) {
 
                 // numbers-at-age set to 0 if age greater than plus group
-                N_y_a(y,a) = 0;
+                N_y_a(y, a) = 0;
             
             }
         }
@@ -418,7 +418,7 @@ Type objective_function<Type>::operator() ()
         // populate age classes
         for (int a = 1; a < nage; a++) {
 
-            N_y_a(y, a) = (((N_y_a(y-1,a-1) - spring_removals(y-1,a-1)) * summer_survival(y-1,a-1)) - foodbait_catch(y-1,a-1)) * winter_survival(y,a-1);
+            N_y_a(y, a) = (((N_y_a(y-1,a-1) - spring_removals(y-1,a-1)) * summer_survival(y-1,a-1)) - foodbait_catch(y-1,a-1)) * winter_survival(y, a-1);
             
             if (a == nage-1) {
                 // plus group
@@ -474,9 +474,9 @@ Type objective_function<Type>::operator() ()
         for(int a = 3; a < nage; a++) {
             if (a < plus_group_index) {
 
-                spawn_removals(y, a) = seine_age_comp_est(y,a)*seine_catch_est(y);
-                spawn_removals(y, a) += pound_catch(y,a); 
-                spawn_removals(y, a) += gillnet_catch(y,a);
+                spawn_removals(y, a) = seine_age_comp_est(y, a)*seine_catch_est(y);
+                spawn_removals(y, a) += pound_catch(y, a); 
+                spawn_removals(y, a) += gillnet_catch(y, a);
                 
                 Ntilde_y_a(y, a) = maturity(a)*(N_y_a(y, a) - spawn_removals(y, a));
 
@@ -506,9 +506,9 @@ Type objective_function<Type>::operator() ()
     for (int y = index_1984; y < nyr; y++) {
         for(int a = 3; a < nage; a++) {
 
-            spawn_removals(y, a) = seine_age_comp_est(y,a)*seine_catch_est(y);
-            spawn_removals(y, a) += pound_catch(y,a); 
-            spawn_removals(y, a) += gillnet_catch(y,a);
+            spawn_removals(y, a) = seine_age_comp_est(y, a)*seine_catch_est(y);
+            spawn_removals(y, a) += pound_catch(y, a); 
+            spawn_removals(y, a) += gillnet_catch(y, a);
             Ntilde_y_a(y, a) = maturity(a)*(N_y_a(y, a) - spawn_removals(y, a));
 
             // penalize negative naa
@@ -517,9 +517,6 @@ Type objective_function<Type>::operator() ()
 
         }
     }
-
-    dummy_matrix = spring_removals;
-    dummy_vector = seine_catch_est;
 
     // ---- biomass estimates ---- //
     
@@ -634,7 +631,7 @@ Type objective_function<Type>::operator() ()
     // the following finds for which years the fecundity index exists 
     for (int y = 0; y < nyr; y++) {
         for (int a = 0; a < nage; a++) {
-            fecundity_years(y) += (fecundity(y,a) != -9);
+            fecundity_years(y) += (fecundity(y, a) != -9);
         }
         if (fecundity_years(y) > 0) fecundity_years(y) = 1; 
     }
@@ -669,67 +666,88 @@ Type objective_function<Type>::operator() ()
     // Calculate likelihoods from 1980 to 1984
     // increments plus group from age-5 in 1980 to age-9 in 1984 in a similar 
     // fashion to the numbers-at-age calculation 
-
+    
     Type L1 = 0.0;
     vector<Type> L1_years(nyr);
     L1_years.setZero();
-
+    
     for (int y = 0; y < index_1984; y++) {
+
         if (seine_ess(y) == -9) continue;               // skip years with no fishery
         int plus_group_index = 5 + y;                   // index of plus group 
         Type seine_plus_group = seine_age_comp.row(y).tail(nage-plus_group_index).sum();
+
         for (int a = 3; a < plus_group_index; a++) {
             // protects observed age classes with 0% from blowing up likelihood
-            if (seine_age_comp(y,a) <= 0) continue; 
-            L1_years(y) += seine_age_comp(y,a)*log(seine_age_comp_est(y,a)/seine_age_comp(y,a));
+            if (seine_age_comp(y, a) <= 0) continue;
+            if (seine_age_comp_est(y, a) == 0) continue;
+            L1_years(y) += seine_age_comp(y, a)*log(seine_age_comp_est(y, a)/seine_age_comp(y, a));
         }
+
         L1_years(y) += seine_plus_group*log(seine_age_comp_est(y,plus_group_index)/seine_plus_group);
         L1 -= seine_ess(y)*L1_years(y);
-    } 
 
+    } 
+    
     // Calculate likelihoods from 1984 to nyr
     
     for (int y = index_1984; y < nyr; y++) {
+
         if (seine_ess(y) == -9) continue;              // skip years with no fishery
+
         for (int a = 3; a < nage; a++) {
-            if (seine_age_comp(y,a) <= 0) continue;
-            L1_years(y) += seine_age_comp(y,a)*log(seine_age_comp_est(y,a)/seine_age_comp(y,a));
+            if (seine_age_comp(y, a) <= 0) continue;
+            if (seine_age_comp_est(y, a) == 0) continue;
+            L1_years(y) += seine_age_comp(y, a)*log(seine_age_comp_est(y, a)/seine_age_comp(y, a));
         }
+
         L1 -= seine_ess(y)*L1_years(y);
+
     } 
+    
 
     // ---- L2: spawn survey age-composition ---- //
-
+    
     // Calculate likelihoods from 1980 to 1984
     // increments plus group from age-5 in 1980 to age-9 in 1984 in a similar 
     // fashion to the numbers-at-age calculation 
-
+    
     Type L2 = 0.0;
     vector<Type> L2_years(nyr);
     L2_years.setZero();
-
+    
     for (int y = 0; y < index_1984; y++) {
+
         if (spawn_ess(y) == -9) continue;               // skip years with no survey
         int plus_group_index = 5 + y;                   // index of plus group 
         Type spawn_plus_group = spawn_age_comp.row(y).tail(nage-plus_group_index).sum();
+
         for (int a = 3; a < plus_group_index; a++) {
             // protects observed age classes with 0% from blowing up likelihood
-            if (spawn_age_comp(y,a) <= 0) continue;
-            L2_years(y) += spawn_age_comp(y,a)*log(spawn_age_comp_est(y,a)/spawn_age_comp(y,a));
+            if (spawn_age_comp(y, a) <= 0) continue;
+            if (spawn_age_comp_est(y, a) == 0) continue;
+            L2_years(y) += spawn_age_comp(y, a)*log(spawn_age_comp_est(y, a)/spawn_age_comp(y, a));
         }
+
         L2_years(y) += spawn_plus_group*log(spawn_age_comp_est(y,plus_group_index)/spawn_plus_group);
         L2 -= spawn_ess(y)*L2_years(y);
-    } 
 
+    } 
+    
     // Calculate likelihoods from 1984 to nyr
     
     for (int y = index_1984; y < nyr; y++) {
+
         if (spawn_ess(y) == -9) continue;               // skip years with no survey
+
         for (int a = 3; a < nage; a++) {
-            if (spawn_age_comp(y,a) <= 0) continue;
-            L2_years(y) += spawn_age_comp(y,a)*log(spawn_age_comp_est(y,a)/spawn_age_comp(y,a));
+            if (spawn_age_comp(y, a) <= 0) continue;
+            if (spawn_age_comp_est(y, a) == 0) continue;
+            L2_years(y) += spawn_age_comp(y, a)*log(spawn_age_comp_est(y, a)/spawn_age_comp(y, a));
         }
+
         L2 -= spawn_ess(y)*L2_years(y);
+
     } 
 
     // ---- L3: Number of eggs deposited ---- //
@@ -788,7 +806,7 @@ Type objective_function<Type>::operator() ()
 
     // number of years in MDM index
     int n_mdm = 0;
-    
+
     for (int y = 0; y < nyr; y++) {
         if (mdm(y) == -9) continue;
         n_mdm += 1;
