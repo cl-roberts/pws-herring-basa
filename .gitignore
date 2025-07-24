@@ -21,12 +21,18 @@ model/*.obj
 model/*.par
 model/*.psv
 model/*.std
+model/unbounded.csv
+model/*.pin
+model/agecomp_effective_sample_size.txt
+
 
 model/rep_out/*
+model/rep_out_tmb/*
 model/mcmc_out/*
 model/mcmc_out_tmb/*
 
 data_outputs/*
+data_outputs/tmb/*
 cost-of-info/*
 references/*
 sensitivity/*
