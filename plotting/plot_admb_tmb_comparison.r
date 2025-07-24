@@ -1,6 +1,6 @@
 ################################################################################
 
-# plot management outputs
+# plot ADMB/TMB comparison
 
 # plot comparison between outputs of ADMB and TMB versions of BASA
 
@@ -59,6 +59,11 @@ years <- start.year:(start.year + Y - 1)
 
 # admb_biomass <- 1000*admb$Median.Pre.fishery.biomass..in.1000s.metric.tons.
 # admb_recruitment <- admb$Median.Age.3..in.millions.
+
+# nrow(admb_biomass_raw)
+# nrow(tmb_biomass_raw)
+# nrow(admb_recruitment_raw)
+# nrow(tmb_recruitment_raw)
 
 if (method == "MCMC") {
 
@@ -178,11 +183,11 @@ iters <- min(nrow(admb_llik), nrow(tmb_llik))
 admb_llik <- admb_llik[1:iters,]
 tmb_llik <- tmb_llik[1:iters,]
 
-likelihoods <- data.frame(admb = admb_llik$V10, tmb = tmb_llik$V8)
+likelihoods <- data.frame(admb = admb_llik$V14, tmb = tmb_llik$V8)
 
 ggplot(likelihoods) +
-    geom_histogram(aes(x = admb, fill = "admb"), alpha = .25) +
-    geom_histogram(aes(x = tmb, fill = "tmb"), alpha = .25) +
+    geom_histogram(aes(x = admb, fill = "admb"), alpha = .25, bins = 50) +
+    geom_histogram(aes(x = tmb, fill = "tmb"), alpha = .25, bins = 50) +
     geom_vline(aes(xintercept = median(admb)), color = "firebrick") +
     geom_vline(aes(xintercept = median(tmb)), color = "#404080") +
     scale_fill_manual(values=c("firebrick", "#404080")) +
@@ -190,3 +195,32 @@ ggplot(likelihoods) +
 ggsave(here(dir_fig_tmb, "admb_tmb_likelihoods.png"))
 
 
+
+# plot penalties histograms
+
+admb_pen <- admb_llik$V12
+tmb_pen <- read.csv(here(dir_mcmc_tmb, "penalties.csv"))[,4]
+
+admb_pen <- admb_pen[1:iters]
+tmb_pen <- tmb_pen[1:iters]
+
+sum(tmb_pen > 0)
+
+penalties <- data.frame(admb = admb_pen, tmb = tmb_pen)
+
+sum(penalties$admb)
+
+ggplot(penalties) +
+    geom_histogram(aes(x = admb, fill = "admb"), alpha = .25) +
+    geom_histogram(aes(x = tmb, fill = "tmb"), alpha = .25) +
+    geom_vline(aes(xintercept = median(admb)), color = "firebrick") +
+    geom_vline(aes(xintercept = median(tmb)), color = "#404080") +
+    scale_fill_manual(values=c("firebrick", "#404080")) +
+    xlab("Penalties") + 
+    coord_trans(y = "sqrt")
+
+# admb_survival <- read.csv(here(dir_mcmc, "adult_survival_effects_summer.csv"))
+# tmb_survival <- read.csv(here(dir_mcmc_tmb, "summer_survival.csv"))
+
+# sum(admb_survival > .99)
+# sum(tmb_survival > .99)
