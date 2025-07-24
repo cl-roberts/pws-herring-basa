@@ -11,6 +11,32 @@
 
 #### set up ####
 
+start_time <- Sys.time()
+
+## model controls
+
+# declare which parameters to fix
+fix <- c(
+    "pk", "egg_add", "Z_0_8", "log_MeanAge0"
+    # "sigma_age0devs"                                   
+    # ------------------------------------------------------------------ 
+    # "Z_9", "VHSV_age3_4_mort_93, "ICH_age5_8_mort_93", 
+    # "beta_mortality",
+    # ------------------------------------------------------------------
+    # "mat_age3", "mat_age4",                  
+    # ------------------------------------------------------------------
+    # "seine_selex_alpha", "seine_selex_beta", 
+    # ------------------------------------------------------------------
+    # "logmdm_c",
+    # "milt_add_var"
+    # "adfg_hydro_q", "adfg_hydro_add_var", "pwssc_hydro_q", "pwssc_hydro_add_var",
+    # "log_juvenile_q", "juvenile_overdispersion"
+    # ------------------------------------------------------------------
+    # "annual_age0devs"
+    # ------------------------------------------------------------------
+    # "loginit_pop"
+) 
+
 ## MCMC controls
 
 seed <- 406
@@ -19,6 +45,14 @@ chains <- 4
 iter <- 2000
 warmup <- 700
 control <- list(adapt_delta = 0.95)
+
+# forecast controls
+forecast_controls <- list(
+    recruitment_average_years = 10,
+    waa_average_years = 5, 
+    disease_cov_average_years = 1
+)
+
 
 ## attach packages
 
@@ -49,6 +83,7 @@ dir_outputs <- here::here("data_outputs/tmb")
 if(!dir.exists(dir_outputs)) {
   dir.create(dir_outputs)
 }
+
 
 ## compile model
 if("PWS_ASA_tmb" %in% names(getLoadedDLLs())) {
@@ -89,12 +124,6 @@ PWS_ASA_ESS$seine_sample_size[seine_missing,] <- -9
 PWS_ASA_ESS$spawn_sample_size[spawn_missing,] <- -9
 
 names(PWS_ASA_ESS) <- c("seine_ess", "spawn_ess", "vhsv_ess", "ich_ess")
-
-# forecast controls
-forecast_controls <- list(
-    recruitment_average_years = 10,
-    waa_average_years = 5
-)
 
 model_data <- c(
     PWS_ASA, PWS_ASA_covariate, PWS_ASA_disease, 
@@ -164,31 +193,33 @@ parameters <- c(
 # the map object is used to fix parameters
 map <- list(
     pk = factor(NA), egg_add = factor(NA), Z_0_8 = factor(NA),       # fixed pars
-    log_MeanAge0 = factor(NA)
-    # sigma_age0devs = factor(NA)                                   
-    # # ------------------------------------------------------------------ 
-    # Z_9 = factor(NA), VHSV_age3_4_mort_93 = factor(NA),             
-    # ICH_age5_8_mort_93 = factor(NA),                                # mort pars
-    # beta_mortality = rep(factor(NA), 3)
-    # # ------------------------------------------------------------------
-    # mat_age3 = factor(NA), mat_age4 = factor(NA),                   # maturity pars
-    # # ------------------------------------------------------------------
-    # seine_selex_alpha = factor(NA), seine_selex_beta = factor(NA),  # selectivity pars
-    # # ------------------------------------------------------------------
-    # logmdm_c = factor(NA), milt_add_var = factor(NA),
-    # adfg_hydro_q = factor(NA), adfg_hydro_add_var = factor(NA),     # survey pars
-    # pwssc_hydro_q = factor(NA), pwssc_hydro_add_var = factor(NA),
-    # log_juvenile_q = factor(NA), 
-    # juvenile_overdispersion = factor(NA),   
-    # # ------------------------------------------------------------------
-    # annual_age0devs = rep(factor(NA), Y-1)                           # recruit deviates
-    # # ------------------------------------------------------------------
-    # loginit_pop = rep(factor(NA), 5)                                # init pop size (ages 1-5)
+    log_MeanAge0 = factor(NA),
+    sigma_age0devs = factor(NA),                                   
+    # ------------------------------------------------------------------ 
+    Z_9 = factor(NA), VHSV_age3_4_mort_93 = factor(NA),             
+    ICH_age5_8_mort_93 = factor(NA),                                # mort pars
+    beta_mortality = rep(factor(NA), 3),
+    # ------------------------------------------------------------------
+    mat_age3 = factor(NA), mat_age4 = factor(NA),                   # maturity pars
+    # ------------------------------------------------------------------
+    seine_selex_alpha = factor(NA), seine_selex_beta = factor(NA),  # selectivity pars
+    # ------------------------------------------------------------------
+    logmdm_c = factor(NA), milt_add_var = factor(NA),
+    adfg_hydro_q = factor(NA), adfg_hydro_add_var = factor(NA),     # survey pars
+    pwssc_hydro_q = factor(NA), pwssc_hydro_add_var = factor(NA),
+    log_juvenile_q = factor(NA), 
+    juvenile_overdispersion = factor(NA),
+    # ------------------------------------------------------------------
+    annual_age0devs = rep(factor(NA), Y-1),                           # recruit deviates
+    # ------------------------------------------------------------------
+    loginit_pop = rep(factor(NA), 5)                                # init pop size (ages 1-5)
 ) 
+
+map <- map[names(map) %in% fix]
 
 # estimated parameter lower bounds
 lower <- c(
-    # log_MeanAge0 = 2, 
+    log_MeanAge0 = 2, 
     annual_age0devs = rep(-10, Y-1), 
     log_juvenile_q = -5,
     loginit_pop = rep(3, 5), 
@@ -203,9 +234,12 @@ lower <- c(
     juvenile_overdispersion = 0.01
 ) 
 
+lower <- lower[!(names(lower) %in% fix)]
+# lower <- lower[!grepl("beta_mortality", names(lower))]
+
 # estimated parameter upper bounds
 upper <- c(
-    # log_MeanAge0 = 20, 
+    log_MeanAge0 = 20, 
     annual_age0devs = rep(10, Y-1), 
     log_juvenile_q = 8,
     loginit_pop = rep(8, 5), 
@@ -219,6 +253,9 @@ upper <- c(
     adfg_hydro_add_var = 0.7, pwssc_hydro_add_var = 0.6,
     juvenile_overdispersion = 4
 )
+
+upper <- upper[!(names(upper) %in% fix)]
+# upper <- upper[!grepl("beta_mortality", names(upper))]
 
 
 # make model object
@@ -256,6 +293,14 @@ model_data$spawn_ess <- ess$spawn_ess
 
 # ------------------------------------------------------------------------------
 
+## compile model
+# if("PWS_ASA_tmb" %in% names(getLoadedDLLs())) {
+#     dyn.unload(dynlib(here(dir_model, "PWS_ASA_tmb")))
+# }
+# compile(here(dir_model, "PWS_ASA_tmb.cpp"))
+# dyn.load(dynlib(here(dir_model, "PWS_ASA_tmb")))
+
+
 #### create model object and write pre-optimization report ####
 
 # fit model with iteratively re-weighted effective sample sizes 
@@ -268,6 +313,7 @@ model <- MakeADFun(
 write_report(
     obj = model, par = model$par, 
     file = here(dir_rep_tmb, "pre-optim-report.txt"),
+    dummy = c("dummy", "dummy_vector"),
     llik = llik, derived = derived, survey = survey, forecast = forecast
 )
 
@@ -309,7 +355,8 @@ fit <- tmbstan(
     silent = FALSE
 )
 mcmc_end_time <- Sys.time()
-time <- mcmc_end_time - mcmc_start_time
+mcmc_time <- mcmc_end_time - mcmc_start_time
+message(paste("MCMC time:", round(mcmc_time, 4), units(mcmc_time)))
 
 
 # save parameter posteriors
@@ -362,8 +409,9 @@ age_3 <- vector(mode = "list", length = n_iters)
 mean_log_rec <- matrix(NA, nrow = n_iters, ncol = 1)
 Btilde_forecast <- matrix(NA, nrow = n_iters, ncol = 1)
 
-winter_survival <- vector(mode = "list", length = n_iters)
-summer_survival <- vector(mode = "list", length = n_iters)
+summer_survival <- matrix(NA, nrow = n_iters, ncol = A*Y)
+winter_survival <- matrix(NA, nrow = n_iters, ncol = A*Y)
+winter_survival_forecast <- matrix(NA, nrow = n_iters, ncol = A)
 
 VARSreport <- matrix(NA, nrow = n_iters, ncol = 4)
 
@@ -396,13 +444,14 @@ for(i in 1:n_iters){
     mean_log_rec[i,] <- other_posteriors$mean_log_rec
     Btilde_forecast[i,] <- other_posteriors$Btilde_forecast
 
-    winter_survival[[i]] <- other_posteriors$winter_survival
-    summer_survival[[i]] <- other_posteriors$summer_survival
+    summer_survival[i,] <- other_posteriors$summer_survival |> t() |> c()
+    winter_survival[i,] <- other_posteriors$winter_survival |> t() |> c()
+    winter_survival_forecast[i,] <- other_posteriors$winter_survival_forecast
 
-    VARSreport[i,] <- unlist(c(mcmc_results[i, c("milt_add_var")],
-                        fixed_pars["egg_add"],
-                        mcmc_results[i, c("adfg_hydro_add_var", "pwssc_hydro_add_var")]
-                        ))
+    # VARSreport[i,] <- unlist(c(mcmc_results[i, c("milt_add_var")],
+    #                     fixed_pars["egg_add"],
+    #                     mcmc_results[i, c("adfg_hydro_add_var", "pwssc_hydro_add_var")]
+    #                     ))
 
     likelihoods[i,1] <- other_posteriors$L1
     likelihoods[i,2] <- other_posteriors$L2
@@ -421,90 +470,6 @@ for(i in 1:n_iters){
     priors[i,] <- other_posteriors$priors
 
 }
-
-# ---------------------------
-
-dir_mcmc_out <- here("model/mcmc_out")
-
-# investigate likelihoods
-
-# tmb_lllk <- likelihoods
-# admb_llik <- read.csv(here(dir_mcmc_out, "llikcomponents.csv"))
-
-# # 3, 4, 5, 6, 7, 8/10
-# llik <- data.frame(admb = admb_llik[,3], tmb = tmb_llik[-1,3])
-
-# ggplot(llik) +
-#     geom_histogram(aes(x = admb, fill = "admb"), alpha = .25) +
-#     geom_histogram(aes(x = tmb, fill = "tmb"), alpha = .25) +
-#     geom_vline(aes(xintercept = median(admb)), color = "firebrick") +
-#     geom_vline(aes(xintercept = median(tmb)), color = "#404080") +
-#     scale_fill_manual(values=c("firebrick", "#404080")) +
-#     xlab("Total Negative Log-Likelihood")
-
-# ---------------------------
-
-# investigate priors
-
-
-# tmb_priors <- priors 
-# admb_priors_tmp <- read.csv(here(dir_mcmc_out, "priordensities.csv"), header = FALSE) |>
-#     as.matrix() |>
-#     t() |>
-#     na.omit()
-# admb_priors <- matrix(admb_priors_tmp, ncol = 45, byrow = TRUE) |>
-#     apply(MARGIN = 1, FUN = sum)
-
-# compare_priors <- data.frame(admb = admb_priors, tmb = tmb_priors)
-
-# ggplot(compare_priors) +
-#     geom_histogram(aes(x = admb, fill = "admb"), alpha = .25) +
-#     geom_histogram(aes(x = tmb, fill = "tmb"), alpha = .25) +
-#     geom_vline(aes(xintercept = median(admb)), color = "firebrick") +
-#     geom_vline(aes(xintercept = median(tmb)), color = "#404080") +
-#     scale_fill_manual(values=c("firebrick", "#404080")) +
-#     xlab("Prior densities")
-
-# ---------------------------
-
-# check to see if penalties worked
-
-sapply(age_3, FUN = median)
-
-sapply(winter_survival, \(x) all((x>0) & (x<1))) |>
-    all()
-
-sapply(summer_survival, \(x) all((x>0) & (x<1))) |>
-    all()
-
-sapply(SpAC, \(x) all((x>=0) & (x<=1))) |>
-    all()
-
-sapply(SeAC, \(x) all((x>=0) & (x<=1))) |>
-    all()
-
-sapply(N, \(x) all(x >= 0)) |>
-    all()
-
-sapply(Ntilde, \(x) all(x >= 0)) |>
-    all()
-
-sapply(Btilde_y, \(x) all(x >= 0)) |>
-    all()
-
-sapply(Btilde_post_y, \(x) all(x >= 0)) |>
-    all()
-
-# pens_admb <- read.csv(here(dir_mcmc_out, "penalties.csv"))[,1:3]
-# apply(pens_admb, MARGIN = 2, sum)
-apply(penalties, MARGIN = 2, sum)
-
-# age3_admb <- read.csv(here(dir_mcmc_out, "Age3.csv"))
-
-# dim(age3_admb)
-
-
-# ---------------------------
 
 
 ## write results to .csv files
@@ -574,18 +539,36 @@ write.csv(likelihoods,
           here::here(dir_mcmc_tmb, "likelihoods.csv"), 
           row.names = FALSE)
 
+# penalties ----
+write.csv(penalties, 
+          here::here(dir_mcmc_tmb, "penalties.csv"), 
+          row.names = FALSE)
+
 # iterations ----
 write.csv(mcmc_results, 
           here::here(dir_mcmc_tmb, "iterations.csv"), 
           row.names = FALSE)
 
+# summer survival ----
+write.csv(summer_survival, 
+          here::here(dir_mcmc_tmb, "adult_survival_effects_summer.csv"), 
+          row.names = FALSE)
+
+# winter survival ----
+write.csv(cbind(winter_survival, winter_survival_forecast), 
+          here::here(dir_mcmc_tmb, "adult_survival_effects_winter.csv"), 
+          row.names = FALSE)
+
 ## print diagnostics
 
 mon <- monitor(fit)
-print(max(mon$Rhat))
-print(min(mon$Bulk_ESS))
-print(min(mon$Tail_ESS))
+end_time <- Sys.time()
+time <- end_time - start_time
+
+message(paste("maximum Rhat:", max(mon$Rhat)))
+message(paste("minimum bulk ESS:", min(mon$Bulk_ESS)))
+message(paste("minimum tail ESS:", min(mon$Tail_ESS)))
 check_treedepth(fit)
 check_divergences(fit)
-
+message(paste("Total model run time:", round(time, 4), units(time)))
 

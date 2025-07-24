@@ -102,6 +102,7 @@ Type objective_function<Type>::operator() ()
     // ---- forecast controls ---- //
     DATA_INTEGER(recruitment_average_years);    // # years to average recruitments in forecast
     DATA_INTEGER(waa_average_years);            // # years to average WAA in forecast 
+    DATA_INTEGER(disease_cov_average_years);    // # years to average disease covariates in forecast
 
     // ------------------------------------------------------------------ //
     //                        Parameter Section                           //
@@ -147,13 +148,13 @@ Type objective_function<Type>::operator() ()
     vector<Type> init_pop = exp(loginit_pop);           // initial population vector
 
     // ---- penalty objects ---- //
-    int penCount = 0;           // count instances of penalties
+    int penCount = 0;                                   // count instances of penalties
 
     // ---- dummy objects ---- //
-    Type dummy = 0;                             // scalar for saving dummy variables for debugging
-    vector<Type> dummy_vector(nyr);             // dummy vector
+    Type dummy = 0;                                     // scalar for saving dummy variables for debugging
+    vector<Type> dummy_vector(nyr);                     // dummy vector
     dummy_vector.setZero();
-    matrix<Type> dummy_matrix(nyr, nage);       // dummy matrix
+    matrix<Type> dummy_matrix(nyr, nage);               // dummy matrix
     dummy_matrix.setZero();
 
     // --------------------- POPULATION DYNAMICS ------------------------ //
@@ -187,7 +188,7 @@ Type objective_function<Type>::operator() ()
     // calculate disease mortality effects
     for (int y = 0; y < nyr; y++) {
         for(int a = 0; a < nage; a++) {
-            for(int b = 0; b < n_covs; b++){
+            for(int b = 0; b < n_covs; b++) {
                 if (disease_covs(y, b) == -9) {
                     disease_covs_calc(y, b) = 0;
                 } else if (disease_covs(y, b) != -9) {
@@ -240,23 +241,25 @@ Type objective_function<Type>::operator() ()
         } 
 
         // plus group (9+)
-        int a = nage-1;
         if (y == 0) {
-            summer_survival(y, a) = exp(-0.5*Z_9 - summer_mortality_effect(y, a));
-            winter_survival(y, a) = exp(-0.5*Z_9 - winter_mortality_effect(y, a));
+
+            summer_survival(y, nage-1) = exp(-0.5*Z_9 - summer_mortality_effect(y, nage-1));
+            winter_survival(y, nage-1) = exp(-0.5*Z_9 - winter_mortality_effect(y, nage-1));
             
-            summer_survival(y, a) = 1 - posfun(1-summer_survival(y, a), min_mortality, summer_surv_pen);
-            if(summer_survival(y, a) >= 1) penCount += 1;
-        
-            winter_survival(y, a) = 1 - posfun(1-winter_survival(y, a), min_mortality, winter_surv_pen);
-            if(winter_survival(y, a) >= 1) penCount += 1;
-
         } else if (y > 0) {
+            
+            summer_survival(y, nage-1) = summer_survival(y-1, nage-1) * (summer_survival(y, nage-2)/summer_survival(y-1, nage-2));
+            winter_survival(y, nage-1) = winter_survival(y-1, nage-1) * (winter_survival(y, nage-2)/winter_survival(y-1, nage-2));
 
-            summer_survival(y, a) = summer_survival(y-1, a) * (summer_survival(y, a-1)/summer_survival(y-1, a-1));
-            winter_survival(y, a) = winter_survival(y-1, a) * (winter_survival(y, a-1)/winter_survival(y-1, a-1));
-        
         }
+        
+        // penalize survivals >= 1 for plus group
+        summer_survival(y, nage-1) = 1 - posfun(1-summer_survival(y, nage-1), min_mortality, summer_surv_pen);
+        if(summer_survival(y, nage-1) >= 1 - min_mortality) penCount += 1;
+    
+        winter_survival(y, nage-1) = 1 - posfun(1-winter_survival(y, nage-1), min_mortality, winter_surv_pen);
+        if(winter_survival(y, nage-1) >= 1 - min_mortality) penCount += 1;
+
     }
 
 
@@ -543,7 +546,19 @@ Type objective_function<Type>::operator() ()
                         
     vector<Type> winter_survival_forecast(nage);        // winter survival for forecast
     winter_survival_forecast.setZero();
-    
+
+    vector<Type> mean_disease_cov(n_covs);                // disease covariate for forecast
+    mean_disease_cov.setZero();
+
+    // forecast disease covariate prevalence
+    for(int b = 0; b < n_covs; b++){
+        for(int y = nyr - disease_cov_average_years; y < nyr; y++) {
+            mean_disease_cov(b) += disease_covs_calc(y, b) / disease_cov_average_years;
+        }    
+        dummy_vector(b) = mean_disease_cov(b);
+    }
+
+
     Type Btilde_forecast = 0.0;                         // spawning biomass forecast
     
     // set up winter survival forecast vector
@@ -556,7 +571,7 @@ Type objective_function<Type>::operator() ()
         }
 
         for (int b = 0; b < n_covs; b++) {
-            winter_survival_forecast(a) *= exp(-beta_mortality(b)*disease_covs_calc(nyr-1, b)*mort_age_impact(a, b));
+            winter_survival_forecast(a) *= exp(-beta_mortality(b)*mean_disease_cov(b)*mort_age_impact(a, b));
         }
         
     }
@@ -812,6 +827,7 @@ Type objective_function<Type>::operator() ()
         n_mdm += 1;
         L6 += pow(log(That_y(y) / mdm(y)), 2);
     }
+
     L6 /= 2*pow(milt_add_var, 2);
     L6 += n_mdm*log(milt_add_var);
 
@@ -876,6 +892,7 @@ Type objective_function<Type>::operator() ()
     REPORT(spawn_removals);
     REPORT(summer_survival);
     REPORT(winter_survival);
+    REPORT(winter_survival_forecast);
     
     // likelihood components
     REPORT(L1);
