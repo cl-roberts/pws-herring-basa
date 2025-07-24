@@ -717,7 +717,14 @@ PARAMETER_SECTION
     // likely underestimation of immunity by current serological assays
     number q_immunity
 
+    // accumulate prior densities
     number priors
+
+    // accumulate penalties
+    number N_y_a_pen
+    number N_spawners_age_pen 
+    number summer_surv_pen
+    number winter_surv_pen
 
     // dummy variables used for debugging
     // number dummy
@@ -965,7 +972,25 @@ PRELIMINARY_CALCS_SECTION
         
         // Aerial juvenile survey (incorporated 12/2019)
         deterministic_run << "# Posterior Probability" << endl;
-        deterministic_run << seine_llk +spawner_llk +eggdep_llk +ADFG_hydro_llk +PWSSC_hydro_llk +mdm_llk +age0_devs_penllk +mort_devs_penllk +priors +juvenile_llk +vhsv_llk +ich_llk << endl << endl;
+        deterministic_run << 
+            seine_llk +
+            spawner_llk +
+            eggdep_llk +
+            ADFG_hydro_llk +
+            PWSSC_hydro_llk +
+            mdm_llk +
+            age0_devs_penllk +
+            mort_devs_penllk +
+            age0_covar_prior +
+            mort_covar_prior +
+            juvenile_llk +
+            vhsv_llk +
+            ich_llk +
+            priors +
+            1000*N_y_a_pen +
+            1000*N_spawners_age_pen +
+            1000*summer_surv_pen +
+            1000*winter_surv_pen << endl << endl;
 
         // deterministic_run << "dummy" << endl;
         // deterministic_run << dummy << endl << endl;
@@ -978,8 +1003,8 @@ PRELIMINARY_CALCS_SECTION
 
         // Aerial juvenile survey (incorporated 12/2019)
         deterministic_run << "# Likelihood Components" << endl;
-        deterministic_run << "# seine_llk  spawner_llk  eggdep_llk  ADFG_hydro_llk  PWSSC_hydro_llk  mdm_llk  age0_devs_penllk  mort_devs_penllk  juvenile_llk  vhsv_llk  ich_llk" << endl;
-        deterministic_run << seine_llk << "  " << spawner_llk << "  " << eggdep_llk << "  " << ADFG_hydro_llk << "  " << PWSSC_hydro_llk << "  " << mdm_llk << "  " << age0_devs_penllk << "  " << mort_devs_penllk << "  " << juvenile_llk <<  " " <<  vhsv_llk << " " <<  ich_llk << endl << endl;
+        deterministic_run << "# seine_llk  spawner_llk  eggdep_llk  ADFG_hydro_llk  PWSSC_hydro_llk  mdm_llk  age0_devs_penllk  mort_devs_penllk  juvenile_llk  vhsv_llk  ich_llk  N_y_a_pen  N_spawners_age_pen  summer_surv_pen  winter_surv_pen" << endl;
+        deterministic_run << seine_llk << "  " << spawner_llk << "  " << eggdep_llk << "  " << ADFG_hydro_llk << "  " << PWSSC_hydro_llk << "  " << mdm_llk << "  " << age0_devs_penllk << "  " << mort_devs_penllk << "  " << juvenile_llk <<  " " <<  vhsv_llk << " " <<  ich_llk << " " << N_y_a_pen << " " << N_spawners_age_pen << " " << summer_surv_pen << " " << winter_surv_pen << endl << endl;
 
         deterministic_run << "# Priors" << endl;
         deterministic_run << priors << endl << endl;
@@ -1073,7 +1098,11 @@ PROCEDURE_SECTION
                juvenile_llk +
                vhsv_llk +
                ich_llk +
-               priors;
+               priors +
+               1000*N_y_a_pen +
+               1000*N_spawners_age_pen +
+               1000*summer_surv_pen +
+               1000*winter_surv_pen;
 
     SSB_final_year = prefishery_biomass(nyr_tobefit); // is projected year's Pre-fishery Run Biomass in metric tons
 
@@ -1109,7 +1138,11 @@ FUNCTION void calc_naturalmortality()
     summer_survival.initialize();
     winter_survival.initialize();
     annual_mortdevs_byage.initialize();
-    
+
+    // penalty terms
+    summer_surv_pen.initialize();
+    winter_surv_pen.initialize();
+
     //Half-Year Survival (Matches Excel version - uses desease data and only estimates plus group mortality)
     //S_3_8=exp(-0.5*Z_0_8); //Z_0_8 is a read-in param 
     
@@ -1221,46 +1254,41 @@ FUNCTION void calc_naturalmortality()
                 }
                 
                 // Calculate survival for ages 3-8 for years 1981 and above  
-                dvariable pen_Sur_1=0.0;
                 dvariable high_survival_penalty_1=1-summer_survival(i,j);
-                summer_survival(i,j)=1-posfun(high_survival_penalty_1, 0.01, pen_Sur_1);
+                summer_survival(i,j)=1-posfun(high_survival_penalty_1, 0.01, summer_surv_pen);
                 if(summer_survival(i,j)>=1){
                     penCount+=1;
                 }
-                full_llk+=1000*pen_Sur_1;
 
-                dvariable pen_Sur_2=0.0;
                 dvariable high_survival_penalty_2=1-winter_survival(i,j);
-                winter_survival(i,j)=1-posfun(high_survival_penalty_2, 0.01, pen_Sur_2);
+                winter_survival(i,j)=1-posfun(high_survival_penalty_2, 0.01, winter_surv_pen);
                 if(winter_survival(i,j)>=1){
                     penCount+=1;
                 }
-                full_llk+=1000*pen_Sur_2;
+                
             }
 
             if(i==1){
                 summer_survival(i,nage)=exp(-(0.5*Z_9+summer_mortality_effect(i,nage)));
                 winter_survival(i,nage)=exp(-(0.5*Z_9+winter_mortality_effect(i,nage)));
-
-                dvariable pen_Sur_3=0.0;
-                dvariable high_survival_penalty_3=1-summer_survival(i,nage);
-                summer_survival(i,nage)=1-posfun(high_survival_penalty_3, 0.01, pen_Sur_3);
-                if(summer_survival(i,nage)>=1){
-                    penCount+=1;
-                }
-                full_llk+=1000*pen_Sur_3;
-
-                dvariable pen_Sur_4=0.0;
-                dvariable high_survival_penalty_4=1-winter_survival(i,nage);
-                winter_survival(i,nage)=1-posfun(high_survival_penalty_4, 0.01, pen_Sur_4);
-                if(winter_survival(i,nage)>=1){
-                    penCount+=1;
-                }
-                full_llk+=1000*pen_Sur_4;
+                
             }else {
                 summer_survival(i,nage)=summer_survival(i,nage-1)*summer_survival(i-1,nage)/summer_survival(i-1,nage-1); // Plus age group
                 winter_survival(i,nage)=winter_survival(i,nage-1)*winter_survival(i-1,nage)/winter_survival(i-1,nage-1); // Plus age group
             }
+
+            dvariable high_survival_penalty_3=1-summer_survival(i,nage);
+            summer_survival(i,nage)=1-posfun(high_survival_penalty_3, 0.01, summer_surv_pen);
+            if(summer_survival(i,nage)>=1){
+                penCount+=1;
+            }
+
+            dvariable high_survival_penalty_4=1-winter_survival(i,nage);
+            winter_survival(i,nage)=1-posfun(high_survival_penalty_4, 0.01, winter_surv_pen);
+            if(winter_survival(i,nage)>=1){
+                penCount+=1;
+            }
+
         }
 
     }else if(mortality_covariate_model==2){
@@ -1277,21 +1305,18 @@ FUNCTION void calc_naturalmortality()
                 winter_survival(i,j)=exp(-(0.5*Z_0_8+annual_mortdevs_byage(i,j)));
 
                 // Calculate survival for ages 3-8 for years 1981 and above  
-                dvariable pen_Sur_1=0.0;
                 dvariable high_survival_penalty_1=1-summer_survival(i,j);
-                summer_survival(i,j)=1-posfun(high_survival_penalty_1, 0.01, pen_Sur_1);
+                summer_survival(i,j)=1-posfun(high_survival_penalty_1, 0.01, summer_surv_pen);
                 if(summer_survival(i,j)>=1){
                     penCount+=1;
                 }
-                full_llk+=1000*pen_Sur_1;
 
-                dvariable pen_Sur_2=0.0;
                 dvariable high_survival_penalty_2=1-winter_survival(i,j);
-                winter_survival(i,j)=1-posfun(high_survival_penalty_2, 0.01, pen_Sur_2);
+                winter_survival(i,j)=1-posfun(high_survival_penalty_2, 0.01, winter_surv_pen);
                 if(winter_survival(i,j)>=1){
                     penCount+=1;
                 }
-                full_llk+=1000*pen_Sur_2;
+
             }
 
             if(i==1){
@@ -1299,25 +1324,25 @@ FUNCTION void calc_naturalmortality()
                 summer_survival(i,nage)=exp(-(0.5*Z_9+annual_mortdevs_byage(i,nage)));
                 winter_survival(i,nage)=exp(-(0.5*Z_9+annual_mortdevs_byage(i,nage)));
 
-                dvariable pen_Sur_3=0.0;
-                dvariable high_survival_penalty_3=1-summer_survival(i,nage);
-                summer_survival(i,nage)=1-posfun(high_survival_penalty_3, 0.01, pen_Sur_3);
-                if(summer_survival(i,nage)>=1){
-                    penCount+=1;
-                }
-                full_llk+=1000*pen_Sur_3;
+            } else {
 
-                dvariable pen_Sur_4=0.0;
-                dvariable high_survival_penalty_4=1-winter_survival(i,nage);
-                winter_survival(i,nage)=1-posfun(high_survival_penalty_4, 0.01, pen_Sur_4);
-                if(winter_survival(i,nage)>=1){
-                    penCount+=1;
-                }
-                full_llk+=1000*pen_Sur_4;
-            }else {
                 summer_survival(i,nage)=summer_survival(i,nage-1)*summer_survival(i-1,nage)/summer_survival(i-1,nage-1); // Plus age group
                 winter_survival(i,nage)=winter_survival(i,nage-1)*winter_survival(i-1,nage)/winter_survival(i-1,nage-1); // Plus age group
+
             }
+
+            dvariable high_survival_penalty_3=1-summer_survival(i,nage);
+            summer_survival(i,nage)=1-posfun(high_survival_penalty_3, 0.01, summer_surv_pen);
+            if(summer_survival(i,nage)>=1){
+                penCount+=1;
+            }
+
+            dvariable high_survival_penalty_4=1-winter_survival(i,nage);
+            winter_survival(i,nage)=1-posfun(high_survival_penalty_4, 0.01, winter_surv_pen);
+            if(winter_survival(i,nage)>=1){
+                penCount+=1;
+            }            
+
         }     
     }
 
@@ -1444,6 +1469,10 @@ FUNCTION void calc_statevariables()
     ich_susceptibility_age = 1.0;
     ich_survival_age = 1.0;
 
+    // penalty terms
+    N_y_a_pen.initialize();
+    N_spawners_age_pen.initialize();
+
     // Time-varying OR constant recovery probability
     dvar_vector rec_prob_vhs2(vhs_start_est,nyr_tobefit-1);
     dvar_vector rec_prob_ich2(ich_start_est,nyr_tobefit-1);
@@ -1560,7 +1589,9 @@ FUNCTION void calc_statevariables()
         if(N_spawners_age(1,j) <= not_below_this){
             penCount+=1;
         }
-        full_llk+=1000*pen4;
+
+        N_spawners_age_pen += pen4;
+
     } 
   
     //spawning_biomass_age(1)(4,6)=elem_prod(elem_prod(N_spawners_age(1)(4,6),weight_at_age(1)(4,6)),1/maturity(1)(4,6));
@@ -1626,7 +1657,9 @@ FUNCTION void calc_statevariables()
                 if(N_y_a(i,j)<=not_below_this){
                     penCount+=1;
                 }       
-                full_llk+=1000*pen1;
+
+                N_y_a_pen += pen1;
+
                 vuln_pop_age(i,j)=N_y_a(i,j)*seine_vuln(j);
             }
 
@@ -1664,7 +1697,9 @@ FUNCTION void calc_statevariables()
                 if(N_y_a(i,j)<=not_below_this){
                     penCount+=1;
                 }
-                full_llk+=1000*pen2;
+
+                N_y_a_pen += pen2;
+
                 vuln_pop_age(i,j)=N_y_a(i,j)*seine_vuln(j);
             } 
 
@@ -1735,7 +1770,9 @@ FUNCTION void calc_statevariables()
                 if(N_y_a(i,j)<=not_below_this){
                     penCount+=1;
                 }
-                full_llk+=1000*pen3;
+
+                N_y_a_pen += pen3;
+
                 vuln_pop_age(i,j)=N_y_a(i,j)*seine_vuln(j);
             }
 
@@ -1812,7 +1849,8 @@ FUNCTION void calc_statevariables()
             if(N_spawners_age(i,j)<=not_below_this){
                 penCount+=1;
             }
-            full_llk+=1000*pen4;
+
+            N_spawners_age_pen += pen4;
 
             spawning_biomass_age(i,j)=N_spawners_age(i,j)*weight_at_age(i,j);
             //spawning_biomass_age(i,j)=N_spawners_age(i,j)*weight_at_age(i,j)/maturity(i,j);
@@ -2098,7 +2136,10 @@ FUNCTION void calc_nll_components()
     
     //Mile-days of milt Likelihood component
     for(int i=1;i<=nyr_tobefit;i++) {
-        mdm_residuals(i)=log(MDM_est(i))-log(mile_days_milt(i));
+        mdm_residuals(i) = 0;
+        if (mile_days_milt(i) != -9) {
+            mdm_residuals(i) += log(MDM_est(i))-log(mile_days_milt(i));
+        }
         mdm_llk_ind(i)=(mdm_residuals(i)*mdm_residuals(i))/(2*milt_add_var*milt_add_var)+log(milt_add_var);
     }
     MDMtemp_2=norm2(mdm_residuals);
@@ -2604,7 +2645,10 @@ FUNCTION write_chain_results
     LLikReport << -seine_llk << "," << -spawner_llk << "," << eggdep_llk << "," << ADFG_hydro_llk << "," << PWSSC_hydro_llk << "," << mdm_llk << ",";
     // LLikReport << age0_devs_penllk << "," << mort_devs_penllk << ",";
     // Aerial juvenile survey (12/2019) and seroprevalence samples (11/2020)
-    LLikReport << juvenile_llk << "," << vhsv_llk << "," << ich_llk << "," << full_llk << endl;
+    LLikReport << juvenile_llk << "," << vhsv_llk << "," << ich_llk << ",";
+    LLikReport << N_y_a_pen << "," << N_spawners_age_pen << ",";
+    LLikReport << summer_surv_pen << "," << winter_surv_pen << ","; 
+    LLikReport << full_llk << endl;
 
     // Prior density reports
     for(int j=1; j<=npar; j++){
