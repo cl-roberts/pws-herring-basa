@@ -20,7 +20,8 @@ fix <- c(
     "pk", "egg_add", "Z_0_8", "log_MeanAge0"
     # "sigma_age0devs"                                   
     # ------------------------------------------------------------------ 
-    # "Z_9", "VHSV_age3_4_mort_93, "ICH_age5_8_mort_93", 
+    # "Z_9", 
+    # "VHSV_age3_4_mort_93", "ICH_age5_8_mort_93" 
     # "beta_mortality",
     # ------------------------------------------------------------------
     # "mat_age3", "mat_age4",                  
@@ -165,7 +166,7 @@ phase1_pars <- list(
     loginit_pop = c(6.35,  5.66,  5.92,  6.74,  4.74)
 )
 phase2_pars <- list(
-    Z_9 = 0.93, beta_mortality = rep(.2, 3), 
+    Z_9 = 0.93, beta_mortality = rep(0.2, 3), 
     logmdm_c = 5.87, adfg_hydro_q = -0.38, pwssc_hydro_q = -0.21
 )
 phase3_pars <- list(
@@ -294,11 +295,11 @@ model_data$spawn_ess <- ess$spawn_ess
 # ------------------------------------------------------------------------------
 
 ## compile model
-# if("PWS_ASA_tmb" %in% names(getLoadedDLLs())) {
-#     dyn.unload(dynlib(here(dir_model, "PWS_ASA_tmb")))
-# }
-# compile(here(dir_model, "PWS_ASA_tmb.cpp"))
-# dyn.load(dynlib(here(dir_model, "PWS_ASA_tmb")))
+if("PWS_ASA_tmb" %in% names(getLoadedDLLs())) {
+    dyn.unload(dynlib(here(dir_model, "PWS_ASA_tmb")))
+}
+compile(here(dir_model, "PWS_ASA_tmb.cpp"))
+dyn.load(dynlib(here(dir_model, "PWS_ASA_tmb")))
 
 
 #### create model object and write pre-optimization report ####

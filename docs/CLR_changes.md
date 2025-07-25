@@ -88,6 +88,10 @@ Every R function in the `pwsHerringBasa` package has an associated .rd file. The
 
 ## TMB model 
 
+## 6/30/2025
+
+- Fixed mortality covariate indexing and mortality forecast bugs in ADMB model
+
 ## 7/1/2025
 
 - Fixed bug in estimation model for juvenile schools, now better fits
@@ -99,4 +103,43 @@ Every R function in the `pwsHerringBasa` package has an associated .rd file. The
 ## 7/2/2025
 
 - Added disease prevalence data from 2020-2024
-- 
+
+## 7/3/2025
+
+- undo treating age0 deviates as random effects in TMB model
+- re-fix last deviate to 0
+
+
+## 7/5/2025
+
+- fixed divergences related to posfun in TMB model
+- TMB bug fixes
+
+## 7/6/2025
+
+- TMB bug fixes
+
+## 7/7/2025
+
+- TMB bug fixes
+
+## 7/9/2025
+
+- implemented ESS calculation in TMB model
+- implement report writing function in TMB model for debugging
+
+## 7/10/2025
+
+- fixed pound spawn removals calculation in first year of ADMB model (for calculating post-fishery spawning NAA) 
+- fixed ignoring 7+ catches in first year of ADMB model
+- fixed plus group bug (first five years) in TMB model 
+
+
+## 7/11/2025
+
+- fixed incrementation in first five years of age comp likelihood calculations in both ADMB and TMB models
+
+
+## 7/23/2025
+
+- fixed likelihood penalties applied by posfun in ADMB model

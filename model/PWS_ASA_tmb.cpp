@@ -23,7 +23,7 @@
 // C++ program file:  PWS_ASA_tmb.cpp                                         //
 // R control file:  run_basa_tmb.r                                            //
 //                                                                            //
-// Input Data files:                                                           //
+// Input Data files:                                                          //
 //        PWS_ASA.dat:             Model input (surveys, catches, etc.)       //
 //                                                                            //
 // Output files:                                                              //
@@ -256,10 +256,10 @@ Type objective_function<Type>::operator() ()
         // penalize survivals >= 1 for plus group
         summer_survival(y, nage-1) = 1 - posfun(1-summer_survival(y, nage-1), min_mortality, summer_surv_pen);
         if(summer_survival(y, nage-1) >= 1 - min_mortality) penCount += 1;
-    
+        
         winter_survival(y, nage-1) = 1 - posfun(1-winter_survival(y, nage-1), min_mortality, winter_surv_pen);
         if(winter_survival(y, nage-1) >= 1 - min_mortality) penCount += 1;
-
+        
     }
 
 
