@@ -53,6 +53,9 @@ retro_iter <- 2000
 retro_warmup <- 700
 retro_chains <- 1
 
+# populate app data?
+app_data <- TRUE
+
 # forecast controls
 forecast_controls <- list(
     recruitment_average_years = 10,
@@ -96,6 +99,12 @@ if (run_retro) {
     dir_retro <- here("retrospectives")
     if (!dir.exists(dir_retro)) {
         dir.create(dir_retro)
+    }
+}
+if (app_data) {
+    dir_app_data <- here("mid-year-management-app", "data")
+    if (!dir.exists(dir_app_data)) {
+        dir.create(dir_app_data)
     }
 }
 
@@ -670,22 +679,24 @@ colnames(mid_year_management) <- c(
 mid_year_management <- mid_year_management |>
     arrange(Btilde_forecast)
 
-quant_indices <- c(0.025, 0.5, .975) * n_iters
-
-# View(mid_year_management[quant_indices,])
-
-dir_app <- here("mid-year-management-app")
-
-write.csv(
-    mid_year_management, 
-    here(dir_app, "data", "mid-year-management.csv"), 
-    row.names = FALSE
-)
-
 write.csv(
     mid_year_management, here(dir_mcmc, "mid-year-management.csv"), 
     row.names = FALSE
 )
+
+# move data files to app dir
+if (app_data) {
+
+    file.copy(
+        from = here(dir_mcmc, "mid-year-management.csv"), 
+        to = here(dir_app_data, "mid-year-management.csv")
+    )
+    file.copy(
+        from = here(dir_model, "PWS_ASA.dat"), 
+        to = here(dir_app_data, "PWS_ASA.dat")
+    )
+
+}
 
 ## print diagnostics ----
 
