@@ -46,6 +46,12 @@ iter <- 2000
 warmup <- 700
 control <- list(adapt_delta = 0.95)
 
+# run retrospective analysis?
+run_retro <- TRUE
+n_peels <- 5
+retro_iter <- 2000
+retro_chains <- 1
+
 # forecast controls
 forecast_controls <- list(
     recruitment_average_years = 10,
@@ -69,21 +75,27 @@ library(here)
 
 dir_model <- here("model")
 
-dir_mcmc <- here::here(dir_model, "mcmc_out")
-if(!dir.exists(dir_mcmc)) {
+dir_mcmc <- here(dir_model, "mcmc_out")
+if (!dir.exists(dir_mcmc)) {
   dir.create(dir_mcmc)
 }
-dir_rep <- here::here(dir_model, "rep_out")
-if(!dir.exists(dir_rep)) {
+dir_rep <- here(dir_model, "rep_out")
+if (!dir.exists(dir_rep)) {
   dir.create(dir_rep)
 }
-dir_figures <- here::here("figures")
-if(!dir.exists(dir_figures)) {
+dir_figures <- here("figures")
+if (!dir.exists(dir_figures)) {
   dir.create(dir_figures)
 }
-dir_outputs <- here::here("data_outputs")
-if(!dir.exists(dir_outputs)) {
+dir_outputs <- here("data_outputs")
+if (!dir.exists(dir_outputs)) {
   dir.create(dir_outputs)
+}
+if (run_retro) {
+    dir_retro <- here("retrospectives")
+    if (!dir.exists(dir_retro)) {
+        dir.create(dir_retro)
+    }
 }
 
 
@@ -490,50 +502,50 @@ for(i in 1:n_iters){
 
 # all mcmc iterations 
 write.csv(
-    mcmc_results, here::here(dir_mcmc, "iterations.csv"), row.names = FALSE
+    mcmc_results, here(dir_mcmc, "iterations.csv"), row.names = FALSE
 )
 
 ## survey quantities
 
 # estimated spawn age comps 
 write.table(
-    SpAC, sep = ",", here::here(dir_mcmc, "SpAC.csv"), 
+    SpAC, sep = ",", here(dir_mcmc, "SpAC.csv"), 
     row.names = FALSE, col.names = FALSE
 )
 
 # estimated seine age comps
 write.table(
-    SeAC, sep = ",", here::here(dir_mcmc, "SeAC.csv"), 
+    SeAC, sep = ",", here(dir_mcmc, "SeAC.csv"), 
     row.names = FALSE, col.names = FALSE
 )
 
 # adfg hydro fit 
 write.table(
-    HYD_ADFG, sep = ",", here::here(dir_mcmc, "HYD_ADFG.csv"), 
+    HYD_ADFG, sep = ",", here(dir_mcmc, "HYD_ADFG.csv"), 
     row.names = FALSE, col.names = FALSE
 )
 
 # pwssc hydro fit 
 write.table(
-    HYD_PWSSC, sep = ",", here::here(dir_mcmc, "HYD_PWSSC.csv"), 
+    HYD_PWSSC, sep = ",", here(dir_mcmc, "HYD_PWSSC.csv"), 
     row.names = FALSE, col.names = FALSE
 )
 
 # egg fit 
 write.table(
-    EGG, sep = ",", here::here(dir_mcmc, "EGG.csv"), 
+    EGG, sep = ",", here(dir_mcmc, "EGG.csv"), 
     row.names = FALSE, col.names = FALSE
 )
 
 # mdm fit 
 write.table(
-    MDM, sep = ",", here::here(dir_mcmc, "MDM.csv"), 
+    MDM, sep = ",", here(dir_mcmc, "MDM.csv"), 
     row.names = FALSE, col.names = FALSE
 )
 
 # juv aerial fit 
 write.table(
-    juv_schools, sep = ",", here::here(dir_mcmc, "juv_schools.csv"), 
+    juv_schools, sep = ",", here(dir_mcmc, "juv_schools.csv"), 
     row.names = FALSE, col.names = FALSE
 )
 
@@ -541,47 +553,47 @@ write.table(
 
 # estimated numbers-at-age 
 write.table(
-    N, sep = ",", here::here(dir_mcmc, "Num_at_age.csv"), 
+    N, sep = ",", here(dir_mcmc, "Num_at_age.csv"), 
     row.names = FALSE, col.names = FALSE
 )
 
 # estimated pre fishery spawning biomass 
 write.table(
     cbind(t(do.call(cbind, Btilde_y)), Btilde_forecast), 
-    sep = ",", here::here(dir_mcmc, "PFRBiomass.csv"), 
+    sep = ",", here(dir_mcmc, "PFRBiomass.csv"), 
     row.names = FALSE, col.names = FALSE
 )
 
 # estimated post fishery spawning biomass
 write.csv(
     do.call(cbind, Btilde_post_y), 
-    here::here(dir_mcmc, "post-fishery-spawning-biomass.csv"), 
+    here(dir_mcmc, "post-fishery-spawning-biomass.csv"), 
     row.names = FALSE
 )
 
 # estimated age-3 herring 
 write.table(
-    t(do.call(cbind, age_3)), sep = ",", here::here(dir_mcmc, "Age3.csv"), 
+    t(do.call(cbind, age_3)), sep = ",", here(dir_mcmc, "Age3.csv"), 
     row.names = FALSE, col.names = FALSE
 )   
 
 # summer survival 
 write.csv(
     summer_survival, 
-    here::here(dir_mcmc, "adult_survival_effects_summer.csv"), 
+    here(dir_mcmc, "adult_survival_effects_summer.csv"), 
     row.names = FALSE
 )
 
 # winter survival
 write.csv(
     cbind(winter_survival, winter_survival_forecast), 
-    here::here(dir_mcmc, "adult_survival_effects_winter.csv"), 
+    here(dir_mcmc, "adult_survival_effects_winter.csv"), 
     row.names = FALSE
 )
 
 # estimated and fixed variances 
 write.table(
-    VARSreport, sep = ",", here::here(dir_mcmc, "VARSreport.csv"), 
+    VARSreport, sep = ",", here(dir_mcmc, "VARSreport.csv"), 
     row.names = FALSE, col.names = FALSE
 )
 
@@ -589,32 +601,32 @@ write.table(
 
 # numbers-at-age forecast
 write.csv(
-    N_a_forecast, here::here(dir_mcmc, "N_a_forecast.csv"), 
+    N_a_forecast, here(dir_mcmc, "N_a_forecast.csv"), 
     row.names = FALSE
 )
 
 # mature numbers-at-age forecast
 write.csv(
-    Ntilde_a_forecast, here::here(dir_mcmc, "Ntilde_a_forecast.csv"), 
+    Ntilde_a_forecast, here(dir_mcmc, "Ntilde_a_forecast.csv"), 
     row.names = FALSE
 )
 
 # biomass-at-age forecast
 write.csv(
-    Btilde_a_forecast, here::here(dir_mcmc, "Btilde_a_forecast.csv"), 
+    Btilde_a_forecast, here(dir_mcmc, "Btilde_a_forecast.csv"), 
     row.names = FALSE
 )
 
 
 # biomass agecomp forecast
 write.csv(
-    Btilde_agecomp_forecast, here::here(dir_mcmc, "Btilde_agecomp_forecast.csv"), 
+    Btilde_agecomp_forecast, here(dir_mcmc, "Btilde_agecomp_forecast.csv"), 
     row.names = FALSE
 )
 
 # mdm forecast
 write.csv(
-    mdm_forecast, here::here(dir_mcmc, "mdm_forecast.csv"), 
+    mdm_forecast, here(dir_mcmc, "mdm_forecast.csv"), 
     row.names = FALSE
 )
 
@@ -623,13 +635,13 @@ write.csv(
 
 # likelihood components 
 write.csv(
-    likelihoods, here::here(dir_mcmc, "likelihoods.csv"), 
+    likelihoods, here(dir_mcmc, "likelihoods.csv"), 
     row.names = FALSE
 )
 
 # penalties 
 write.csv(
-    penalties, here::here(dir_mcmc, "penalties.csv"), 
+    penalties, here(dir_mcmc, "penalties.csv"), 
     row.names = FALSE
 )
 
@@ -665,19 +677,14 @@ dir_app <- here("mid-year-management-app")
 
 write.csv(
     mid_year_management, 
-    here::here(dir_app, "data", "mid-year-management.csv"), 
+    here(dir_app, "data", "mid-year-management.csv"), 
     row.names = FALSE
 )
 
 write.csv(
-    mid_year_management, here::here(dir_mcmc, "mid-year-management.csv"), 
+    mid_year_management, here(dir_mcmc, "mid-year-management.csv"), 
     row.names = FALSE
 )
-
-quantile(mdm_forecast, c(0.025, 0.5, .975))
-quantile(Btilde_forecast*1.10231, c(0.025, 0.5, .975))
-
-sum(Btilde_forecast*1.10231 < 22000) / n_iters
 
 ## print diagnostics ----
 
@@ -691,4 +698,80 @@ message(paste("minimum tail ESS:", min(mon$Tail_ESS)))
 check_treedepth(fit)
 check_divergences(fit)
 message(paste("Total model run time:", round(time, 4), units(time)))
+
+
+## run retrospective analysis ----
+
+if (run_retro) {
+
+    retro_start_time <- Sys.time()
+
+    for(i in 1:n_peels){
+
+        dir_retro_i <- here(dir_retro, paste0("basa-", i))
+        dir_mcmc_i <- here(dir_retro_i, "mcmc_out")
+        if(!dir.exists(dir_retro_i)) dir.create(dir_retro_i)
+        if(!dir.exists(dir_mcmc_i)) dir.create(dir_mcmc_i)
+        
+        # incrementally remove data to fit model
+        retro_data <- lapply(model_data, FUN = \(x) {
+            if (all(!is.null(dim(x)), nrow(x)==nyr)) {
+                x[1:(nyr-i), , drop = FALSE]
+            } else {
+                x
+            }
+        })
+        retro_data$nyr <- nyr-i
+
+        # fit model
+        model_retro <- MakeADFun(
+            retro_data, parameters, map = map, DLL = "PWS_ASA", 
+            silent = TRUE, hessian = FALSE
+        )
+
+        # ML optimization
+        retro_fit_ML <- nlminb(
+            start = model_retro$par, objective = model_retro$fn, gradient = model_retro$gr, 
+            lower = lower, upper = upper,
+            control = list(eval.max = 10000, iter.max = 1000, rel.tol = 1e-10)
+        )
+
+        # run NUTS
+        retro_inits <- init_tmb_params(
+            chains = retro_chains, seed = seed,
+            start = model_retro$env$last.par.best, 
+            lower = lower, upper = upper
+        )
+        retro_fits <- vector(mode = "list", length = n_peels)
+        retro_fits[[i]] <- tmbstan(
+            model, chains = retro_chains, lower = lower, upper = upper, 
+            cores = retro_chains, init = retro_inits, iter = retro_iter, 
+            control = control, warmup = warmup, seed = seed, algorithm = "NUTS", 
+            silent = FALSE
+        )
+
+        # write results
+        retro_mcmc_results <- as.data.frame(retro_fits[[i]]) |> 
+            select(!lp__)
+        
+        retro_Btilde_y <- matrix(NA, nrow = retro_iter, ncol = retro_data$nyr)
+        for(iter in 1:retro_iter) {
+            retro_Btilde_y[iter,] <- model_retro$report(retro_mcmc_results[iter,])$Btilde_y |>
+                t()
+        }
+
+        # estimated pre fishery spawning biomass 
+        write.table(
+            retro_Btilde_y, sep = ",", here(dir_mcmc_i, "PFRBiomass.csv"), 
+            row.names = FALSE, col.names = FALSE
+        )
+        saveRDS(retro_fits[[i]], here(dir_retro_i, "fit.rds"))
+
+    }
+
+    retro_end_time <- Sys.time()
+    retro_time <- retro_end_time - retro_start_time
+    message(paste("Retrospective analysis run time:", round(retro_time, 4), units(retro_time)))
+
+}
 
