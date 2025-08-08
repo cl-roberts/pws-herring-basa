@@ -53,7 +53,13 @@ library(pwsHerringBasa)
 
 # see ?pwsHerringBasa::run.basa() for more details
 
-run <- run.basa(here::here("model"), n.chains = 4)
+control <- list(
+    adapt_delta = 0.95,
+    # max_treedepth = 16,
+    metric = "mle"
+)
+
+run <- run.basa(here::here("model"), n.chains = 4, control = control)
 
 #-------------------------------------------------------------------------------
 

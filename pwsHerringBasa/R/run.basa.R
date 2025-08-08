@@ -9,12 +9,13 @@
 #' @param n.warmup Number of MCMC burn-in iterations
 #' @param n.time Number of minutes after which the model will quit running
 #' @param n.chains Number of MCMC chains to run
+#' @param control List of MCMC controls passed to `rstan`
 #'
 #' @returns Metadata from model fit in ADMB. Model outputs are saved to `model/mcmc_out/`
 #' and `model/rep_out` subdirectories.
 #'
 
-run.basa <- function(dir_model, n.samples=2000, n.warmup=700, n.time=5, n.chains=4){
+run.basa <- function(dir_model, n.samples=2000, n.warmup=700, n.time=5, n.chains=4, control=NULL){
  
   template.files <- here::here(dir_model)
   print(template.files)
@@ -241,11 +242,7 @@ run.basa <- function(dir_model, n.samples=2000, n.warmup=700, n.time=5, n.chains
                        duration = n.time,
                        init=inits, seeds=seeds, chains=reps,cores=reps,
                        mceval=TRUE,
-                       control=list(
-                         adapt_delta=0.9,
-                         #max_treedepth=16,
-                         metric="mle"
-                       )
+                       control=control
   )
   end.time <- Sys.time()
   total.time <- end.time - start.time

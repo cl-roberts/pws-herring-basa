@@ -103,6 +103,8 @@ Type objective_function<Type>::operator() ()
     DATA_INTEGER(recruitment_average_years);    // # years to average recruitments in forecast
     DATA_INTEGER(waa_average_years);            // # years to average WAA in forecast 
     DATA_INTEGER(disease_cov_average_years);    // # years to average disease covariates in forecast
+    DATA_SCALAR(expected_spring_harvest);       // metric tons of expected harvest for milt forecast
+    DATA_INTEGER(perc_female_forecast_years);   // # years to average percent females in milt forecast
 
     // ------------------------------------------------------------------ //
     //                        Parameter Section                           //
@@ -536,84 +538,10 @@ Type objective_function<Type>::operator() ()
     Btilde_y = (N_y_a.array() * waa.array()).matrix() * maturity.matrix();
     Btilde_post_y = (Ntilde_y_a.array() * waa.array()).rowwise().sum();
 
-    // ---- biomass forecast ---- //
-
-    vector<Type> projected_N_y_a(nage);                 // numbers-at-age forecast
-    projected_N_y_a.setZero();
-
-    vector<Type> waa_forecast(nage);                    // weight-at-age forecast
-    waa_forecast.setZero();
-                        
-    vector<Type> winter_survival_forecast(nage);        // winter survival for forecast
-    winter_survival_forecast.setZero();
-
-    vector<Type> mean_disease_cov(n_covs);                // disease covariate for forecast
-    mean_disease_cov.setZero();
-
-    // forecast disease covariate prevalence
-    for(int b = 0; b < n_covs; b++){
-        for(int y = nyr - disease_cov_average_years; y < nyr; y++) {
-            mean_disease_cov(b) += disease_covs_calc(y, b) / disease_cov_average_years;
-        }    
-        dummy_vector(b) = mean_disease_cov(b);
-    }
-
-
-    Type Btilde_forecast = 0.0;                         // spawning biomass forecast
+    // ----------------- ESTIMATED SURVEY QUANTITIES -------------------- //
     
-    // set up winter survival forecast vector
-    for (int a = 0; a < nage; a++) {
-
-        if(a < nage - 1) {
-            winter_survival_forecast(a) = exp(-0.5*Z_0_8);
-        } else if (a == nage - 1) { 
-            winter_survival_forecast(a) = exp(-0.5*Z_9);            
-        }
-
-        for (int b = 0; b < n_covs; b++) {
-            winter_survival_forecast(a) *= exp(-beta_mortality(b)*mean_disease_cov(b)*mort_age_impact(a, b));
-        }
-        
-    }
-    
-
-    // forecast recruitment
-    Type mean_log_rec = 0.0;
-    for(int y = nyr - recruitment_average_years; y < nyr; y++) {
-        mean_log_rec += log(N_y_a(y, 3)) / recruitment_average_years;
-    }
-
-
-    // project naa matrix forward 1 year
-    for (int a = 0; a < nage; a++) {
-        if (a < 3) {
-            projected_N_y_a(a) = 0;   
-        } else if(a == 3) {
-            projected_N_y_a(a) = exp(mean_log_rec);
-        } else if (a >= 4) {
-            projected_N_y_a(a) = ((N_y_a(nyr-1, a-1)-(seine_age_comp_est(nyr-1,a-1)*seine_catch_est(nyr-1) + gillnet_catch(nyr-1,a-1) + pk*pound_catch(nyr-1,a-1)))*summer_survival(nyr-1,a-1) - foodbait_catch(nyr-1,a-1))*winter_survival_forecast(a-1);
-        } 
-        if (a == nage-1) {
-            // plus group
-            projected_N_y_a(a) += ((N_y_a(nyr-1, a)-(seine_age_comp_est(nyr-1,a)*seine_catch_est(nyr-1) + gillnet_catch(nyr-1,a) + pk*pound_catch(nyr-1,a)))*summer_survival(nyr-1,a) - foodbait_catch(nyr-1,a))*winter_survival_forecast(a);
-        }
-    }
-
-
-    // forecast waa
-    for (int a = 0; a < nage; a++) {
-        waa_forecast(a) = waa.col(a).tail(waa_average_years).sum() / waa_average_years;
-    }
-
-    // pre-fishery spawning biomass forecast
-    for (int a = 0; a < nage; a++) {
-        Btilde_forecast += maturity(a)*projected_N_y_a(a)*waa_forecast(a);
-    }
-
-    // ----------- OTHER ESTIMATES IN LIKELIHOOD EXPRESSIONS ------------ //
-
     // ---- estimate spawning age compositions ---- //
-
+    
     matrix<Type> spawn_age_comp_est(nyr, nage);         // spawning age composition
     spawn_age_comp_est.setZero();
     vector<Type> total_spawners(nyr);                   // all spawners across ages
@@ -666,7 +594,7 @@ Type objective_function<Type>::operator() ()
     }
 
     // ---- estimate juvenile aerial survey ---- //
-
+    
     vector<Type> Jhat_y(nyr);
     Jhat_y.setZero();
     
@@ -674,10 +602,110 @@ Type objective_function<Type>::operator() ()
         Jhat_y(y) = N_y_a(y,1) * exp(log_juvenile_q); 
     }
 
+    // --------------------- FORECAST QUANTITIES ------------------------ //
+
+    vector<Type> N_a_forecast(nage);                   // numbers-at-age forecast
+    N_a_forecast.setZero();
+
+    vector<Type> Ntilde_a_forecast(nage);              // mature numbers-at-age forecast
+    Ntilde_a_forecast.setZero();
+
+    vector<Type> Ntilde_agecomp_forecast(nage);         // mature numbers agecomp forecast
+    Ntilde_agecomp_forecast.setZero();
+
+    vector<Type> waa_forecast(nage);                    // weight-at-age forecast
+    waa_forecast.setZero();
+    
+    vector<Type> winter_survival_forecast(nage);        // winter survival for forecast
+    winter_survival_forecast.setZero();
+    
+    vector<Type> mean_disease_cov(n_covs);              // disease covariate for forecast
+    mean_disease_cov.setZero();
+    
+    Type Btilde_forecast = 0.0;                         // mature biomass forecast
+
+    vector<Type> Btilde_a_forecast(nage);               // mature biomass-at-age forecast
+    Btilde_a_forecast.setZero();
+
+    vector<Type> Btilde_agecomp_forecast(nage);         // mature biomass agecomp forecast
+    Btilde_agecomp_forecast.setZero();
+
+    Type mdm_forecast = 0.0;                            // mile-days milt forecast
+
+    // forecast disease covariate prevalence
+    for(int b = 0; b < n_covs; b++){
+        for(int y = nyr - disease_cov_average_years; y < nyr; y++) {
+            mean_disease_cov(b) += disease_covs_calc(y, b) / disease_cov_average_years;
+        }    
+    }
+    
+    // set up winter survival forecast vector
+    for (int a = 0; a < nage; a++) {
+
+        if(a < nage - 1) {
+            winter_survival_forecast(a) = exp(-0.5*Z_0_8);
+        } else if (a == nage - 1) { 
+            winter_survival_forecast(a) = exp(-0.5*Z_9);            
+        }
+
+        for (int b = 0; b < n_covs; b++) {
+            winter_survival_forecast(a) *= exp(-beta_mortality(b)*mean_disease_cov(b)*mort_age_impact(a, b));
+        }
+        
+    }
+
+    // forecast recruitment
+    Type mean_log_rec = 0.0;
+    for(int y = nyr - recruitment_average_years; y < nyr; y++) {
+        mean_log_rec += log(N_y_a(y, 3)) / recruitment_average_years;
+    }
+
+    // forecast waa
+    for (int a = 0; a < nage; a++) {
+        waa_forecast(a) = waa.col(a).tail(waa_average_years).sum() / waa_average_years;
+    }
+
+    // project naa matrix forward 1 year
+    for (int a = 0; a < nage; a++) {
+        if (a < 3) {
+            N_a_forecast(a) = 0;   
+        } else if(a == 3) {
+            N_a_forecast(a) = exp(mean_log_rec);
+        } else if (a >= 4) {
+            N_a_forecast(a) = ((N_y_a(nyr-1, a-1)-(seine_age_comp_est(nyr-1,a-1)*seine_catch_est(nyr-1) + gillnet_catch(nyr-1,a-1) + pk*pound_catch(nyr-1,a-1)))*summer_survival(nyr-1,a-1) - foodbait_catch(nyr-1,a-1))*winter_survival_forecast(a-1);
+        } 
+        if (a == nage-1) {
+            // plus group
+            N_a_forecast(a) += ((N_y_a(nyr-1, a)-(seine_age_comp_est(nyr-1,a)*seine_catch_est(nyr-1) + gillnet_catch(nyr-1,a) + pk*pound_catch(nyr-1,a)))*summer_survival(nyr-1,a) - foodbait_catch(nyr-1,a))*winter_survival_forecast(a);
+        }
+    }
+
+    // pre-fishery spawning biomass forecast
+    for (int a = 0; a < nage; a++) {
+        Ntilde_a_forecast(a) = maturity(a)*N_a_forecast(a);
+        Btilde_a_forecast(a) = Ntilde_a_forecast(a)*waa_forecast(a);
+        Btilde_forecast += Btilde_a_forecast(a);
+    }
+
+    // agecomp forecasts
+    Ntilde_agecomp_forecast = Ntilde_a_forecast / Ntilde_a_forecast.sum();
+    Btilde_agecomp_forecast = Btilde_a_forecast / Btilde_a_forecast.sum();
+
+    // forecast proportion of population that are female
+    Type perc_female_forecast = 0.0;
+    for(int y = nyr - perc_female_forecast_years; y < nyr; y++) {
+        perc_female_forecast += perc_female(y) / perc_female_forecast_years;
+    }
+
+    // milt forecast
+    mdm_forecast = Btilde_forecast - expected_spring_harvest; 
+    mdm_forecast *= (1 - perc_female_forecast);
+    mdm_forecast /= exp(logmdm_c);
+
     // ------------------------- LIKELIHOODS ---------------------------- //
-
+    
     // ---- L1: purse-seine age-composition ---- //
-
+    
     // Calculate likelihoods from 1980 to 1984
     // increments plus group from age-5 in 1980 to age-9 in 1984 in a similar 
     // fashion to the numbers-at-age calculation 
@@ -843,9 +871,10 @@ Type objective_function<Type>::operator() ()
         L7 -= dnbinom2(Type(juvenile_survey(y)), Jhat_y(y), L7_var(y), true);
     }
 
-    // ---- total likelihood ---- //
+    // ---- build objective function ---- //
 
     Type negLogLik = 0.0;        
+    Type priors = 0.0;
     
     // add likelihood components
     negLogLik += L1;    // seine age comp 
@@ -862,11 +891,7 @@ Type objective_function<Type>::operator() ()
     negLogLik += 1000*winter_surv_pen;          // penalizes >1 winter survival
     negLogLik += 1000*summer_surv_pen;          // penalizes >1 summer survival
 
-
-    // ---- incorporate prior densities ---- //
-
-    Type priors = 0.0;
-
+    // add priors
     priors -= dbeta(mat_age3, Type(9.0), Type(11.0), true);
     priors -= dbeta(mat_age4, Type(18.0), Type(2.0), true);
     priors -= dnorm(milt_add_var, Type(0.33), Type(0.10), true);
@@ -879,9 +904,21 @@ Type objective_function<Type>::operator() ()
     //                         Report Section                             //
     // ------------------------------------------------------------------ //
 
-    // population quantities
+    // ---- survey quantities ---- //
+
     REPORT(seine_age_comp_est);
     REPORT(spawn_age_comp_est);
+    REPORT(Ehat_y);
+    REPORT(L3_total_var);
+    REPORT(Hhat_adfg_y);
+    REPORT(Hhat_pwssc_y);
+    REPORT(L5_total_var);
+    REPORT(That_y);
+    REPORT(Jhat_y);
+    REPORT(L7_var);
+
+    // ---- population dynamics ---- //
+
     REPORT(age_0);
     REPORT(N_y_a);
     REPORT(maturity);
@@ -892,7 +929,8 @@ Type objective_function<Type>::operator() ()
     REPORT(spawn_removals);
     REPORT(summer_survival);
     REPORT(winter_survival);
-    REPORT(winter_survival_forecast);
+    
+    // ---- objective function quantities ---- //
     
     // likelihood components
     REPORT(L1);
@@ -903,34 +941,31 @@ Type objective_function<Type>::operator() ()
     REPORT(L6);
     REPORT(L7);
     REPORT(negLogLik);
-
+    
     // penalties
     REPORT(penCount);
     REPORT(naa_pen);
     REPORT(ntilde_pen);
     REPORT(winter_surv_pen);
     REPORT(summer_surv_pen);
-
-    // priors
-    REPORT(priors)
-
-    // fitted survey quantities
-    REPORT(Ehat_y);
-    REPORT(L3_total_var);
-    REPORT(Hhat_adfg_y);
-    REPORT(Hhat_pwssc_y);
-    REPORT(L5_total_var);
-    REPORT(That_y);
-    REPORT(Jhat_y);
-    REPORT(L7_var);
-
-    // forecast quantities
-    REPORT(mean_log_rec);
-    REPORT(projected_N_y_a);
-    REPORT(waa_forecast);
-    REPORT(Btilde_forecast);    
     
-    // dummy objects
+    // priors
+    REPORT(priors);
+    
+    // ---- forecast quantities ---- //
+    REPORT(winter_survival_forecast);
+    REPORT(mean_log_rec);
+    REPORT(mean_disease_cov);
+    REPORT(N_a_forecast);
+    REPORT(Ntilde_a_forecast);
+    REPORT(Ntilde_agecomp_forecast);
+    REPORT(waa_forecast);
+    REPORT(Btilde_forecast); 
+    REPORT(Btilde_a_forecast); 
+    REPORT(Btilde_agecomp_forecast); 
+    REPORT(mdm_forecast);    
+    
+    // ---- dummy objects for debugging ---- //
     REPORT(dummy);
     REPORT(dummy_vector);
     REPORT(dummy_matrix);
