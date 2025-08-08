@@ -50,6 +50,7 @@ control <- list(adapt_delta = 0.95)
 run_retro <- TRUE
 n_peels <- 5
 retro_iter <- 2000
+retro_warmup <- 700
 retro_chains <- 1
 
 # forecast controls
@@ -715,13 +716,13 @@ if (run_retro) {
         
         # incrementally remove data to fit model
         retro_data <- lapply(model_data, FUN = \(x) {
-            if (all(!is.null(dim(x)), nrow(x)==nyr)) {
-                x[1:(nyr-i), , drop = FALSE]
+            if (all(!is.null(dim(x)), nrow(x)==Y)) {
+                x[1:(Y-i), , drop = FALSE]
             } else {
                 x
             }
         })
-        retro_data$nyr <- nyr-i
+        retro_data$nyr <- Y-i
 
         # fit model
         model_retro <- MakeADFun(
@@ -746,7 +747,7 @@ if (run_retro) {
         retro_fits[[i]] <- tmbstan(
             model, chains = retro_chains, lower = lower, upper = upper, 
             cores = retro_chains, init = retro_inits, iter = retro_iter, 
-            control = control, warmup = warmup, seed = seed, algorithm = "NUTS", 
+            control = control, warmup = retro_warmup, seed = seed, algorithm = "NUTS", 
             silent = FALSE
         )
 
@@ -754,15 +755,19 @@ if (run_retro) {
         retro_mcmc_results <- as.data.frame(retro_fits[[i]]) |> 
             select(!lp__)
         
-        retro_Btilde_y <- matrix(NA, nrow = retro_iter, ncol = retro_data$nyr)
-        for(iter in 1:retro_iter) {
-            retro_Btilde_y[iter,] <- model_retro$report(retro_mcmc_results[iter,])$Btilde_y |>
-                t()
+        n_retro_iter <- nrow(retro_mcmc_results)
+
+        retro_Btilde_y <- vector(mode = "list", length = n_retro_iter)
+        retro_Btilde_forecast <- matrix(NA, nrow = n_retro_iter, ncol = 1)
+        for(iter in 1:n_retro_iter) {
+            retro_Btilde_y[[iter]] <- model_retro$report(retro_mcmc_results[iter,])$Btilde_y 
+            retro_Btilde_forecast[iter] <- model_retro$report(retro_mcmc_results[iter,])$Btilde_forecast
         }
 
         # estimated pre fishery spawning biomass 
         write.table(
-            retro_Btilde_y, sep = ",", here(dir_mcmc_i, "PFRBiomass.csv"), 
+            cbind(t(do.call(cbind, retro_Btilde_y)), retro_Btilde_forecast), 
+            sep = ",", here(dir_mcmc_i, "PFRBiomass.csv"), 
             row.names = FALSE, col.names = FALSE
         )
         saveRDS(retro_fits[[i]], here(dir_retro_i, "fit.rds"))
