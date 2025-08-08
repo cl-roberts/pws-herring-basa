@@ -53,7 +53,13 @@ library(pwsHerringBasa)
 
 # see ?pwsHerringBasa::run.basa() for more details
 
-run <- run.basa(here::here("model"))
+control <- list(
+    adapt_delta = 0.95,
+    # max_treedepth = 16,
+    metric = "mle"
+)
+
+run <- run.basa(here::here("model"), n.chains = 4, control = control)
 
 #-------------------------------------------------------------------------------
 
@@ -101,6 +107,7 @@ saveRDS(run$fit1, file="mcmc_out/NUTS_fit.RDS")
 # Launch Shiny App to check diagnostics online
 # launch_shinyadmb(fit.1)
 
+message(paste("Total model run time:", round(run$time, 4), units(run$time)))
 rm(list = ls(all.names = TRUE))
 
 # plot_marginals(fit.1)

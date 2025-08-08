@@ -4,7 +4,14 @@
 \alias{run.basa}
 \title{Run BASA model}
 \usage{
-run.basa(dir_model, n.samples = 2000, n.warmup = 700, n.time = 5)
+run.basa(
+  dir_model,
+  n.samples = 2000,
+  n.warmup = 700,
+  n.time = 5,
+  n.chains = 4,
+  control = NULL
+)
 }
 \arguments{
 \item{dir_model}{Relative path to model}
@@ -14,6 +21,10 @@ run.basa(dir_model, n.samples = 2000, n.warmup = 700, n.time = 5)
 \item{n.warmup}{Number of MCMC burn-in iterations}
 
 \item{n.time}{Number of minutes after which the model will quit running}
+
+\item{n.chains}{Number of MCMC chains to run}
+
+\item{control}{List of MCMC controls passed to \code{rstan}}
 }
 \value{
 Metadata from model fit in ADMB. Model outputs are saved to \verb{model/mcmc_out/}

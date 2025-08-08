@@ -4,21 +4,33 @@
 #' and lower bounds for parameter values are provided as input and random
 #' error is added for initializing each markov chain.
 #'
-#' @param chains The number of markov chains used in the model.
+#' @param start Vector of starting values for parameters
 #' @param lower Vector of lower bounds for parameter initialization
 #' @param upper Vector of upper bounds for parameter initialization
+#' @param chains Integer number of markov chains for which initial values are desired
+#' @param seed Integer seed for generating random parameter starting values
 #'
 #' @returns List of named parameter values to initialize each markov chain in BASA.
 
-init_tmb_params <- function(chains, lower, upper) {
+init_tmb_params <- function(start, lower, upper, chains, seed) {
 
-  inits <- vector(mode = "list", length = chains)
+    set.seed(seed)
 
-  for(c in 1:chains) {
-    inits[[c]] <- runif(length(lower), min = lower, max = upper)
-    names(inits[[c]]) <- names(lower)
-  }
+    par_names <- names(lower) 
+    sd <- abs(.75*start)
 
-  return(inits)
-  
+    inits <- list()
+    
+    for(j in 1:chains){
+
+        inits[[j]] <- rnorm(length(start), start, sd = sd)
+
+        while (any(inits[[j]] < lower) | any(inits[[j]] > upper)) {
+            inits[[j]] <- rnorm(length(start), start, sd = sd)
+        }
+    
+        names(inits[[j]]) <- par_names
+    }
+
+    return(inits)
 }

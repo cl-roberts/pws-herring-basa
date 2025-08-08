@@ -4,14 +4,18 @@
 \alias{init_tmb_params}
 \title{Set initial TMB parameter values}
 \usage{
-init_tmb_params(chains, lower, upper)
+init_tmb_params(start, lower, upper, chains, seed)
 }
 \arguments{
-\item{chains}{The number of markov chains used in the model.}
+\item{start}{Vector of starting values for parameters}
 
 \item{lower}{Vector of lower bounds for parameter initialization}
 
 \item{upper}{Vector of upper bounds for parameter initialization}
+
+\item{chains}{Integer number of markov chains for which initial values are desired}
+
+\item{seed}{Integer seed for generating random parameter starting values}
 }
 \value{
 List of named parameter values to initialize each markov chain in BASA.
