@@ -46,6 +46,10 @@ if (!dir.exists(dir_figures)) {
 # read in model input data 
 raw.data <- read.data.files(dir_model)
 
+# read ess's
+ess <- data.reader(here(dir_model, "agecomp_effective_sample_size.txt"))
+names(ess) <- c("seine_ess", "spawn_ess")
+
 # save global variables
 
 nyr <- raw.data$PWS_ASA.dat$nyr
@@ -68,8 +72,8 @@ colors <- generate.colors(nyr = nyr, color.options = color.options)
 
 model.data <- list(nyr=raw.data$PWS_ASA.dat$nyr,
                    nage=raw.data$PWS_ASA.dat$nage,
-                   ess.seine=raw.data$PWS_ASA_ESS.ctl$seine_ess[1:nyr],
-                   ess.spawn=raw.data$PWS_ASA_ESS.ctl$spawn_ess[1:nyr],
+                   ess.seine=ess$seine_ess,
+                   ess.spawn=ess$spawn_ess,
                    seac=raw.data$PWS_ASA.dat$seine_age_comp[1:nyr,]*100,
                    spac=raw.data$PWS_ASA.dat$spawn_age_comp[1:nyr,]*100,
                    seine_indices=which(rowSums(raw.data$PWS_ASA.dat$seine_age_comp[1:nyr,])>0),
