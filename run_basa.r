@@ -69,30 +69,30 @@ library(here)
 
 dir_model <- here("model")
 
-dir_mcmc_tmb <- here::here(dir_model, "mcmc_out_tmb")
-if(!dir.exists(dir_mcmc_tmb)) {
-  dir.create(dir_mcmc_tmb)
+dir_mcmc <- here::here(dir_model, "mcmc_out")
+if(!dir.exists(dir_mcmc)) {
+  dir.create(dir_mcmc)
 }
-dir_rep_tmb <- here::here(dir_model, "rep_out_tmb")
-if(!dir.exists(dir_rep_tmb)) {
-  dir.create(dir_rep_tmb)
+dir_rep <- here::here(dir_model, "rep_out")
+if(!dir.exists(dir_rep)) {
+  dir.create(dir_rep)
 }
-dir_figures <- here::here("figures/tmb")
+dir_figures <- here::here("figures")
 if(!dir.exists(dir_figures)) {
   dir.create(dir_figures)
 }
-dir_outputs <- here::here("data_outputs/tmb")
+dir_outputs <- here::here("data_outputs")
 if(!dir.exists(dir_outputs)) {
   dir.create(dir_outputs)
 }
 
 
 ## compile model
-if("PWS_ASA_tmb" %in% names(getLoadedDLLs())) {
-    dyn.unload(dynlib(here(dir_model, "PWS_ASA_tmb")))
+if("PWS_ASA" %in% names(getLoadedDLLs())) {
+    dyn.unload(dynlib(here(dir_model, "PWS_ASA")))
 }
-compile(here(dir_model, "PWS_ASA_tmb.cpp"))
-dyn.load(dynlib(here(dir_model, "PWS_ASA_tmb")))
+compile(here(dir_model, "PWS_ASA.cpp"))
+dyn.load(dynlib(here(dir_model, "PWS_ASA")))
 
 # ------------------------------------------------------------------------------ 
 
@@ -261,9 +261,9 @@ upper <- upper[!(names(upper) %in% fix)]
 
 
 # make model object
-# model <- MakeADFun(model_data, parameters, map = map, DLL = "PWS_ASA_tmb", 
+# model <- MakeADFun(model_data, parameters, map = map, DLL = "PWS_ASA", 
 #                    silent = TRUE, random = "annual_age0devs")
-# model <- MakeADFun(model_data, parameters, map = map, DLL = "PWS_ASA_tmb", 
+# model <- MakeADFun(model_data, parameters, map = map, DLL = "PWS_ASA", 
 #                    silent = TRUE)
 
 # ------------------------------------------------------------------------------
@@ -274,7 +274,7 @@ upper <- upper[!(names(upper) %in% fix)]
 # calculate ESS's
 ess <- calculate_ess(
     data = model_data, max_iter = 10, 
-    parameters = parameters, map = map, DLL = "PWS_ASA_tmb",
+    parameters = parameters, map = map, DLL = "PWS_ASA",
     lower = lower, upper = upper, 
     control = list(eval.max = 10000, iter.max = 1000, rel.tol = 1e-10)
 )
@@ -296,25 +296,25 @@ model_data$spawn_ess <- ess$spawn_ess
 # ------------------------------------------------------------------------------
 
 # compile model
-if("PWS_ASA_tmb" %in% names(getLoadedDLLs())) {
-    dyn.unload(dynlib(here(dir_model, "PWS_ASA_tmb")))
+if("PWS_ASA" %in% names(getLoadedDLLs())) {
+    dyn.unload(dynlib(here(dir_model, "PWS_ASA")))
 }
-compile(here(dir_model, "PWS_ASA_tmb.cpp"))
-dyn.load(dynlib(here(dir_model, "PWS_ASA_tmb")))
+compile(here(dir_model, "PWS_ASA.cpp"))
+dyn.load(dynlib(here(dir_model, "PWS_ASA")))
 
 
 #### create model object and write pre-optimization report ####
 
 # fit model with iteratively re-weighted effective sample sizes 
 model <- MakeADFun(
-    model_data, parameters, map = map, DLL = "PWS_ASA_tmb", 
+    model_data, parameters, map = map, DLL = "PWS_ASA", 
     silent = TRUE, hessian = TRUE
 )
 
 # write pre-optimization report
 write_report(
     obj = model, par = model$par, 
-    file = here(dir_rep_tmb, "pre-optim-report.txt"),
+    file = here(dir_rep, "pre-optim-report.txt"),
     # dummy = c("dummy", "dummy_vector"),
     llik = llik, derived = derived, survey = survey, forecast = forecast
 )
@@ -333,7 +333,7 @@ fit_ML <- nlminb(
 # write maximum likelihood report
 write_report(
     obj = model, par = fit_ML$par, 
-    file = here(dir_rep_tmb, "ml-report.txt"),
+    file = here(dir_rep, "ml-report.txt"),
     llik = llik, derived = derived, survey = survey, forecast = forecast
 )
 
@@ -376,7 +376,7 @@ names(fit_mcmc_par)[grep("beta_mortality", names(fit_mcmc_par))] <- "beta_mortal
 # write mcmc report
 write_report(
     obj = model, par = fit_mcmc_par, 
-    file = here(dir_rep_tmb, "mcmc-report.txt"),
+    file = here(dir_rep, "mcmc-report.txt"),
     llik = llik, derived = derived, survey = survey, forecast = forecast
 )
 
@@ -490,50 +490,50 @@ for(i in 1:n_iters){
 
 # all mcmc iterations 
 write.csv(
-    mcmc_results, here::here(dir_mcmc_tmb, "iterations.csv"), row.names = FALSE
+    mcmc_results, here::here(dir_mcmc, "iterations.csv"), row.names = FALSE
 )
 
 ## survey quantities
 
 # estimated spawn age comps 
 write.table(
-    SpAC, sep = ",", here::here(dir_mcmc_tmb, "SpAC.csv"), 
+    SpAC, sep = ",", here::here(dir_mcmc, "SpAC.csv"), 
     row.names = FALSE, col.names = FALSE
 )
 
 # estimated seine age comps
 write.table(
-    SeAC, sep = ",", here::here(dir_mcmc_tmb, "SeAC.csv"), 
+    SeAC, sep = ",", here::here(dir_mcmc, "SeAC.csv"), 
     row.names = FALSE, col.names = FALSE
 )
 
 # adfg hydro fit 
 write.table(
-    HYD_ADFG, sep = ",", here::here(dir_mcmc_tmb, "HYD_ADFG.csv"), 
+    HYD_ADFG, sep = ",", here::here(dir_mcmc, "HYD_ADFG.csv"), 
     row.names = FALSE, col.names = FALSE
 )
 
 # pwssc hydro fit 
 write.table(
-    HYD_PWSSC, sep = ",", here::here(dir_mcmc_tmb, "HYD_PWSSC.csv"), 
+    HYD_PWSSC, sep = ",", here::here(dir_mcmc, "HYD_PWSSC.csv"), 
     row.names = FALSE, col.names = FALSE
 )
 
 # egg fit 
 write.table(
-    EGG, sep = ",", here::here(dir_mcmc_tmb, "EGG.csv"), 
+    EGG, sep = ",", here::here(dir_mcmc, "EGG.csv"), 
     row.names = FALSE, col.names = FALSE
 )
 
 # mdm fit 
 write.table(
-    MDM, sep = ",", here::here(dir_mcmc_tmb, "MDM.csv"), 
+    MDM, sep = ",", here::here(dir_mcmc, "MDM.csv"), 
     row.names = FALSE, col.names = FALSE
 )
 
 # juv aerial fit 
 write.table(
-    juv_schools, sep = ",", here::here(dir_mcmc_tmb, "juv_schools.csv"), 
+    juv_schools, sep = ",", here::here(dir_mcmc, "juv_schools.csv"), 
     row.names = FALSE, col.names = FALSE
 )
 
@@ -541,47 +541,47 @@ write.table(
 
 # estimated numbers-at-age 
 write.table(
-    N, sep = ",", here::here(dir_mcmc_tmb, "Num_at_age.csv"), 
+    N, sep = ",", here::here(dir_mcmc, "Num_at_age.csv"), 
     row.names = FALSE, col.names = FALSE
 )
 
 # estimated pre fishery spawning biomass 
 write.table(
     cbind(t(do.call(cbind, Btilde_y)), Btilde_forecast), 
-    sep = ",", here::here(dir_mcmc_tmb, "PFRBiomass.csv"), 
+    sep = ",", here::here(dir_mcmc, "PFRBiomass.csv"), 
     row.names = FALSE, col.names = FALSE
 )
 
 # estimated post fishery spawning biomass
 write.csv(
     do.call(cbind, Btilde_post_y), 
-    here::here(dir_mcmc_tmb, "post-fishery-spawning-biomass.csv"), 
+    here::here(dir_mcmc, "post-fishery-spawning-biomass.csv"), 
     row.names = FALSE
 )
 
 # estimated age-3 herring 
 write.table(
-    t(do.call(cbind, age_3)), sep = ",", here::here(dir_mcmc_tmb, "Age3.csv"), 
+    t(do.call(cbind, age_3)), sep = ",", here::here(dir_mcmc, "Age3.csv"), 
     row.names = FALSE, col.names = FALSE
 )   
 
 # summer survival 
 write.csv(
     summer_survival, 
-    here::here(dir_mcmc_tmb, "adult_survival_effects_summer.csv"), 
+    here::here(dir_mcmc, "adult_survival_effects_summer.csv"), 
     row.names = FALSE
 )
 
 # winter survival
 write.csv(
     cbind(winter_survival, winter_survival_forecast), 
-    here::here(dir_mcmc_tmb, "adult_survival_effects_winter.csv"), 
+    here::here(dir_mcmc, "adult_survival_effects_winter.csv"), 
     row.names = FALSE
 )
 
 # estimated and fixed variances 
 write.table(
-    VARSreport, sep = ",", here::here(dir_mcmc_tmb, "VARSreport.csv"), 
+    VARSreport, sep = ",", here::here(dir_mcmc, "VARSreport.csv"), 
     row.names = FALSE, col.names = FALSE
 )
 
@@ -589,32 +589,32 @@ write.table(
 
 # numbers-at-age forecast
 write.csv(
-    N_a_forecast, here::here(dir_mcmc_tmb, "N_a_forecast.csv"), 
+    N_a_forecast, here::here(dir_mcmc, "N_a_forecast.csv"), 
     row.names = FALSE
 )
 
 # mature numbers-at-age forecast
 write.csv(
-    Ntilde_a_forecast, here::here(dir_mcmc_tmb, "Ntilde_a_forecast.csv"), 
+    Ntilde_a_forecast, here::here(dir_mcmc, "Ntilde_a_forecast.csv"), 
     row.names = FALSE
 )
 
 # biomass-at-age forecast
 write.csv(
-    Btilde_a_forecast, here::here(dir_mcmc_tmb, "Btilde_a_forecast.csv"), 
+    Btilde_a_forecast, here::here(dir_mcmc, "Btilde_a_forecast.csv"), 
     row.names = FALSE
 )
 
 
 # biomass agecomp forecast
 write.csv(
-    Btilde_agecomp_forecast, here::here(dir_mcmc_tmb, "Btilde_agecomp_forecast.csv"), 
+    Btilde_agecomp_forecast, here::here(dir_mcmc, "Btilde_agecomp_forecast.csv"), 
     row.names = FALSE
 )
 
 # mdm forecast
 write.csv(
-    mdm_forecast, here::here(dir_mcmc_tmb, "mdm_forecast.csv"), 
+    mdm_forecast, here::here(dir_mcmc, "mdm_forecast.csv"), 
     row.names = FALSE
 )
 
@@ -623,13 +623,13 @@ write.csv(
 
 # likelihood components 
 write.csv(
-    likelihoods, here::here(dir_mcmc_tmb, "likelihoods.csv"), 
+    likelihoods, here::here(dir_mcmc, "likelihoods.csv"), 
     row.names = FALSE
 )
 
 # penalties 
 write.csv(
-    penalties, here::here(dir_mcmc_tmb, "penalties.csv"), 
+    penalties, here::here(dir_mcmc, "penalties.csv"), 
     row.names = FALSE
 )
 
@@ -670,7 +670,7 @@ write.csv(
 )
 
 write.csv(
-    mid_year_management, here::here(dir_mcmc_tmb, "mid-year-management.csv"), 
+    mid_year_management, here::here(dir_mcmc, "mid-year-management.csv"), 
     row.names = FALSE
 )
 

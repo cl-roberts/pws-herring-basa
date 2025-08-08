@@ -17,9 +17,6 @@
 
 #### front matter ####
 
-# choose TMB or ADMB
-software <- "TMB"
-
 # load packages
 
 library(ggplot2)
@@ -34,17 +31,9 @@ library(here)
 
 dir_model <- here::here("model")
 
-if (software == "ADMB") {
-    dir_mcmc_out <- here(dir_model, "mcmc_out")
-    dir_figures <- here("figures")
-    dir_outputs <- here("data_outputs")
-} else if (software == "TMB") {
-    dir_mcmc_out <- here(dir_model, "mcmc_out_tmb")
-    dir_figures <- here("figures/tmb")
-    dir_outputs <- here("data_outputs/tmb")
-} else {
-    stop("choose valid software")
-}
+dir_mcmc_out <- here::here(dir_model, "mcmc_out")
+dir_figures <- here::here("figures")
+dir_outputs <- here::here("data_outputs")
 
 if (!dir.exists(dir_figures)) {
     dir.create(dir_figures)

@@ -20,8 +20,8 @@
 //                                                                            //
 // -------------------------------------------------------------------------- //
 //                                                                            //
-// C++ program file:  PWS_ASA_tmb.cpp                                         //
-// R control file:  run_basa_tmb.r                                            //
+// C++ program file:  PWS_ASA.cpp                                             //
+// R control file:  run_basa.r                                                //
 //                                                                            //
 // Input Data files:                                                          //
 //        PWS_ASA.dat:             Model input (surveys, catches, etc.)       //
