@@ -138,7 +138,7 @@ reweighting procedure is conducted for estimating effective sample sizes wherein
 BASA is initially using raw sample sizes for the age-composition datasets, and
 the effective sample size is estimated using
 
-$$
+```math
 \tilde{Z}^1_y = \sum_{a=3}^{9+} \frac{\hat{\Theta}^1_{y, a} (1 - \hat{\Theta}^1_{y, a})}{(\Theta^1_{y, a} - \hat{\Theta}^1_{y, a})^2}
 
 \hspace{.5cm}
@@ -146,7 +146,7 @@ $$
 \hspace{.5cm}
 
 \tilde{Z}^{Sp}_y = \sum_{a=3}^{9+} \frac{\hat{\Theta}^{Sp}_{y, a} (1 - \hat{\Theta}^{Sp}_{y, a})}{(\Theta^{Sp}_{y, a} - \hat{\Theta}^{Sp}_{y, a})^2}.
-$$
+```
 
 These effective sample sizes are then used to re-fit the model, and the procedure
 repeats until the harmonic mean (across years) of the ratio of the effective to raw 
@@ -163,7 +163,7 @@ function are:
 | :----- | :---: | :-----: |
 | Complete expression | -- | $L = \sum_{i=1}^{n_L} L_i$ |
 | Purse-seine age-composition | multinomial | $L_1 = -\sum_{y \in Y_1} \left[ \tilde{Z}^1_y \sum_{a \in A} \Theta^1_{y, a} \log\left( \frac{\hat{\Theta}^1_{y, a}}{\Theta^1_{y, a}} \right) \right]$ |
-| Spawner survey age-composition | multinomial | $L_2 = -\sum_{y \in Y_2} \left[ \tilde{Z}^{Sp}_y \sum_{a \in A} \Theta^{Sp}_{y, a} \log\left( \frac{\hat{\Theta}^{Sp}_{y, a}}{\Theta^{Sp}_{y, a}} \right) \right]$ |
+| Spawner survey age-composition | multinomial | $`L_2 = -\sum_{y \in Y_2} \left[ \tilde{Z}^{Sp}_y \sum_{a \in A} \Theta^{Sp}_{y, a} \log\left( \frac{\hat{\Theta}^{Sp}_{y, a}}{\Theta^{Sp}_{y, a}} \right) \right]`$ |
 | Egg deposition | lognormal | $L_3 = \sum_{y \in Y_3} \left[ \log(\sigma^{L_3}_y) + \frac{\left(\log(\hat{E}_y) - \log(E_y)\right)^2}{2 (\sigma^{L_3}_y)^2} \right]$ |
 | Total variance for $L_3$ | -- | $\left(\sigma^{L_3}_y\right)^2 = \left(\sigma^E_y\right)^2 + \left(\sigma^{E+}\right)^2$ |
 | ADFG hydroacoustic biomass | lognormal | $L_4 = n_4 \log(\sigma^{H^A}) + \frac{1}{(\sigma^{H^A})^2} \sum_{y \in Y_4} \left[ \left(\log(\hat{H}^A_y) - \log(H^A_y)\right)^2 \right]$ |
@@ -173,4 +173,4 @@ function are:
 | Juvenile schools [^2] | negative binomial | $L_7 = - \sum_{y \in Y_7} \left[ \log \Gamma\left(J_y+m_y\right) + \log \Gamma\left(m_y\right) + \log \Gamma\left(1+J_y\right) - m_y \log(p_y) - J_y \log(1-p_y) \right]$ |
 | Total variance for $L_7$ | -- | $\left(\sigma^{L_7}_y\right)^2 = \hat{J}_y + \frac{\hat{J}_y^2}{\phi^J}$ |
 
-[^2]: $\Gamma$ denotes the gamma function; $p_y = \frac{\hat{J}_y}{\left(\sigma^{L_7}_y\right)^2}$ and $m_y = \hat{J}_y \cdot \frac{p_y}{1-p_y}$
+[^2]: $`\Gamma`$ denotes the gamma function; $`p_y = \frac{\hat{J}_y}{\left(\sigma^{L_7}_y\right)^2}`$ and $`m_y = \hat{J}_y \cdot \frac{p_y}{1-p_y}`$
