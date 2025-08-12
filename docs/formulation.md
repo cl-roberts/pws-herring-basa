@@ -146,7 +146,7 @@ $$\tilde{Z}^1_y = \sum_{a=3}^{9+} \frac{\hat{\Theta}^1_{y, a} (1 - \hat{\Theta}^
 
 and 
 
-$$\tilde{Z}^{Sp}_y = \sum_{a=3}^{9+} \frac{\hat{\Theta}^{Sp}_{y, a} (1 - \hat{\Theta}^{Sp}_{y, a})}{(\Theta^{Sp}_{y, a} - \hat{\Theta}^{Sp}_{y, a})^2}.$$
+$$\tilde{Z}^{Sp}_y = \sum_{a=3}^{9+} \frac{\hat{\Theta}^{Sp}_{y, a} (1 - \hat{\Theta}^{Sp}_{y, a})}{(\Theta^{Sp}_{y, a} - \hat{\Theta}^{Sp}_{y, a})^2}$$
 
 These effective sample sizes are then used to re-fit the model, and the procedure
 repeats until the harmonic mean (across years) of the ratio of the effective to raw 
