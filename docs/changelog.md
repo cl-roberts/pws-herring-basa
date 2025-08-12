@@ -143,3 +143,7 @@ Every R function in the `pwsHerringBasa` package has an associated .rd file. The
 ## 7/23/2025
 
 - fixed likelihood penalties applied by posfun in ADMB model
+
+## 8/9/2025
+
+- move TMB model to main

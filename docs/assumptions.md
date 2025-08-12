@@ -13,3 +13,4 @@
   * age 0-2: fully immature
   * age 3-4: maturity fraction of age 3 less than age 4
   * age 5+: fully mature
+- 75% mortality in pounds, time- and age-invariant 
