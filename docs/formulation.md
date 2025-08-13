@@ -2,6 +2,9 @@
 
 # BASA model formulation
 
+> [!warning]
+> For whatever reason, some equations are not rendered properly on the github web page
+
 ## Data sets
 
 Let $Y$ denote the complete set of years fit by the model, beginning in
@@ -141,15 +144,11 @@ conducted for estimating effective sample sizes wherein BASA is
 initially using raw sample sizes for the age-composition datasets, and
 the effective sample size is estimated using
 
-$$ 
-\tilde{Z}^1_y = \sum_{a=3}^{9+} \frac{\hat{\Theta}^1_{y, a} (1 - \hat{\Theta}^1_{y, a})}{(\Theta^1_{y, a} - \hat{\Theta}^1_{y, a})^2} 
-$$
+$$ \tilde{Z}^1_y = \sum_{a=3}^{9+} \frac{\hat{\Theta}^1_{y, a} (1 - \hat{\Theta}^1_{y, a})}{(\Theta^1_{y, a} - \hat{\Theta}^1_{y, a})^2} $$
 
 and
 
-$$ 
-\tilde{Z}^{Sp}_y = \sum_{a=3}^{9+} \frac{\hat{\Theta}^{Sp}_{y, a} (1 - \hat{\Theta}^{Sp}_{y, a})}{(\Theta^{Sp}_{y, a} - \hat{\Theta}^{Sp}_{y, a})^2} 
-$$
+$$ \tilde{Z}^{Sp}_y = \sum_{a=3}^{9+} \frac{\hat{\Theta}^{Sp}_{y, a} (1 - \hat{\Theta}^{Sp}_{y, a})}{(\Theta^{Sp}_{y, a} - \hat{\Theta}^{Sp}_{y, a})^2} $$
 
 These effective sample sizes are then used to re-fit the model, and the
 procedure repeats until the harmonic mean (across years) of the ratio of
@@ -166,7 +165,7 @@ used in the BASA objective function are:
 |:---|:--:|
 | **Multinomial** |  |
 | Complete expression | $L = \sum_{i=1}^{n_L} L_i$ |
-| Purse-seine age-composition | $L_1 = -\sum_{y\inY_1}\left[ \tilde{Z}^1_y \sum_{a \in A} \Theta^1_{y, a} \log\left( \frac{\hat{\Theta}^1_{y, a}}{\Theta^1_{y, a}}\right)\right]$ |
+| Purse-seine age-composition | $L_1 = -\sum_{y \in Y_1} \left[ \tilde{Z}^1_y \sum_{a \in A} \Theta^1_{y, a} \log\left( \frac{\hat{\Theta}^1_{y, a}}{\Theta^1_{y, a}} \right) \right]$ |
 | Spawner survey age-composition | $L_2 = -\sum_{y \in Y_2} \left[ \tilde{Z}^{Sp}_y \sum_{a \in A} \Theta^{Sp}_{y, a} \log\left( \frac{\hat{\Theta}^{Sp}_{y, a}}{\Theta^{Sp}_{y, a}} \right) \right]$ |
 | **Lognormal** |  |
 | Egg deposition | $L_3 = \sum_{y \in Y_3} \left[ \log(\sigma^{L_3}_y) + \frac{\left(\log(\hat{E}_y) - \log(E_y)\right)^2}{2 (\sigma^{L_3}_y)^2} \right]$ |
