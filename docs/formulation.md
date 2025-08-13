@@ -81,7 +81,7 @@ Other expressions used in the likelihood components of BASA are:
 | Description | Equation | 
 | :----- | :-----: |
 | Estimated purse-seine age composition, proportion | $\hat{\Theta}^1_{y, a} = \frac{V_a N_{y, a}}{\sum_{a \in A} (V_a N_{y, a})}$ |
-| Estimated spawner survey age composition, proportion | $\hat{Sp}^1_{y, a} = \frac{\rho^M_a N_{y, a}}{\sum_{a \in A} (\rho^M_a N_{y, a})}$ |
+| Estimated spawner survey age composition, proportion | $\hat{\Theta}^{Sp}_{y, a} = \frac{\rho^M_a N_{y, a}}{\sum_{a \in A} (\rho^M_a N_{y, a})}$ |
 | Estimated egg deposition, trillions | $\hat{E}_y = 10^{-6} \rho^f_y \sum_{a \in A} (f_{y, a} \tilde{N}_{y, a})$ |
 | Estimated ADFG hydroacoustic biomass, metric tons | $\hat{H}^A_y = \tilde{B}_y \cdot e^{q^{H^A}}$ |
 | Estimated PWSSC hydroacoustic biomass, metric tons | $\hat{H}^P_y = \tilde{B}_y \cdot e^{q^{H^P}}$ |
@@ -174,6 +174,6 @@ function are:
 | Milt | $L_6 = n_6 \log(\sigma^T) + \frac{1}{(\sigma^T)^2} \sum_{y \in Y_6} \left[ \left(\log(\hat{T}_y) - \log(T_y)\right)^2 \right]$ |
 | **Negative binomial** | |
 | Juvenile schools [^2] | $L_7 = - \sum_{y \in Y_7} \left[ \log \Gamma\left(J_y+m_y\right) + \log \Gamma\left(m_y\right) + \log \Gamma\left(1+J_y\right) - m_y \log(p_y) - J_y \log(1-p_y) \right]$ |
-| Total variance for $L_7$ | $\left(\sigma^{L_7}_y\right)^2 = \hat{J}_y + \frac{\hat{J}_y^2}{\phi^J}$ |
+| Terms used in $L_7$ | $p_y = \hat{J}_y \cdot \left(\sigma^{L_7}_y\right)^{-2} \hspace{.5cm} m_y = \hat{J}_y \cdot \frac{p_y}{1-p_y} \hspace{.5cm} \left(\sigma^{L_7}_y\right)^2 = \hat{J}_y + \frac{\hat{J}_y^2}{\phi^J}$ |
 
-[^2]: $\Gamma$ denotes the gamma function; $p_y = \hat{J}_y \cdot \left(\sigma^{L_7}_y\right)^{-2}$ and $m_y = \hat{J}_y \cdot \frac{p_y}{1-p_y}$
+[^2]: $\Gamma$ denotes the gamma function
