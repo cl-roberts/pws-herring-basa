@@ -18,12 +18,12 @@ datasets fit by BASA are:
 | Gillnet catch-at-age | millions | $C^2_{y, a}$ | $[1980, 1998]$ |
 | Pound utilization catch-at-age | millions | $C^3_{y, a}$ | $[1980, 1999]$ |
 | Food/bait catch-at-age | millions | $C^4_{y, a}$ | $[1980, 1998]$ |
-| Fecundity-at-age | no. of eggs per female | $f_{y, a}$ | $[1984, 1993]$ |
 | Total annual purse-seine yield | mt | $\Omega^1_{y}$ | $[1980, 1998]$ |
 | **Age compositions** |  |  |  |
 | Purse-seine age-composition | proportion | $\Theta^1_{y, a}$ | $[1980, 1998]$ |
 | Spawner survey age-composition | proportion | $\Theta^\text{Sp}_{y, a}$ | $[1980, 1980+n_Y]$ |
 | **Biological information** |  |  |  |
+| Fecundity-at-age | no. of eggs per female | $f_{y, a}$ | $[1984, 1993]$ |
 | Weight-at-age of spawning herring | $\frac{\text{mt}}{\text{million fish}}$ | $w_{y, a}$ | $[1980, 1980+n_Y]$ |
 | Female spawners | proportion | $\rho^f_y$ | $[1980, 1980+n_Y]$ |
 | **Biomass indices** |  |  |  |
@@ -85,10 +85,10 @@ Other expressions used in the likelihood components of BASA are:
 | Estimated purse-seine age composition, proportion | $\hat{\Theta}^1_{y, a} = \frac{V_a N_{y, a}}{\sum_{a \in A} (V_a N_{y, a})}$ |
 | Estimated spawner survey age composition, proportion | $\hat{\Theta}^{Sp}_{y, a} = \frac{\rho^M_a N_{y, a}}{\sum_{a \in A} (\rho^M_a N_{y, a})}$ |
 | Estimated egg deposition, trillions | $\hat{E}_y = 10^{-6} \rho^f_y \sum_{a \in A} (f_{y, a} \tilde{N}_{y, a})$ |
-| Estimated ADFG hydroacoustic biomass, metric tons | $\hat{H}^A_y = \tilde{B}_y \cdot e^{q^{H^A}}$ |
-| Estimated PWSSC hydroacoustic biomass, metric tons | $\hat{H}^P_y = \tilde{B}_y \cdot e^{q^{H^P}}$ |
-| Estimated milt, mile-days | $\hat{T}_y = \frac{(1-\rho^f_y) \tilde{B}^{post}_y}{e^{q^T}}$ |
-| Estimated juvenile schools, small-school equivalent | $\hat{J}_y = N_{y, 1} \cdot e^{q^J}$ |
+| Estimated ADFG hydroacoustic biomass, metric tons | $\hat{H}^A_y = \tilde{B}_y \cdot q^{H^A}$ |
+| Estimated PWSSC hydroacoustic biomass, metric tons | $\hat{H}^P_y = \tilde{B}_y \cdot q^{H^P}$ |
+| Estimated milt, mile-days | $\hat{T}_y = \frac{(1-\rho^f_y) \tilde{B}^{post}_y}{q^T}$ |
+| Estimated juvenile schools, small-school equivalent | $\hat{J}_y = N_{y, 1} \cdot q^J$ |
 
 ## Model parameters
 
@@ -99,7 +99,7 @@ The total number of parameters estimated by BASA are:
 | **Fixed parameters** |  |  |
 | Background natural mortality, ages 0-8 | $\bar{M}$ | – |
 | Egg deposition additional error | $\sigma^{E+}$ | – |
-| Mean recruitment | $\bar{R}$ | – |
+| Mean log recruitment | $\log \bar{R}$ | – |
 | Pound mortality | $\rho_k$ | – |
 | **Initial population size** |  |  |
 | Age-1 abundance in 1980, log-link | $\eta_{1980, 1}; N_{1980, 1} = e^{\eta_{1980, 1}}$ | uniform |
@@ -123,13 +123,13 @@ The total number of parameters estimated by BASA are:
 | Age-3 maturity | $\nu_3; \rho^M_3 = \nu_3 \rho^M_4$ | beta |
 | Age-4 maturity | $\rho^M_4$ | beta |
 | **Data model parameters** |  |  |
-| ADFG Hydroacoustic catchability coefficient | $q^{H^A}$ | uniform |
+| ADFG Hydroacoustic catchability coefficient | $\log q^{H^A}$ | uniform |
 | ADFG Hydroacoustic biomass CV | $\sigma^{H^A}$ | normal |
-| PWSSC Hydroacoustic catchability coefficient | $q^{H^P}$ | uniform |
+| PWSSC Hydroacoustic catchability coefficient | $\log q^{H^P}$ | uniform |
 | PWSSC Hydroacoustic biomass additonal error | $\sigma^{H^P+}$ | normal |
-| Milt catchability coefficient | $q^T$ | uniform |
+| Milt catchability coefficient | $\log q^T$ | uniform |
 | Milt CV | $\sigma^T$ | normal |
-| Juvenile schools catchability coefficient | $q^J$ | uniform |
+| Juvenile schools catchability coefficient | $\log q^J$ | uniform |
 | Juvenile schools overdispersion | $\phi^J$ | uniform |
 
 ## Likelihood expressions
