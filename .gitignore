@@ -38,6 +38,10 @@ cost-of-info/*
 references/*
 sensitivity/*
 
+mid-year-management-app/vignettes/mid-year-management-files/*
+mid-year-management-app/vignettes/*.docx
+mid-year-management-app/vignettes/*.html
+
 *.tex
 
 *~

@@ -1,7 +1,6 @@
 #--- helper functions ---#
 
 # reads .dat file
-
 data.reader <- function(filename) {
 
   text <- readLines(filename)
@@ -44,6 +43,7 @@ data.reader <- function(filename) {
 
 }
 
+# for calculating most recent 10-year means (if window=10)
 window_average <- function(x, window) {
   out <- colMeans(x[(nrow(x)-window+1):nrow(x),])
   return(out)
