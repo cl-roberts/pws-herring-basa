@@ -372,7 +372,10 @@ Type objective_function<Type>::operator() ()
             if (a < plus_group_index) {                
                 
                 // age-1 to plus group
-                N_y_a(y, a) = (((N_y_a(y-1,a-1) - spring_removals(y-1,a-1)) * summer_survival(y-1,a-1)) - foodbait_catch(y-1,a-1)) * winter_survival(y, a-1);
+                N_y_a(y, a) = N_y_a(y-1, a-1) - spring_removals(y-1, a-1);
+                N_y_a(y, a) *= summer_survival(y-1, a-1);
+                N_y_a(y, a) -= foodbait_catch(y-1, a-1);
+                N_y_a(y, a) *= winter_survival(y, a-1);
                       
                 // penalize negative naa
                 N_y_a(y, a) = posfun(N_y_a(y, a), naa_min, naa_pen);
@@ -382,7 +385,10 @@ Type objective_function<Type>::operator() ()
             } else if (a == plus_group_index) {
 
                 // plus group
-                N_y_a(y, a) = (((N_y_a(y-1,a-1) - spring_removals_sum) * summer_survival(y-1,a-1)) - foodbait_sum) * winter_survival(y, a-1);
+                N_y_a(y, a) = N_y_a(y-1, a-1) - spring_removals_sum;
+                N_y_a(y, a) *= summer_survival(y-1, a-1);
+                N_y_a(y, a) -= foodbait_sum;
+                N_y_a(y, a) *= winter_survival(y, a-1);
 
                 // penalize negative naa
                 N_y_a(y, a) = posfun(N_y_a(y, a), naa_min, naa_pen);
@@ -423,11 +429,19 @@ Type objective_function<Type>::operator() ()
         // populate age classes
         for (int a = 1; a < nage; a++) {
 
-            N_y_a(y, a) = (((N_y_a(y-1,a-1) - spring_removals(y-1,a-1)) * summer_survival(y-1,a-1)) - foodbait_catch(y-1,a-1)) * winter_survival(y, a-1);
+            N_y_a(y, a) = N_y_a(y-1, a-1) - spring_removals(y-1, a-1);
+            N_y_a(y, a) *= summer_survival(y-1, a-1);
+            N_y_a(y, a) -= foodbait_catch(y-1, a-1);
+            N_y_a(y, a) *= winter_survival(y, a-1);
             
             if (a == nage-1) {
                 // plus group
-                N_y_a(y, a) += (((N_y_a(y-1,nage-1) - spring_removals(y-1,nage-1)) * summer_survival(y-1,nage-1)) - foodbait_catch(y-1,nage-1)) * winter_survival(y,nage-1);
+                Type N_y_a_plus_group = 0.0;
+                N_y_a_plus_group = N_y_a(y-1, nage-1) - spring_removals(y-1, nage-1);
+                N_y_a_plus_group *= summer_survival(y-1, nage-1);
+                N_y_a_plus_group -= foodbait_catch(y-1, nage-1);
+                N_y_a_plus_group *= winter_survival(y, nage-1);
+                N_y_a(y, a) += N_y_a_plus_group;
             }
 
             // penalize negative naa
@@ -655,29 +669,52 @@ Type objective_function<Type>::operator() ()
     }
 
     // forecast recruitment
+    // take a mean (in log space) of age-2 fish for recruitment forecast
+    // enables accounting for age-2 fish harvested in food/bait fishery
     Type mean_log_rec = 0.0;
     for(int y = nyr - recruitment_average_years; y < nyr; y++) {
-        mean_log_rec += log(N_y_a(y, 3)) / recruitment_average_years;
-    }
-
-    // forecast waa
-    for (int a = 0; a < nage; a++) {
-        waa_forecast(a) = waa.col(a).tail(waa_average_years).sum() / waa_average_years;
+        mean_log_rec += log(N_y_a(y-1, 2)) / recruitment_average_years;
+        // mean_log_rec += log(N_y_a(y, 3)) / recruitment_average_years;
     }
 
     // project naa matrix forward 1 year
     for (int a = 0; a < nage; a++) {
+        
         if (a < 3) {
+            
             N_a_forecast(a) = 0;   
+            
         } else if(a == 3) {
+            
             N_a_forecast(a) = exp(mean_log_rec);
+            N_a_forecast(a) *= summer_survival(nyr-1, a-1);
+            N_a_forecast(a) -= foodbait_catch(nyr-1, a-1);
+            N_a_forecast(a) *= winter_survival_forecast(a-1);
+            
         } else if (a >= 4) {
-            N_a_forecast(a) = ((N_y_a(nyr-1, a-1)-(seine_age_comp_est(nyr-1,a-1)*seine_catch_est(nyr-1) + gillnet_catch(nyr-1,a-1) + pk*pound_catch(nyr-1,a-1)))*summer_survival(nyr-1,a-1) - foodbait_catch(nyr-1,a-1))*winter_survival_forecast(a-1);
+
+            N_a_forecast(a) = N_y_a(nyr-1, a-1) - spring_removals(nyr-1, a-1);
+            N_a_forecast(a) *= summer_survival(nyr-1, a-1);
+            N_a_forecast(a) -= foodbait_catch(nyr-1, a-1);
+            N_a_forecast(a) *= winter_survival_forecast(a-1);       
+
         } 
+        
         if (a == nage-1) {
             // plus group
-            N_a_forecast(a) += ((N_y_a(nyr-1, a)-(seine_age_comp_est(nyr-1,a)*seine_catch_est(nyr-1) + gillnet_catch(nyr-1,a) + pk*pound_catch(nyr-1,a)))*summer_survival(nyr-1,a) - foodbait_catch(nyr-1,a))*winter_survival_forecast(a);
+            Type N_a_forecast_plus_group = 0.0;
+            N_a_forecast_plus_group += N_y_a(nyr-1, a) - spring_removals(nyr-1, a);
+            N_a_forecast_plus_group *= summer_survival(nyr-1, a);
+            N_a_forecast_plus_group -= foodbait_catch(nyr-1, a);
+            N_a_forecast_plus_group *= winter_survival_forecast(a);
+            N_a_forecast(a) += N_a_forecast_plus_group;
         }
+        
+    }
+    
+    // forecast waa
+    for (int a = 0; a < nage; a++) {
+        waa_forecast(a) = waa.col(a).tail(waa_average_years).sum() / waa_average_years;
     }
 
     // pre-fishery spawning biomass forecast

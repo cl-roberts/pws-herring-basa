@@ -47,7 +47,7 @@ warmup <- 700
 control <- list(adapt_delta = 0.95)
 
 # run retrospective analysis?
-run_retro <- TRUE
+run_retro <- FALSE
 n_peels <- 5
 retro_iter <- 2000
 retro_warmup <- 700
@@ -318,11 +318,11 @@ model_data$spawn_ess <- ess$spawn_ess
 # ------------------------------------------------------------------------------
 
 # compile model
-if("PWS_ASA" %in% names(getLoadedDLLs())) {
-    dyn.unload(dynlib(here(dir_model, "PWS_ASA")))
-}
-compile(here(dir_model, "PWS_ASA.cpp"))
-dyn.load(dynlib(here(dir_model, "PWS_ASA")))
+# if("PWS_ASA" %in% names(getLoadedDLLs())) {
+#     dyn.unload(dynlib(here(dir_model, "PWS_ASA")))
+# }
+# compile(here(dir_model, "PWS_ASA.cpp"))
+# dyn.load(dynlib(here(dir_model, "PWS_ASA")))
 
 
 #### create model object and write pre-optimization report ####
@@ -562,9 +562,9 @@ write.table(
 ## population dynamics
 
 # estimated numbers-at-age 
-write.table(
-    N, sep = ",", here(dir_mcmc, "Num_at_age.csv"), 
-    row.names = FALSE, col.names = FALSE
+write.csv(
+    N, here(dir_mcmc, "Num_at_age.csv"), 
+    row.names = FALSE
 )
 
 # estimated pre fishery spawning biomass 
