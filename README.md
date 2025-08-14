@@ -16,15 +16,20 @@ The model is reliant on data from several annual surveys performed in Prince Wil
 
 ## Dependencies
 
-* ADMB-12.3
+Template Model builder (`TMB`)
+* v. 1.9.17
 
-R Packages
-* 'adnuts'   v. 1.1.2
-* 'rstan'    v. 2.21.3
-* 'snowfall' v. 1.84.6.1
+`R`
+* v. 4.4.1
+
+Key R Packages
+* 'tmbstan'   v. 1.0.91
+* 'pwsHerringBasa'  v. 0.1.0
 
 ## Running the Model
-The actual stock assessment model runs in ADMB, though, in practice, is more freuqently run using the provided `run_basa.r` R script. `run_basa.R` acts as a wrapper that performs four important operations:
+The actual stock assessment model runs in template model builder (TMB). Though, 
+in practice, BASA is more frequently run using the provided `run_basa.r` R script. 
+`run_basa.r` acts as a wrapper that performs four important operations:
 
 1. Calculates effective sample sizes (ESS) for each data source being provided to the model.
 2. Generates initial values for MCMC sampler to begin at
@@ -38,15 +43,18 @@ Once the model has run successfully, three R scripts are provided to visualize t
 * `plotting/plot_survey_fits.R` generates a multi-panel plot displaying estimated model fits to each of the five primary data sources.
 * `plotting/plot_management_outputs.R` generates a four panel plot summarizing the model outputs for management use. The four plots include: annual recruitment, annual spawning biomass, annual fishing exploitation rate, and the posterior distribution of spawning biomass in the final year of the assessment. 
 
+See `docs/run-model.md` for step-by-step instructions for running BASA and generating
+analysis.
 
 ## Repository Structure
 * `data_outputs`: tables of clean model outputs in `.csv` format for general use.
 <!-- * `deprecated`: stores antiquated code not currently in use. -->
 * `docs`: metadata and general information about BASA.
 * `figures`: all relevant plots generated to visualize model outputs.
-* `functions/simulation`: MSE code current lives here **add to package in future**.
+<!-- * `functions/simulation`: MSE code current lives here **add to package in future**. -->
 * `historical_outputs`: archived outputs of historical model runs.
-* `model`: model ADMB code, input data, and temporary files and directories generated during model runs. 
+* `mid-year-management-app`: app to facilitate a mid-year stock status report
+* `model`: model TMB code, input data, and temporary files and directories generated during model runs. 
 * `plotting`: R scripts for synthesizing model outputs into `figures` and `data_outputs`.
 * `pwsHerringBasa`: a self-contained R package containing R code and documentation for running the model, reading in data, plotting outputs, calculating effective sample sizes, etc. The `pwsHerringBasa` package may be installed via the `pwsHerringBasa_0.1.0.tar.gz` tarball.
 * `references`: papers which directly use BASA.
