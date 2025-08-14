@@ -689,11 +689,13 @@ if (app_data) {
 
     file.copy(
         from = here(dir_mcmc, "mid-year-management.csv"), 
-        to = here(dir_app_data, "mid-year-management.csv")
+        to = here(dir_app_data, "mid-year-management.csv"),
+        overwrite = TRUE
     )
     file.copy(
         from = here(dir_model, "PWS_ASA.dat"), 
-        to = here(dir_app_data, "PWS_ASA.dat")
+        to = here(dir_app_data, "PWS_ASA.dat"),
+        overwrite = TRUE
     )
 
 }

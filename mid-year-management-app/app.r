@@ -70,33 +70,52 @@ ui  <- page_sidebar(
         "),
 
   # app title ----
-  title = h2(paste("PWS Herring", curr_year,"Mid-year Management Tool")),
+  title = h2(paste("PWS Herring", curr_year, "Mid-year Management Tool")),
 
   # sidebar panel for inputs ----
   sidebar = sidebar(title = NULL, width = 350,
 
-    # required fields ----
-    card(card_header(h4("Required Fields")),
+    # spring catch ----
+    card(card_header(h4(paste("Spring", curr_year, "Catch"))),
 
-      # NAA input ----
-      h6(paste("Spring", curr_year, "catch-at-age (millions)")),
+      # gillnet CAA input ----
+      h6(paste("Gillnet catch-at-age (millions)")),
 
       fluidRow( 
-
         splitLayout(
-          numericInput("caaAge3", "Age 3:", value = NA, min = 0),
-          numericInput("caaAge4", "Age 4:", value = NA, min = 0),
-          numericInput("caaAge5", "Age 5:", value = NA, min = 0),
-          numericInput("caaAge6", "Age 6:", value = NA, min = 0)
+          numericInput("gillnetCatchAge3", "Age 3:", value = NA, min = 0),
+          numericInput("gillnetCatchAge4", "Age 4:", value = NA, min = 0),
+          numericInput("gillnetCatchAge5", "Age 5:", value = NA, min = 0),
+          numericInput("gillnetCatchAge6", "Age 6:", value = NA, min = 0)
         ),
-
         splitLayout(
-          numericInput("caaAge7", "Age 7:", value = NA, min = 0),
-          numericInput("caaAge8", "Age 8:", value = NA, min = 0),
-          numericInput("caaAge9", "Age 9+:", value = NA, min = 0)
+          numericInput("gillnetCatchAge7", "Age 7:", value = NA, min = 0),
+          numericInput("gillnetCatchAge8", "Age 8:", value = NA, min = 0),
+          numericInput("gillnetCatchAge9", "Age 9+:", value = NA, min = 0)
         )    
+      ), 
 
-      ),
+      # pound CAA input ----
+      h6(paste("Pound catch-at-age (millions)")),
+
+      fluidRow( 
+        splitLayout(
+          numericInput("poundCatchAge3", "Age 3:", value = NA, min = 0),
+          numericInput("poundCatchAge4", "Age 4:", value = NA, min = 0),
+          numericInput("poundCatchAge5", "Age 5:", value = NA, min = 0),
+          numericInput("poundCatchAge6", "Age 6:", value = NA, min = 0)
+        ),
+        splitLayout(
+          numericInput("poundCatchAge7", "Age 7:", value = NA, min = 0),
+          numericInput("poundCatchAge8", "Age 8:", value = NA, min = 0),
+          numericInput("poundCatchAge9", "Age 9+:", value = NA, min = 0)
+        )    
+      )
+
+    ),
+
+    # spring survey data ----
+    card(card_header(h4(paste("Spring", curr_year, "Survey Data"))),
 
       # WAA input ----
       h6(paste("Spring", curr_year, "weight-at-age (g)")),
@@ -390,15 +409,46 @@ server <- function(input, output) {
   })
 
   # reactive current year spring catch ----
+
+  # THIS FUNCTION DOES NOT ACCOUNT FOR THE 25% OF FISH THAT ARE ASSUMED TO SURVIVE
+  # THE POUND FISHERY
+  # NEED TO RENAME THIS FUNCTION SPAWN CATCH 
+  # AND CREATE A SPRING CATCH FUNCTION THAT INCLUDES THE SURVIVED FISH AND 
+  # USE THAT IN THE POST-FISHERY NUMBERS AT AGE MATRIX FOR THE TWO-YEAR FORECAST
+
+  gillnetCatch <- eventReactive(input$doCalculations, {
+
+    gillnetCatch <- cbind(
+        input$gillnetCatchAge3, input$gillnetCatchAge4, input$gillnetCatchAge5, input$gillnetCatchAge6,
+        input$gillnetCatchAge7, input$gillnetCatchAge8, input$gillnetCatchAge9
+    ) 
+    gillnetCatch <- ifelse(is.na(gillnetCatch), 0, gillnetCatch)
+
+    return(gillnetCatch)
+
+  })
+
+  poundCatch <- eventReactive(input$doCalculations, {
+
+    poundCatch <- cbind(
+        input$poundCatchAge3, input$poundCatchAge4, input$poundCatchAge5, input$poundCatchAge6,
+        input$poundCatchAge7, input$poundCatchAge8, input$poundCatchAge9
+    ) 
+    poundCatch <- ifelse(is.na(poundCatch), 0, poundCatch)
+
+    return(poundCatch)
+
+  })
+
   springCatch <- eventReactive(input$doCalculations, {
 
-    springCatch <- cbind(
-        input$caaAge3, input$caaAge4, input$caaAge5, input$caaAge6,
-        input$caaAge7, input$caaAge8, input$caaAge9
-    ) 
-    springCatch <- ifelse(is.na(springCatch), 0, springCatch)
+    return(gillnetCatch() + poundCatch())
 
-    return(springCatch)
+  })
+
+  spawnCatch <- eventReactive(input$doCalculations, {
+
+    return(gillnetCatch() + pk*poundCatch())
 
   })
 
@@ -555,16 +605,17 @@ server <- function(input, output) {
   # calculate expected post-fishery MDM ----
   mdmPosterior <- eventReactive(input$doCalculations, {
 
-    if (any(is.na(currYearWAA()))) {
-      springYield <- apply(maturity, MARGIN = 1, FUN = \(x) sum(x*springCatch()*waa_forecast))
-    } else {
-      springYield <- apply(maturity, MARGIN = 1, FUN = \(x) sum(x*springCatch()*currYearWAA()))
-    }
+    currYearWAANAtoZero <- ifelse(is.na(currYearWAA()), 0, currYearWAA())
+
+    # uses spawnCatch: herring that survived pound fishery included in yield since
+    # they do not contribute to milt deposition 
+    springYield <- apply(maturity, MARGIN = 1, FUN = \(x) sum(x*spawnCatch()*currYearWAANAtoZero))
     
     postfisheryBiomass <- Btilde_forecast - springYield
     mdmPosterior <- postfisheryBiomass * (1-input$propFemale) / exp(logmdm_c)
     
     return(mdmPosterior)
+
   })
 
   # render MDM summary ----
@@ -582,6 +633,17 @@ server <- function(input, output) {
 
   # make MDM histogram ----
   mdmPlot <- reactive({
+
+    spawnCatchZeroToNA <- ifelse(spawnCatch() == 0, NA, spawnCatch())
+    currYearWAAZeroToNA <- ifelse(currYearWAA() == 0, NA, currYearWAA())
+  
+    spawnCatchHaveObservations <- which(is.na(spawnCatchZeroToNA))
+    currYearWAAHaveObservations <- which(is.na(currYearWAAZeroToNA))
+
+    validate(errorClass = "warning",
+      need(all(currYearWAAHaveObservations %in% spawnCatchHaveObservations), 
+          message = paste0("Age classes represented in catch must have observed weights to calculate MDM expectation!"))
+    )
 
     mdmPlotData <- data.frame(mdm = mdmPosterior()) 
     
@@ -609,6 +671,7 @@ server <- function(input, output) {
   })
 
   # calculate two-year biomass forecast ----
+
   biomassForecastTwoyear <- eventReactive(input$doCalculations, {
 
     postfisheryNAA <- apply(N_a_forecast, MARGIN = 1, FUN = \(x) x - springCatch()) |>
@@ -616,13 +679,16 @@ server <- function(input, output) {
     fallNAA <- postfisheryNAA*survival_forecast
 
     twoyearNAA <- cbind(
-      (exp(mean_log_rec)/survival_forecast_age2 - expectedFallCatch()[1])*survival_forecast_age2, 
+      (exp(mean_log_rec)*survival_forecast_age2 - expectedFallCatch()[1])*survival_forecast_age2,
       (fallNAA[,1:5] - expectedFallCatch()[2:6]) * survival_forecast[,1:5],
       (fallNAA[,6]-expectedFallCatch()[7])*survival_forecast[,6] + (fallNAA[,7]-expectedFallCatch()[8])*survival_forecast[,7]
     )
 
     if (any(is.na(currYearWAA()))) {
-      twoyearWAAForecast <- waa_forecast
+      # in absence of current year WAA, re-use previous 10-year mean
+      # twoyearWAAForecast <- waa_forecast  
+      # in absence of current year WAA, use current 9-year mean
+      twoyearWAAForecast <- window_average(waa, waa_average_years-1)
     } else {
       twoyearWAAForecast <- window_average(rbind(waa, currYearWAA()), waa_average_years)
     }

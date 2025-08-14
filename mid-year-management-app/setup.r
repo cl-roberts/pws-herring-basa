@@ -52,6 +52,7 @@ nyr <- model_data[[1]]
 curr_year <- 1980 + nyr
 perc_females <- model_data[[11]]
 waa <- model_data[[4]]
+pk <- model_data[[7]]
 
 # averaged quantities used in forecast
 
