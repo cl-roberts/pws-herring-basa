@@ -793,42 +793,34 @@ server <- function(input, output) {
   # tells download handler which plots to download ---- 
   observeEvent(input$doCalculations, {
 
-    # plot NAA agecomp? ----
+    # download NAA agecomp? ----
     naaAgecompSum <- sum(na.omit(naaAgecompObserved()$Proportion))
-    if((abs(naaAgecompSum-1) < .01) | all(is.na(naaAgecompInput()))) {
-      rv$naaAgecompPlotShown <- TRUE
-    } else {
-      rv$naaAgecompPlotShown <- FALSE
-    }
+    rv$naaAgecompPlotShown <- (abs(naaAgecompSum-1) < .01) | all(is.na(naaAgecompInput()))
 
-    # plot BAA agecomp? ----
+    # download BAA agecomp? ----
     naaAgeCompZeroToNA <- ifelse(naaAgecompInput() == 0, NA, naaAgecompInput())
     currYearWAAZeroToNA <- ifelse(currYearWAA() == 0, NA, currYearWAA())
- 
+    
     if (!all(is.na(naaAgeCompZeroToNA)) & !all(is.na(currYearWAAZeroToNA))) {
    
       naaAgeCompHaveObservations <- which(is.na(naaAgeCompZeroToNA))
       currYearWAAHaveObservations <- which(is.na(currYearWAAZeroToNA))
-
-      if(all(naaAgeCompHaveObservations %in% currYearWAAHaveObservations)) {
-        rv$baaAgecompPlotShown <- TRUE
-      } else {
-        rv$baaAgecompPlotShown <- FALSE
-      }
-      
-      if(all(currYearWAAHaveObservations %in% naaAgeCompHaveObservations)) {
-        rv$baaAgecompPlotShown <- TRUE
-      } else {
-        rv$baaAgecompPlotShown <- FALSE
-      }
+      rv$baaAgecompPlotShown <- all(naaAgeCompHaveObservations %in% currYearWAAHaveObservations)      
+      rv$baaAgecompPlotShown <- all(currYearWAAHaveObservations %in% naaAgeCompHaveObservations)
 
     } 
 
-    # plot MDM or 2-year biomass forcast histograms? ----
+    # download MDM forecast histogram? ----
     if (input$doCalculations > 0) {
-      rv$mdmPlotShown <- TRUE
-      rv$biomassPlotTwoyearShown <- TRUE
+      spawnCatchZeroToNA <- ifelse(spawnCatch() == 0, NA, spawnCatch())
+      currYearWAAZeroToNA <- ifelse(currYearWAA() == 0, NA, currYearWAA())    
+      spawnCatchHaveObservations <- which(is.na(spawnCatchZeroToNA))
+      currYearWAAHaveObservations <- which(is.na(currYearWAAZeroToNA))
+      rv$mdmPlotShown <- all(currYearWAAHaveObservations %in% spawnCatchHaveObservations)
     }
+
+    # download 2-year biomass forcast histogram? ----
+    rv$biomassPlotTwoyearShown <- input$doCalculations > 0
 
   })
 

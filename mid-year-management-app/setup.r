@@ -13,16 +13,11 @@ library(tibble)
 
 # dir
 
-if(interactive()) {
+app_dir <- here()
+app_name <- "mid-year-management-app"
 
-    app_dir <- grep("\\bapp.r\\b", list.files(recursive = TRUE), value = TRUE) |>
-        here() |>
-        dirname()
-
-} else {
-
-    app_dir <- "mid-year-management-app"
-
+if (app_name %in% list.files(app_dir)) {
+    app_dir <- here(app_dir, app_name)
 }
 
 # scripts 
