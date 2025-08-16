@@ -660,7 +660,7 @@ write.csv(
 
 mid_year_management <- data.frame(
     Btilde_forecast, Btilde_a_forecast, 
-    mcmc_results$logmdm_c, mdm_forecast,
+    mcmc_results$logmdm_c, mdm_forecast, mcmc_results$milt_add_var, 
     N_a_forecast, mcmc_results$mat_age3, mcmc_results$mat_age4, 
     winter_survival_forecast, mean_log_rec,
     Ntilde_agecomp_forecast, Btilde_agecomp_forecast
@@ -668,7 +668,7 @@ mid_year_management <- data.frame(
 
 colnames(mid_year_management) <- c(
     "Btilde_forecast", paste0("Btilde_age", 0:9, "_forecast"), 
-    "logmdm_c", "mdm_forecast", 
+    "logmdm_c", "mdm_forecast", "milt_add_var",
     paste0("N_a_forecast_age", 0:9), "mat_age3", "mat_age4",
     paste0("survival_forecast_age", 0:9), 
     "mean_log_rec", 
@@ -695,6 +695,11 @@ if (app_data) {
     file.copy(
         from = here(dir_model, "PWS_ASA.dat"), 
         to = here(dir_app_data, "PWS_ASA.dat"),
+        overwrite = TRUE
+    )
+    file.copy(
+        from = here(dir_mcmc, "PFRBiomass.csv"), 
+        to = here(dir_app_data, "PFRBiomass.csv"),
         overwrite = TRUE
     )
 

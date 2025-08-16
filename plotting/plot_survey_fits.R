@@ -32,6 +32,7 @@ dir_model <- here::here("model")
 dir_mcmc_out <- here::here(dir_model, "mcmc_out")
 dir_figures <- here::here("figures")
 dir_outputs <- here::here("data_outputs")
+dir_app <- here::here("mid-year-management-app", "data")
 
 if (!dir.exists(dir_figures)) {
     dir.create(dir_figures)
@@ -148,38 +149,73 @@ survey_fits <- ggarrange(
 # CLR: added / to file path
 ggsave(here::here(dir_figures, "survey_fits.pdf"), survey_fits, width=12, height=8, dpi=300)
 
+# format survey fits for saving to files
+mdm_tbl <- mdm.pp %>% 
+    filter(.width==0.95) %>% 
+    select(-c(.point, .interval, .width)) %>% 
+    rename(median=data) %>% 
+    mutate(median=round(median, 3), .lower=round(.lower, 3), .upper=round(.upper, 3))
+
+egg_tbl <- egg.pp %>% 
+    filter(.width==0.95) %>% 
+    select(-c(.point, .interval, .width)) %>% 
+    rename(median=data) %>% 
+    mutate(median=round(median, 3), .lower=round(.lower, 3), .upper=round(.upper, 3))
+
+adfg_hydro_tbl <- adfg.hydro.pp %>% 
+    filter(.width==0.95) %>% 
+    select(-c(.point, .interval, .width)) %>% 
+    rename(median=data) %>% 
+    mutate(median=round(median, 3), .lower=round(.lower, 3), .upper=round(.upper, 3))
+
+pwssc_hydro_tbl <- pwssc.hydro.pp %>% 
+    filter(.width==0.95) %>% 
+    select(-c(.point, .interval, .width)) %>% 
+    rename(median=data) %>% 
+    mutate(median=round(median, 3), .lower=round(.lower, 3), .upper=round(.upper, 3))
+
+juv_schools_tbl <- juv.schools.pp %>% 
+    filter(.width==0.95) %>% 
+    select(-c(.point, .interval, .width)) %>% 
+    rename(median=data) %>% 
+    mutate(median=round(median, 3), .lower=round(.lower, 3), .upper=round(.upper, 3))
 
 # save .csv table with clean survey fits
-
 sink(here::here(dir_outputs, "predicted-survey-values.csv"))
 cat('Milt (mile-days) posterior predictions\n')
 write.table(
-    mdm.pp %>% filter(.width==0.95) %>% select(-c(.point, .interval, .width)) %>% rename(median=data) %>% mutate(median=round(median, 3), .lower=round(.lower, 3), .upper=round(.upper, 3)),
-    row.names=FALSE,col.names=c('Year','Median Posterior Prediction','Lower 95th','Upper 95th'),sep=","
+    mdm_tbl, sep = ",", row.names = FALSE,
+    col.names = c('Year','Median Posterior Prediction','Lower 95th','Upper 95th')
 )
 
 cat('\nEggs deposited (trillions) posterior predictions\n')
 write.table(
-    egg.pp %>% filter(.width==0.95) %>% select(-c(.point, .interval, .width)) %>% rename(median=data) %>% mutate(median=round(median, 3), .lower=round(.lower, 3), .upper=round(.upper, 3)),
-    row.names=FALSE,col.names=c('Year','Median Posterior Prediction','Lower 95th','Upper 95th'),sep=","
+    egg_tbl, sep=",", row.names = FALSE, 
+    col.names = c('Year','Median Posterior Prediction','Lower 95th','Upper 95th')
 )
 
 cat('\nADF&G acoustic biomass (thousands of tons) posterior predictions\n')
 write.table(
-    adfg.hydro.pp %>% filter(.width==0.95) %>% select(-c(.point, .interval, .width)) %>% rename(median=data) %>% mutate(median=round(median, 3), .lower=round(.lower, 3), .upper=round(.upper, 3)),
-    row.names=FALSE,col.names=c('Year','Median Posterior Prediction','Lower 95th','Upper 95th'),sep=","
+    adfg_hydro_tbl, sep=",", row.names = FALSE, 
+    col.names = c('Year','Median Posterior Prediction','Lower 95th','Upper 95th')
 )
 
 cat('\nPWSSC acoustic biomass (thousands of tons) posterior predictions\n')
 write.table(
-    pwssc.hydro.pp %>% filter(.width==0.95) %>% select(-c(.point, .interval, .width)) %>% rename(median=data) %>% mutate(median=round(median, 3), .lower=round(.lower, 3), .upper=round(.upper, 3)),
-    row.names=FALSE,col.names=c('Year','Median Posterior Prediction','Lower 95th','Upper 95th'),sep=","
+    pwssc_hydro_tbl, sep=",", row.names = FALSE,
+    col.names = c('Year','Median Posterior Prediction','Lower 95th','Upper 95th')
 )
 
 cat('\nAge-1 Aerial survey (# of small schools) posterior predictions\n')
 write.table(
-    juv.schools.pp %>% filter(.width==0.95) %>% select(-c(.point, .interval, .width)) %>% rename(median=data) %>% mutate(median=round(median, 3), .lower=round(.lower, 3), .upper=round(.upper, 3)),
-    row.names=FALSE,col.names=c('Year','Median Posterior Prediction','Lower 95th','Upper 95th'),sep=","
+    juv_schools_tbl, sep=",", row.names = FALSE, 
+    col.names = c('Year','Median Posterior Prediction','Lower 95th','Upper 95th')
 )
-
 sink()
+
+# save mdm to app data
+write.csv(
+    mdm_tbl,
+    here::here(dir_app, "mdm-fits.csv"), 
+    row.names = FALSE
+)

@@ -202,7 +202,7 @@ ui  <- page_sidebar(
     # action and download buttons ----
     actionButton("doCalculations", "Calculate", 
                   icon = icon("circle-right")),
-    downloadButton("downloadTbl", "Download Estimates"),
+    downloadButton("downloadTbl", "Download Tables"),
     downloadButton("downloadFigs", "Download Figures")
   
   ),
@@ -210,9 +210,9 @@ ui  <- page_sidebar(
   navset_card_tab(
 
     # one-year biomass forecast tab ----
-    nav_panel(paste(curr_year, "Biomass Forecast"),
+    nav_panel("Welcome",
 
-      h2("Welcome"),
+      h2(paste("Spring",  curr_year, "Pre-fishery Mature Biomass Forecast")),
       p("This application is intended to assist in the mid-year management of Prince William Sound herring."),
 
       fluidRow(
@@ -221,7 +221,7 @@ ui  <- page_sidebar(
           div(
             card(
               class = "centered-card",
-              card_header(h4(paste("Spring", curr_year, "Forecast"))),
+              card_header(h4(paste("Spring", curr_year, "Forecast (tons)"))),
               h3(Btilde_forecast_med)
             )      
           ),
@@ -229,7 +229,7 @@ ui  <- page_sidebar(
           div(
             card(
               class = "centered-card",
-              card_header(h4("95% Credible Interval")), 
+              card_header(h4("95% CI (tons)")), 
               h3(Btilde_forecast_ci)
             )
           ),
@@ -244,7 +244,7 @@ ui  <- page_sidebar(
 
         ),
 
-        column(width = 8, plotOutput("biomassForecastPlot"))
+        column(width = 8, plotOutput("biomassTimeSeriesPlot"))
 
       )
     ),
@@ -252,7 +252,7 @@ ui  <- page_sidebar(
     # agecomp forecast tab ----
     nav_panel(paste(curr_year, "Agecomp Forecast"), 
 
-        h2(paste(curr_year, "age composition forecast")),
+        h2(paste("Spring", curr_year, "Pre-fishery Age Composition Forecast")),
 
         layout_columns(
 
@@ -283,7 +283,7 @@ ui  <- page_sidebar(
     # MDM forecast tab ----
     nav_panel(paste(curr_year, "MDM Forecast"), 
     
-      h2(paste(curr_year, "mile-days milt forecast")),
+      h2(paste("Spring", curr_year, "Pre-fishery Mile-days Milt Forecast")),
       p("A low probability indicates that the observed value mile-days milt was substantially less than what the bayesian age-structure assessment (BASA) model expected, and suggests that the spring 2025 mature biomass estimate may have been overforcasted. This could be due to a smaller than expected recruitment, for example."),
 
       fluidRow(
@@ -293,7 +293,7 @@ ui  <- page_sidebar(
           div(
             card(
               class = "centered-card",
-              card_header(h4(paste("Spring", curr_year, "Forecast"))),
+              card_header(h4(paste("Spring", curr_year, "Forecast (mdm)"))),
               h5(textOutput("mdmEstimate"))
             )      
           ),
@@ -301,7 +301,7 @@ ui  <- page_sidebar(
           div(
             card(
               class = "centered-card",
-              card_header(h4("95% Credible Interval")), 
+              card_header(h4("95% CI (mdm)")), 
               h5(textOutput("mdmCI"))
             )
           ),
@@ -317,7 +317,8 @@ ui  <- page_sidebar(
         ), 
 
         column(width = 8,
-          plotOutput("mdmPlot")
+          plotOutput("miltTimeSeriesPlot"),
+          plotOutput("mdmPosteriorPlot")
         )
 
       )
@@ -327,7 +328,7 @@ ui  <- page_sidebar(
     # two-year biomass forecast tab ----
     nav_panel(paste(curr_year+1, "Biomass Forecast"), 
 
-      h2(paste(curr_year+1, "biomass forecast")),
+      h2(paste("Spring", curr_year+1, "Pre-fishery Mature Biomass Forecast")),
       p("This is a two-year forecast. Caution is advised."),
 
       fluidRow(
@@ -336,7 +337,7 @@ ui  <- page_sidebar(
           div(
             card(
               class = "centered-card",
-              card_header(h4(paste("Spring", curr_year+1, "Forecast"))),
+              card_header(h4(paste("Spring", curr_year+1, "Forecast (tons)"))),
               h3(textOutput("biomassTwoyearEstimate"))
             )      
           ),
@@ -344,7 +345,7 @@ ui  <- page_sidebar(
           div(
             card(
               class = "centered-card",
-              card_header(h4("95% Credible Interval")), 
+              card_header(h4("95% CI (tons)")), 
               h3(textOutput("biomassTwoyearCI"))
             )
           ),
@@ -385,15 +386,38 @@ server <- function(input, output) {
   # boolean values keep track of whether plots are rendered or not
   rv <- reactiveValues(
     tbl = forecastTbl,
+    biomassTimeSeries = Btilde_ts,
+    miltTimeSeries = mdm_fits,
     naaAgecompPlotShown = TRUE,
     baaAgecompPlotShown = TRUE,
-    mdmPlotShown = FALSE,
+    mdmPosteriorPlotShown = FALSE,
     biomassPlotTwoyearShown = FALSE
   )
 
-  # static one-year biomass forecast plot ----
-  output$biomassForecastPlot <- renderPlot({
-      return(biomass_forecast_plot)
+  # biomass time series plot ----
+  biomassTimeSeriesPlot <- reactive({
+
+    biomassTimeSeriesPlot <- ggplot(rv$biomassTimeSeries) +
+        # geom_ribbon(aes(x = Year, ymin = Lower, ymax = Upper, alpha = Forecast)) +
+        geom_line(aes(x = Year, y = Estimate/1000, linewidth = Forecast), na.rm = TRUE) +
+        geom_point(aes(x = Year, y = Estimate/1000, shape = Forecast, color = Forecast), na.rm = TRUE) +
+        geom_errorbar(aes(x = Year, ymin = Lower/1000, ymax = Upper/1000, color = Forecast), width = .25, na.rm = TRUE) +
+        scale_shape_manual(values = c(8, 16)) +
+        scale_linewidth_manual(values = c(0, 1)) +
+        scale_color_manual(values = c(theme_gold, theme_navy)) +
+        # scale_alpha_manual(values = c(.25, 0)) +
+        ylab("Mature Biomass (1000 tons)") +
+        xlab("Year") +
+        labs(title = "Pre-fishery Mature Biomass Time Series", 
+            shape = NULL, linewidth = NULL, color = NULL) +
+        theme(legend.position.inside = c(.8, .8), legend.position = "inside")
+
+    return(biomassTimeSeriesPlot)
+
+  })
+
+  output$biomassTimeSeriesPlot <- renderPlot({
+    biomassTimeSeriesPlot()
   })
 
   # reactive current year WAA ----
@@ -409,13 +433,6 @@ server <- function(input, output) {
   })
 
   # reactive current year spring catch ----
-
-  # THIS FUNCTION DOES NOT ACCOUNT FOR THE 25% OF FISH THAT ARE ASSUMED TO SURVIVE
-  # THE POUND FISHERY
-  # NEED TO RENAME THIS FUNCTION SPAWN CATCH 
-  # AND CREATE A SPRING CATCH FUNCTION THAT INCLUDES THE SURVIVED FISH AND 
-  # USE THAT IN THE POST-FISHERY NUMBERS AT AGE MATRIX FOR THE TWO-YEAR FORECAST
-
   gillnetCatch <- eventReactive(input$doCalculations, {
 
     gillnetCatch <- cbind(
@@ -602,6 +619,32 @@ server <- function(input, output) {
     baaAgecompPlot()
   })
 
+
+  # milt time series plot ----
+  miltTimeSeriesPlot <- reactive({
+
+    miltTimeSeriesPlot <- ggplot(rv$miltTimeSeries) +
+      geom_line(aes(x = Year, y = Estimate, linewidth = Forecast), na.rm = TRUE, show.legend = FALSE) +
+      geom_point(aes(x = Year, y = Estimate, shape = Forecast), na.rm = TRUE) +
+      geom_point(aes(x = Year, y = Observed, shape = "Observed", color = "Observed"), size = 2, na.rm = TRUE) +
+      geom_errorbar(aes(x = Year, ymin = Lower, ymax = Upper, color = Forecast), width = .25, na.rm = TRUE) +
+      scale_shape_manual(values = c(8, NA, 16)) +
+      scale_linewidth_manual(values = c(0, 1)) +
+      scale_color_manual(values = c(theme_navy, theme_navy, theme_gold)) +
+      ylab("Mile-days Milt") +
+      xlab("Year") +
+      labs(title = "Pre-fishery Milt Survey Time Series", 
+          shape = NULL, linewidth = NULL, color = NULL) +
+      theme(legend.position.inside = c(.8, .8), legend.position = "inside")
+
+    return(miltTimeSeriesPlot)
+
+  })
+
+  output$miltTimeSeriesPlot <- renderPlot({
+    miltTimeSeriesPlot()
+  })
+
   # calculate expected post-fishery MDM ----
   mdmPosterior <- eventReactive(input$doCalculations, {
 
@@ -618,21 +661,40 @@ server <- function(input, output) {
 
   })
 
+  mdmPostSummary <- reactive({
+
+    mdmPostSummary <- list(
+      median = median(mdmPosterior())
+    )
+
+    errors <- milt_add_var*mdmPosterior()
+    pp_mean <- log((mdmPosterior()^2) / sqrt((errors^2)+(mdmPosterior()^2)))
+    pp_sd <- sqrt(log(1 + ((errors^2)/(mdmPosterior()^2))))
+
+    mdmPostSummary$ci <- rlnorm(n = n_iters, meanlog = pp_mean, sdlog = pp_sd) |>
+      quantile(prob = c(.025, .975))
+  
+    mdmPostSummary$prob <- 100*sum(mdmPosterior() < input$mdmObserved) / n_iters
+
+    return(mdmPostSummary)
+
+  })
+
   # render MDM summary ----
   output$mdmEstimate <- renderText({ 
-    round(median(mdmPosterior()), 1) 
+    round(mdmPostSummary()$median, 1) 
   })
 
   output$mdmCI <- renderText({ 
-    paste(round(quantile(mdmPosterior(), c(.025, .975)), 1), collapse = ", ") 
+    paste(round(mdmPostSummary()$ci, 1), collapse = ", ") 
   })
 
   output$mdmProb <- renderText({ 
-    paste0(round(100*sum(mdmPosterior() < input$mdmObserved) / n_iters, 1), "%") 
+    paste0(round(mdmPostSummary()$prob, 1), "%") 
   })
 
   # make MDM histogram ----
-  mdmPlot <- reactive({
+  mdmPosteriorPlot <- eventReactive(input$doCalculations, {
 
     spawnCatchZeroToNA <- ifelse(spawnCatch() == 0, NA, spawnCatch())
     currYearWAAZeroToNA <- ifelse(currYearWAA() == 0, NA, currYearWAA())
@@ -645,9 +707,9 @@ server <- function(input, output) {
           message = paste0("Age classes represented in catch must have observed weights to calculate MDM expectation!"))
     )
 
-    mdmPlotData <- data.frame(mdm = mdmPosterior()) 
+    mdmPosteriorPlotData <- data.frame(mdm = mdmPosterior()) 
     
-    mdmPlot <- ggplot(mdmPlotData) +
+    mdmPosteriorPlot <- ggplot(mdmPosteriorPlotData) +
       geom_histogram(aes(x = mdm, y = after_stat(count / sum(count))), 
                      fill = "NA", color = "black", bins = 50) +
       xlab("Mile-days Milt") +
@@ -655,19 +717,19 @@ server <- function(input, output) {
       labs(title = "MDM Posterior Distribution", color = NULL) 
 
     if (!is.na(input$mdmObserved)) {
-      mdmPlot <- mdmPlot +
+      mdmPosteriorPlot <- mdmPosteriorPlot +
         geom_vline(aes(xintercept = input$mdmObserved, color = "Observed MDM")) +
         scale_color_manual(values = theme_gold) +
         theme(legend.position.inside = c(.8, .8), legend.position = "inside")
     }
 
-    return(mdmPlot)
+    return(mdmPosteriorPlot)
 
   })
 
   # render MDM plot ----
-  output$mdmPlot <- renderPlot({
-    mdmPlot()
+  output$mdmPosteriorPlot <- renderPlot({
+    mdmPosteriorPlot()
   })
 
   # calculate two-year biomass forecast ----
@@ -708,15 +770,27 @@ server <- function(input, output) {
 
   })
 
+  biomassPostSummary <- reactive({
+
+    biomassPostSummary <- list(
+      median = median(biomassForecastTwoyearTons()),
+      ci = quantile(biomassForecastTwoyearTons(), c(.025, .975)),
+      prob = 100*sum(biomassForecastTwoyearTons() < threshold) / n_iters
+    )
+
+    return(biomassPostSummary)
+
+  })  
+
   # render two-year forecast summary ----
   output$biomassTwoyearEstimate <- renderText({ 
-    median(biomassForecastTwoyearTons()) |>   
+    biomassPostSummary()$median |>   
       round() |>
       prettyNum(big.mark = ",")
   })
 
   output$biomassTwoyearCI <- renderText({ 
-    quantile(biomassForecastTwoyearTons(), c(.025, .975)) |>
+    biomassPostSummary()$ci |>
       round() |>
       prettyNum(big.mark = ",") |>
       paste(collapse = ", ")
@@ -724,7 +798,7 @@ server <- function(input, output) {
 
   output$biomassTwoyearProb <- renderText({ 
     paste0(
-      round(100*sum(biomassForecastTwoyearTons() < threshold) / n_iters, 1), 
+      round(biomassPostSummary()$prob, 1), 
       "%"
     ) 
   })
@@ -756,7 +830,7 @@ server <- function(input, output) {
     biomassPlotTwoyear()
   })
 
-  # add rows to download table upon calculations ----
+  # add rows to download table and biomass time series upon calculations ----
   observeEvent(input$doCalculations, {
 
     # remove previously added rows
@@ -771,22 +845,39 @@ server <- function(input, output) {
         Year = curr_year, 
         Age = "3+", 
         Units = "Mile-days milt", 
-        `50%` = median(mdmPosterior()), 
-        `2.5%` = quantile(mdmPosterior(), .025),
-        `97.5%` = quantile(mdmPosterior(), .975)
+        `50%` = mdmPostSummary()$median, 
+        `2.5%` = mdmPostSummary()$ci[1],
+        `97.5%` = mdmPostSummary()$ci[2]
       )
 
-    # add row for 2026 biomass forecast
+    # add row for two-year biomass forecast
     rv$tbl <- rv$tbl |> 
       add_row(
         Quantity = "Mature Biomass Forecast",
         Year = curr_year+1, 
         Age = "3+", 
         Units = "Tons", 
-        `50%` = median(biomassForecastTwoyear()), 
-        `2.5%` = quantile(biomassForecastTwoyear(), .025),
-        `97.5%` = quantile(biomassForecastTwoyear(), .975)
+        `50%` = biomassPostSummary()$median, 
+        `2.5%` = biomassPostSummary()$ci[1],
+        `97.5%` = biomassPostSummary()$ci[2]
       )
+
+    rv$biomassTimeSeries[rv$biomassTimeSeries$Year == curr_year+1,] <- list(
+      Year = curr_year+1,
+      Forecast = "Forecast",
+      Estimate = biomassPostSummary()$median,
+      Lower = biomassPostSummary()$ci[1],
+      Upper = biomassPostSummary()$ci[2]
+    )
+
+    rv$miltTimeSeries[rv$miltTimeSeries$Year == curr_year,] <- list(
+      Year = curr_year,
+      Estimate = mdmPostSummary()$median,
+      Lower = mdmPostSummary()$ci[1],
+      Upper = mdmPostSummary()$ci[2],
+      Forecast = "Forecast", 
+      Observed = input$mdmObserved
+    )
 
   })
 
@@ -816,7 +907,7 @@ server <- function(input, output) {
       currYearWAAZeroToNA <- ifelse(currYearWAA() == 0, NA, currYearWAA())    
       spawnCatchHaveObservations <- which(is.na(spawnCatchZeroToNA))
       currYearWAAHaveObservations <- which(is.na(currYearWAAZeroToNA))
-      rv$mdmPlotShown <- all(currYearWAAHaveObservations %in% spawnCatchHaveObservations)
+      rv$mdmPosteriorPlotShown <- all(currYearWAAHaveObservations %in% spawnCatchHaveObservations)
     }
 
     # download 2-year biomass forcast histogram? ----
@@ -828,11 +919,34 @@ server <- function(input, output) {
   output$downloadTbl <- downloadHandler(
 
     filename = function() {
-      paste0("PWS-herring-mid-year-management-estimates-", Sys.Date(), ".csv")
+      paste0("PWS-herring-mid-year-management-tables-", Sys.Date(), ".zip")
     },
 
     content = function(file) {
-      write.csv(rbind(rv$tbl, agecompTbl), file, row.names = FALSE)
+
+      temp_dir <- paste0(tempdir(), "/tables")
+      unlink(temp_dir, recursive = TRUE)
+      dir.create(temp_dir)
+
+      write.csv(
+        rv$biomassTimeSeries, 
+        here(temp_dir, "biomass-time-series.csv"), 
+        row.names = FALSE
+      )
+      write.csv(
+        rv$miltTimeSeries, 
+        here(temp_dir, "milt-time-series.csv"), 
+        row.names = FALSE
+      )
+      write.csv(
+        rbind(rv$tbl, agecompTbl), 
+        here(temp_dir, "mid-year-management-estimates.csv"), 
+        row.names = FALSE
+      )
+
+      zipr(file, files = paste(temp_dir, list.files(temp_dir), sep = "/"))   
+      unlink(temp_dir, recursive = TRUE)
+
     }
   
   )
@@ -850,15 +964,16 @@ server <- function(input, output) {
       unlink(temp_dir, recursive = TRUE)
       dir.create(temp_dir)
 
-      ggsave(paste0(curr_year, "-mature-biomass-forecast.png"), plot = biomass_forecast_plot, path = temp_dir, device = "png")
+      ggsave("mature-biomass-time-series.png", plot = biomassTimeSeriesPlot(), path = temp_dir, device = "png")
+      ggsave("milt-time-series.png", plot = miltTimeSeriesPlot(), path = temp_dir, device = "png")
       if(rv$naaAgecompPlotShown) {
         ggsave("naa-agecomp.png", plot = naaAgecompPlot(), path = temp_dir, device = "png")
       }
       if(rv$baaAgecompPlotShown) {
         ggsave("baa-agecomp.png", plot = baaAgecompPlot(), path = temp_dir, device = "png")
       }
-      if(rv$mdmPlotShown) {
-        ggsave("mile-days-milt-forecast.png", plot = mdmPlot(), path = temp_dir, device = "png")
+      if(rv$mdmPosteriorPlotShown) {
+        ggsave("mile-days-milt-posterior.png", plot = mdmPosteriorPlot(), path = temp_dir, device = "png")
       }
       if(rv$biomassPlotTwoyearShown) {
         ggsave(paste0(curr_year+1, "-mature-biomass-forecast.png"), plot = biomassPlotTwoyear(), path = temp_dir, device = "png")

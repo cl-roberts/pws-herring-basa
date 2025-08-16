@@ -13,16 +13,16 @@ library(tibble)
 
 # dir
 
-app_dir <- here()
+dir_app <- here()
 app_name <- "mid-year-management-app"
 
-if (app_name %in% list.files(app_dir)) {
-    app_dir <- here(app_dir, app_name)
+if (app_name %in% list.files(dir_app)) {
+    dir_app <- here(dir_app, app_name)
 }
 
 # scripts 
 
-source(here(app_dir, "helper.r"))
+source(here(dir_app, "helper.r"))
 
 # colors 
 
@@ -41,13 +41,14 @@ perc_female_forecast_years <- 10
 
 # read model input data
 
-model_data <- data.reader(here(app_dir, "data", "PWS_ASA.dat"))
+model_data <- data.reader(here(dir_app, "data", "PWS_ASA.dat"))
 
 nyr <- model_data[[1]]
 curr_year <- 1980 + nyr
 perc_females <- model_data[[11]]
 waa <- model_data[[4]]
 pk <- model_data[[7]]
+mdm_observed <- model_data[[12]]
 
 # averaged quantities used in forecast
 
@@ -60,19 +61,50 @@ threshold <- 22000
 
 # read mcmc results
 
-mcmc_results <- read.csv(here(app_dir, "data", "mid-year-management.csv"))
+mcmc_results <- read.csv(here(dir_app, "data", "mid-year-management.csv"))
 
 n_iters <- nrow(mcmc_results)
 
 mean_log_rec <- mcmc_results$mean_log_rec
 Btilde_forecast <- mcmc_results$Btilde_forecast
 logmdm_c <- mcmc_results$logmdm_c
+mdm_forecast <- mcmc_results$mdm_forecast
+milt_add_var <- mcmc_results$milt_add_var
 N_a_forecast <- mcmc_results[,grepl("N_a_forecast_age", names(mcmc_results))]
 maturity <- cbind(mcmc_results$mat_age3, mcmc_results$mat_age4, 1, 1, 1, 1, 1)
 survival_forecast <- mcmc_results[,grepl("survival_forecast_age", names(mcmc_results))]
 Btilde_agecomp_forecast <- mcmc_results[,grepl("Btilde_agecomp", names(mcmc_results))]
 Ntilde_agecomp_forecast <- mcmc_results[,grepl("Ntilde_agecomp", names(mcmc_results))]
 
+# data for biomass time series
+Btilde_y <- read.csv(here(dir_app, "data", "PFRBiomass.csv"))*1.10231  # tons
+Btilde_ci <- apply(Btilde_y, MARGIN = 2, FUN = \(x) quantile(x, c(.5, .025, .975))) |>
+    t()
+colnames(Btilde_ci) <- c("Estimate", "Lower", "Upper")
+Btilde_ts <- cbind(
+        data.frame(Year = 1980:curr_year), 
+        data.frame(Forecast = c(rep("Hindcast", nyr), "Forecast")),
+        Btilde_ci
+    ) |>
+    rbind(
+        data.frame(
+            Year = 2026, Forecast = "Forecast", Estimate = NA, Lower = NA, Upper = NA
+        )
+    )
+
+# data for mdm time series
+mdm_fits <- read.csv(here(dir_app, "data", "mdm-fits.csv"))
+colnames(mdm_fits) <- c("Year", "Estimate", "Lower", "Upper")
+mdm_fits$Forecast <- "Hindcast"
+mdm_fits$Observed <- mdm_observed
+
+mdm_fits <- rbind(
+    mdm_fits,
+    data.frame(
+        Year = 2025, Estimate = NA, Lower = NA, Upper = NA, 
+        Forecast = "Forecast", Observed = NA
+    )
+)
 
 # calculate one-year forecast quantities
 
@@ -89,19 +121,6 @@ prob_below_threshold <- paste0(
     round(100*sum(Btilde_forecast_tons < threshold)/n_iters, 1),
     "%"
 )
-
-# plot one-year forecast 
-
-biomass_forecast_plot <- ggplot(data.frame(biomass = Btilde_forecast_tons)) +
-    geom_histogram(aes(x = biomass, y = after_stat(count / sum(count))), 
-                    fill = "NA", color = "black", bins = 50) +
-    xlab("Mature Biomass (tons)") +
-    ylab("Frequency") +
-    labs(title = paste(curr_year, "Biomass Forecast Posterior Distribution"), 
-         color = NULL) +
-    geom_vline(aes(xintercept = threshold, color = "22,000-ton Threshold")) +
-    scale_color_manual(values = theme_gold) +
-    theme(legend.position.inside = c(.8, .8), legend.position = "inside")
 
 
 # make agecomp forecast tables
