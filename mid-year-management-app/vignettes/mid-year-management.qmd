@@ -5,40 +5,48 @@ author:
   - C.L. Roberts
 date: today
 date-format: long
-# format: docx
-format: html
+format: docx
+# format: html
+reference-doc: wordtemplate.docx
 bibliography: references.bib
 csl: american-fisheries-society
 warning: false
 echo: false
+# editor:
+#   render-on-save: true
 ---
 
+<!-- mid-year management app at https://clroberts2112.shinyapps.io/mid-year-management-app/ -->
 
-## Executive Summary
-
-
+<!-- ## Executive Summary -->
 
 ## Introduction
 
-The Pacific herring (*Clupea pallasii*) stock in Prince William Sound (PWS), Alaska, 
-is assessed using a Bayesian age-structured assessment (BASA). BASA uses Markov chain
-Monte Carlo (MCMC) to estimate posterior distributions for stock biomass and other 
-quantities [@muradian2017]. See @tbl-datasets for a partial list of data sets; 
-the mile-days milt index is the longest and most consistent biomass index used by BASA.
+Modest recovery of Pacific herring (*Clupea pallasii*) in Prince William Sound, Alaska, 
+facilitated the opening of commercial fisheries in fall 2024, and spring 2025, for the 
+first time since 1999. Historically, PWS herring supported a fall food/bait fishery 
+as well as spring harvest of sac roe (using gillnet and purse-seine gear) and 
+spawn-on-kelp (in open and closed pounds). All fisheries were
+closed due to low biomass from 1999 to 2024. Beginning in 2026, PWS herring stock 
+biomass will be assessed in winter in time for spring fisheries; in recent years,
+annual assessments were conducted in the fall. Ongoing fleet interest in the fall 
+fishery, coupled with the need for conservative management of this recovering stock, 
+necessitates an mid-year stock status update to inform management of the food/bait 
+fishery. 
 
-Historically, herring in PWS was harvested in the spring for sac roe and 
-spawn-on-kelp and in the fall for food/bait [@muradian2017]. All fisheries were
-closed due to low biomass from 1999 to 2024. Modest stock recovery has precluded
-the re-opening of fisheries beginning in fall 2024. Beginning in 2026, PWS herring stock 
-biomass will be assessed in winter in time for spring fisheries. However, ongoing
-fleet interest in fall food/bait harvest coupled with the need for conservative 
-management of this recovering stock necessitates an mid-year stock status update to 
-inform management of the fall fishery. 
+The herring stock in PWS is assessed using a Bayesian age-structured assessment 
+(BASA) [@muradian2017]. BASA currently estimates PWS herring biomass using 19 
+different time series, the earliest of which begins in 1980. The mile-days milt 
+index is the longest and most consistent biomass index used by BASA. BASA uses 
+Markov chain Monte Carlo (MCMC) to estimate posterior distributions for stock 
+biomass and other quantities. For an abbreviated description of the BASA model 
+data, formulation, and estimated parameters, see @tbl-datasets, @tbl-model, and 
+@tbl-parameters, respectively. 
 
 This document describes methods used to facilitate a mid-year stock status update
-of PWS herring. First, calculations are shown for how mature biomass and age 
-compositions are forecasted during the PWS herring assessment conducted during
-the winter for upcoming spring fisheries. Second, methods are described for 
+for PWS herring. First, calculations are shown for how mature biomass and age 
+compositions are forecasted during the PWS herring winter assessment for upcoming 
+spring fisheries. Second, methods are described for 
 estimating the expected milt survey result based on spring catches and spawn 
 survey data. Lastly, we show calculations for a two-year mature biomass forecast 
 (i.e., the expected mature biomass one year after the first spring mature biomass
@@ -55,7 +63,7 @@ conducted.
 Mature biomass of PWS herring is forecasted annually in winter to set guideline 
 harvest limits (GHL's) for the following spring and fall fisheries. Let $Y$ denote 
 the last year in the model; to forecast age-3 fish in spring of year $Y+1$ we 
-take a median of age-2 fish from previous springs, apply summer mortality in year 
+take a geometric mean of age-2 fish from previous springs, apply summer mortality in year 
 $Y$, subtract age-2 fish caught in the food/bait fishery, and apply year $Y$ winter 
 mortality: 
 
@@ -64,15 +72,15 @@ N^*_{Y+1, 3} = \left(r^*_{Y} S^1_{Y, 2} - C^4_{Y, 2}\right) S^2_{Y, 2}
 $$ {#eq-age3-forecast}
 
 where $C^4_{Y, 2}$ is the fall food/bait age-2 catch, $S^1_{Y, 2}$ and $S^2_{Y, 2}$ 
-are the survival fractions for summer and winter, respectively, and
+are the survival fractions for summer and winter, respectively, and $r^*_{Y}$ is 
+the geometric mean of age-2 fish over the final $10$ years in the model
 
 $$
-r^*_{Y} = \text{median}\{N_{y, 2}\} \ \forall \ y \ \in \ [Y-9, Y].
-$$ {#eq-age2-median}
+r^*_{Y} = \exp\left( \frac{1}{10} \sum_{Y-9}^Y \log N_{y, 2}  \right).
+$$ {#eq-age2-average}
 
-I.e., $r^*_{Y}$ is the median age-3 fish over the final $10$ years in 
-the model. Note that $(*)$ denotes a forecasted quantity. Therefore, the 
-forecasted numbers-at-age matrix in year $Y$ is
+Note that $(*)$ denotes a forecasted quantity. Therefore, the forecasted 
+numbers-at-age matrix in spring of year $Y$ is
 
 $$
 N^*_{Y+1, a} = 
@@ -84,13 +92,14 @@ N^*_{Y+1, a} =
   \end{cases}.
 $$ {#eq-naa-forecast}
 
-The mature biomass forecast is given by 
+where $\hat{C}^S_{Y, a}$ is the estimated total spring catch of age class $a$ in
+year $Y$. The mature biomass forecast is given by 
 
 $$
 \tilde{B}^*_{Y+1} = \sum_{a = 0}^{9+} \rho^M_a \cdot \bar{W}_{Y+1, a} \cdot N^*_{Y+1, a}
 $$ {#eq-btilde-forecast}
 
-where $\rho^M_a$ is maturity-at-age (@tbl-model, @tbl-parameters) and the weight-at-age used 
+where $\rho^M_a$ is maturity-at-age and the weight-at-age used 
 in the forecast, $\bar{W}_{Y+1, a}$, is calculated using the average 
 weight-at-ages over the final $10$ years in the model:
 
@@ -113,40 +122,62 @@ $$
 \hat{\Phi}^*_{Y+1, a} = \frac{\rho^M_a N^*_{Y+1, a} \bar{W}_{Y+1, a}}{\sum_{a=0}^{9+} (\rho^M_a N^*_{Y+1, a} \bar{W}_{Y+1, a})}.
 $$ {#eq-baa-agecomp}
 
-### Expected mile-days milt
+### Mile-days milt forecast
 
-Expected mile-days milt ($\hat{T}^*_Y$) is calculated using spring catches, year $Y+1$ survey data, and 
-BASA-estimated catchability coefficient ($q^T$) and additional variance ($\sigma^T$)
-parameters (@tbl-parameters). Using the posterior distribution for BASA parameters
-and derived quantities, a post-MCMC posterior distribution for the expected mile-days 
-milt. Comparing the observed mile-days milt ($T_Y$) to the posterior distribution
-for the expected value of mile-days milt will give an indication whether or not
-the spring pre-fishery mature biomass forecast approximately correct. 
+Expected spring post-fishery mile-days milt for the current year ($\hat{T}^*_{Y+1}$) 
+is calculated using spring catches, survey data, and BASA-estimated parameters. A 
+posterior predictive distribution for $\hat{T}^*_{Y+1}$ is derived to compute a $95\%$ credible 
+interval. Comparing the observed mile-days milt ($T_{Y+1}$) to the posterior predictive 
+distribution for $\hat{T}^*_{Y+1}$ will give an indication whether or not the spring 
+pre-fishery mature biomass forecast was approximately correct. 
 
 First, catches from all spring fisheries are used to estimate the biomass of all
 removed mature fish using
 
 $$
-\tilde{H}_Y = \sum_{a = 0}^{9+} \rho^M_a \cdot W_{Y+1, a} \cdot \tilde{C}^S_{Y+1, a}
+\tilde{H}_{Y+1} = \sum_{a = 0}^{9+} \rho^M_a \cdot W_{Y+1, a} \cdot \tilde{C}^S_{Y+1, a}
 $$ {#eq-spring-yield}
 
-where $\rho^M_a$ is maturity-at-age, $W_{Y+1, a}$ is the current year weight-at-age, 
+where $\rho^M_a$ is maturity-at-age, $W_{Y+1, a}$ is the current-year weight-at-age, 
 and $\tilde{C}^S_{Y+1, a}$ is the total current-year catch-at-age for the gillnet, pound, and 
 purse-seine fisheries. Note that $\tilde{C}^S_{Y+1, a}$ comprises all mature individuals
 that are removed from the spawning population, including $25\%$ that are assumed 
-to survive the pound fishery (@tbl-model). 
+to survive the pound fishery ("spawn removals" in @tbl-model). 
 
-The expected mile-days milt is then calculated using 
+The BASA prediction of mile-days milt from the aerial milt survey is then calculated 
+using 
 
 $$
-\hat{T}^*_Y = \left(\tilde{B}_Y - \tilde{H}_Y\right) \cdot \frac{1-\rho^f_Y}{q^T}
+\hat{T}^*_{Y+1} = \left(\tilde{B}_{Y+1} - \tilde{H}_{Y+1}\right) \cdot \frac{1-\rho^f_{Y+1}}{q_T}
 $$ {#eq-mdm-expectation}
 
-where $\tilde{B}_Y$ is the current-year mature biomass forecast and $\rho^f_Y$ is
-the observed proportion of female spawners from the spring spawn survey. BASA 
+where $\tilde{B}_{Y+1}$ is the current-year mature biomass forecast, $\rho^f_{Y+1}$ 
+is the observed proportion of female spawners from the spring spawn survey, and 
+$q_T$ is the BASA-estimated catchability coefficient for the milt index. BASA 
 parameter estimates and derived quantities from all MCMC iterations of the full 
 PWS herring winter assessment are used to calculate @eq-spring-yield and 
-@eq-mdm-expectation, resulting in a posterior distribution $\hat{T}^*_Y$
+@eq-mdm-expectation, resulting in a posterior distribution for $\hat{T}^*_{Y+1}$ that
+is estimate without refitting the model mid-year.
+
+A 95% posterior predictive interval for $\hat{T}^*_{Y+1}$ is calculated to incorporate 
+observation error as well as additional milt deposition process error that is not directly 
+modeled by BASA. The posterior predictive distribution is estimated from random 
+draws of a lognormal distribution with log-mean 
+
+$$
+\log\left(\frac{(\hat{T}^*_{Y+1})^2}{\sqrt{(\hat{T}^*_{Y+1})^2 + (\hat{T}^*_{Y+1}\sigma_T^2)^2}} \right)
+$$ {#eq-pp-logmean}
+
+and log-variance
+
+$$
+\log\left(1 + \sigma_T^4 \right)
+$$ {#eq-pp-logvar}
+
+where $\sigma_T^2$ is a BASA-estimated additional variance parameter for the milt
+survey. The $95\%$ credible interval for $\hat{T}^*_{Y+1}$ is
+taken to be the 2.5 and 97.5 percentiles of random draws the distribution described
+in @eq-pp-logmean and @eq-pp-logvar.
 
 ### Two-year mature biomass forecast
 
@@ -161,7 +192,7 @@ $$ {#eq-fall-forecast}
 
 where $N^*_{Y, a}$ is the (one-year) forecast numbers-at-age, $\hat{C}^S_{Y+1, a}$ is the
 current year catch-at-age (not including fish that survive the pound fishery, 
-@tbl-model), and $S^2_{Y, a}$ is the winter survival of the final year of the model
+"spring removals" in @tbl-model), $S^2_{Y, a}$ is the winter survival of the final year of the model
 (@tbl-model), and $\hat{C}^4_{Y+1, a}$ is the expected catch-at-age for the upcoming 
 fall fishery. Then, the numbers-at-age matrix for the two-year forecast is 
 
@@ -178,7 +209,7 @@ where $r^*$ is the one-year age-2 fish forecast and $S^1_{Y, a}$ is the summer
 survival of the final year of the model (@tbl-model). Note that the recruitment
 used in the two-year forecast is the same as the recruitment used in the one-year
 forecast and that the winter and summer survival are the same as the final year 
-in the model. Also note that$N^*_{Y+2, 3}$ in @eq-naa-twoyear-forecast accounts 
+in the model. Also note that $N^*_{Y+2, 3}$ in @eq-naa-twoyear-forecast accounts 
 for an expected catch of age-2 fish in the upcoming food/bait fishery that become 
 age-3 fish in year $Y+2$. 
 
@@ -198,15 +229,15 @@ $$ {#eq-waa-twoyear-forecast}
 
 ## Discussion
 
-A posterior distribution for the expected milt survey result in year $Y+1$, $\hat{T}^*_{Y+1}$, 
+The posterior predictive distribution for the expected milt survey result in year $Y+1$, $\hat{T}^*_{Y+1}$, 
 can be estimated in the spring using @eq-mdm-expectation after the fisheries and spawn 
 survey occur. This information, in conjunction with observed age compositions 
 ($\hat{\Theta}^*_{Y+1, a}$) from the spawn survey and the observed aerial mile-days 
 milt ($T_{Y+1}$), can be used to assess whether or not the mature biomass was
-overforecasted in year $Y+1$. For example, if the observed mile-days milt lies 
-completely below the values covered by the estimated posterior distribution for 
-$\hat{T}^*_{Y+1}$, then this would be evidence that mature biomass in year $Y+1$
-was overforecasted. An overforecast could be due to a smaller than expected 
+overforecasted in year $Y+1$. For example, if the observed mile-days milt in year $Y+1$ 
+lies completely below the values covered by the estimated posterior predictive distribution 
+for $\hat{T}^*_{Y+1}$, then there is strong evidence that mature biomass in year $Y+1$
+was overforecasted. An overforecasted mature biomass could be due to a smaller than expected 
 recruitment, in which case the observed proportion of the mature fish in the spawn
 survey that are age-3 would be less than the forecasted proportion 
 ($\Theta_{Y+1, 3} < \hat{\Theta}^*_{Y+1, 3}$).
@@ -215,7 +246,7 @@ survey that are age-3 would be less than the forecasted proportion
 ## Tables
 
 | Data type | Units | Symbol | Years |
-|:---|:--:|:--:|:--:|
+|:-----|:--:|:--:|:--:|
 | **Fishery-dependent data** |  |  |  |
 | Gillnet catch-at-age | millions | $C^2_{y, a}$ | $[1980, 1998]$ |
 | Pound utilization catch-at-age | millions | $C^3_{y, a}$ | $[1980, 1999]$ |
@@ -239,7 +270,7 @@ survey that are age-3 would be less than the forecasted proportion
 | **Recruitment, millions** |  |
 | Annual recruitment (age-0) | $R_y = \bar{R} e^{\epsilon^{rec}_y}$ |
 | **Selectivity, proportion** |  |
-| Purse-seine age-specific selectivity | $V_a = \frac{1}{1 + e^{-\beta^V (a-\alpha^V)}}$ |
+| Purse-seine age-specific selectivity | $V_a = \frac{1}{1 + e^{-\beta_V (a-\alpha_V)}}$ |
 | **Numbers-at-age, millions** |  |
 | Pre-fishery total abundance, age 0-2 | $N_{y+1, a+1} = N_{y, a} S^1_{y, a} S^2_{y, a}$ |
 | Pre-fishery total abundance, ages 3-8 | $N_{y+1, a+1} = [(N_{y, a}-\hat{C}^S_{y, a}) S^1_{y, a} - C^4_{y, a}] S^2_{y, a}$ |
@@ -252,8 +283,8 @@ survey that are age-3 would be less than the forecasted proportion
 | **Other expressions** |  |
 | Estimated purse-seine age composition, proportion | $\hat{\Theta}^1_{y, a} = \frac{V_a N_{y, a}}{\sum_{a \in A} (V_a N_{y, a})}$ |
 | Estimated spawner survey age composition, proportion | $\hat{\Theta}^{Sp}_{y, a} = \frac{\rho^M_a N_{y, a}}{\sum_{a \in A} (\rho^M_a N_{y, a})}$ |
-| Estimated milt, mile-days | $\hat{T}_y = \frac{(1-\rho^f_y) \tilde{B}^{post}_y}{q^T}$ |
-: Selected population dynamics modeled by the Bayesian age-structured assessment (BASA) model. Individual years in time-varying quantities are indexed $y$ and $a$ indexes age-class where age-9 in the plus-age group. $S^1_{y, a}$ and $S^2_{y, a}$ denote half-year survival fractions winter summer and winter, respectively, for year $y$ and age $a$. Age-specific maturity is given by $\rho^M_a$, where 0% maturity is assumed for age-2 or younger fish, age-3 and age-4 maturity are model-estimated parameters, and 100% maturity is assumed for age-5 or older fish. {#tbl-model}
+| Estimated milt, mile-days | $\hat{T}_y = \frac{(1-\rho^f_y) \tilde{B}^{post}_y}{q_T}$ |
+: Selected population dynamics modeled by the Bayesian age-structured assessment (BASA) model. Individual years in time-varying quantities are indexed $y$ and $a$ indexes age-class where age-9 in the plus-age group. $S^1_{y, a}$ and $S^2_{y, a}$ denote half-year survival fractions in summer and winter, respectively, for year $y$ and age $a$. Age-specific maturity is given by $\rho^M_a$, where 0% maturity is assumed for age-2 or younger fish, age-3 and age-4 maturity are model-estimated parameters, and 100% maturity is assumed for age-5 or older fish. {#tbl-model}
 
 
 | Parameter | Symbol | Prior |
@@ -264,12 +295,14 @@ survey that are age-3 would be less than the forecasted proportion
 | **Recruitment deviates** |  |  |
 | Annual recruitment deviations, log-link | $\epsilon^{rec}_y; N_{y, 0} = \bar{R} e^{\epsilon^{rec}_y}$ | Uniform(-10, 10) |
 | **Selectivity parameters** |  |  |
-| Purse-seine gear selectivity | $\alpha^V$ | Uniform(3, 5) |
-| Purse-seine gear selectivity | $\beta^V$ | Uniform(1, 7) |
+| Purse-seine gear selectivity | $\alpha_V$ | Uniform(3, 5) |
+| Purse-seine gear selectivity | $\beta_V$ | Uniform(1, 7) |
 | **Maturity parameters** |  |  |
 | Age-3 maturity | $\nu_3; \rho^M_3 = \nu_3 \rho^M_4$ | Beta(9, 11) |
 | Age-4 maturity | $\rho^M_4$ | Beta(18, 2) |
 | **Milt parameters** |  |  |
-| Milt catchability coefficient | $\log q^T$ | Uniform(2.3, 9) |
-| Milt CV | $\sigma^T$ | Normal(0.01, 0.9) |
+| Milt catchability coefficient | $\log q_T$ | Uniform(2.3, 9) |
+| Milt additional error | $\sigma_T^2$ | Normal(0.01, 0.9) |
 : Selected parameters estimated by the Bayesian age-structured assessment (BASA) model. Individual years in recruitment deviates are indexed by $y$. {#tbl-parameters}
+
+## References
