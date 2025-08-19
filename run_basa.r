@@ -9,16 +9,21 @@
 
 ################################################################################
 
-#### set up ####
-
 start_time <- Sys.time()
 
-## model controls
+#### model controls ####
 
-# declare which parameters to fix
+## control execution
+write_report_files <- TRUE         # write report files?
+run_mcmc <- FALSE                  # run MCMC sampler?
+write_mcmc_files <- FALSE          # write MCMC outputs to files?
+run_retro <- FALSE                 # run retrospective analysis?
+app_data <- FALSE                  # copy outputs to mid-year management app directory?
+
+## declare which parameters to fix
 fix <- c(
     "pk", "egg_add", "Z_0_8", "log_MeanAge0"
-    # "sigma_age0devs"                                   
+    # "sigma_age0devs",                                   
     # ------------------------------------------------------------------ 
     # "Z_9", 
     # "VHSV_age3_4_mort_93", "ICH_age5_8_mort_93" 
@@ -29,13 +34,14 @@ fix <- c(
     # "seine_selex_alpha", "seine_selex_beta", 
     # ------------------------------------------------------------------
     # "logmdm_c",
-    # "milt_add_var"
+    # "milt_add_var",
     # "adfg_hydro_q", "adfg_hydro_add_var", "pwssc_hydro_q", "pwssc_hydro_add_var",
     # "log_juvenile_q", "juvenile_overdispersion"
     # ------------------------------------------------------------------
-    # "annual_age0devs"
+    # "annual_age0devs",
     # ------------------------------------------------------------------
     # "loginit_pop"
+
 ) 
 
 # MCMC controls
@@ -46,15 +52,11 @@ iter <- 2000
 warmup <- 700
 control <- list(adapt_delta = 0.95)
 
-# run retrospective analysis?
-run_retro <- FALSE
+# retrospective analysis controls
 n_peels <- 5
 retro_iter <- 2000
 retro_warmup <- 700
 retro_chains <- 1
-
-# populate app data?
-app_data <- TRUE
 
 # forecast controls
 forecast_controls <- list(
@@ -65,6 +67,9 @@ forecast_controls <- list(
     perc_female_forecast_years = 10    
 )
 
+# ------------------------------------------------------------------------------ 
+
+#### set up ####
 
 ## attach packages
 
@@ -281,13 +286,6 @@ upper <- c(
 upper <- upper[!(names(upper) %in% fix)]
 # upper <- upper[!grepl("beta_mortality", names(upper))]
 
-
-# make model object
-# model <- MakeADFun(model_data, parameters, map = map, DLL = "PWS_ASA", 
-#                    silent = TRUE, random = "annual_age0devs")
-# model <- MakeADFun(model_data, parameters, map = map, DLL = "PWS_ASA", 
-#                    silent = TRUE)
-
 # ------------------------------------------------------------------------------
 
 
@@ -334,12 +332,14 @@ model <- MakeADFun(
 )
 
 # write pre-optimization report
-write_report(
-    obj = model, par = model$par, 
-    file = here(dir_rep, "pre-optim-report.txt"),
-    # dummy = c("dummy", "dummy_vector"),
-    llik = llik, derived = derived, survey = survey, forecast = forecast
-)
+if (write_report_files) {
+    write_report(
+        obj = model, par = model$par, 
+        file = here(dir_rep, "pre-optim-report.txt"),
+        # dummy = c("dummy", "dummy_vector"),
+        llik = llik, derived = derived, survey = survey, forecast = forecast
+    )
+}
 
 # ------------------------------------------------------------------------------
 
@@ -353,58 +353,63 @@ fit_ML <- nlminb(
 )
 
 # write maximum likelihood report
-write_report(
-    obj = model, par = fit_ML$par, 
-    file = here(dir_rep, "ml-report.txt"),
-    llik = llik, derived = derived, survey = survey, forecast = forecast
-)
+if (write_report_files) {
+    write_report(
+        obj = model, par = fit_ML$par, 
+        file = here(dir_rep, "ml-report.txt"),
+        llik = llik, derived = derived, survey = survey, forecast = forecast
+    )
+}
 
 # ------------------------------------------------------------------------------
 
 #### fit model with markov chain monte carlo ####
 
-# randomize initial values for MCMC chains
-inits <- init_tmb_params(
-    chains = chains, seed = seed,
-    start = model$env$last.par.best, 
-    lower = lower, upper = upper
-)
+if (run_mcmc) {
 
-# run NUTS
-mcmc_start_time <- Sys.time()
-fit <- tmbstan(
-    model, chains = chains, lower = lower, upper = upper, 
-    cores = chains, init = inits, iter = iter, 
-    control = control, warmup = warmup, seed = seed, algorithm = "NUTS", 
-    silent = FALSE
-)
-mcmc_end_time <- Sys.time()
-mcmc_time <- mcmc_end_time - mcmc_start_time
-message(paste("MCMC time:", round(mcmc_time, 4), units(mcmc_time)))
+    # randomize initial values for MCMC chains
+    inits <- init_tmb_params(
+        chains = chains, seed = seed,
+        start = model$env$last.par.best, 
+        lower = lower, upper = upper
+    )
+
+    # run NUTS
+    mcmc_start_time <- Sys.time()
+    fit <- tmbstan(
+        model, chains = chains, lower = lower, upper = upper, 
+        cores = chains, init = inits, iter = iter, 
+        control = control, warmup = warmup, seed = seed, algorithm = "NUTS", 
+        silent = FALSE
+    )
+    mcmc_end_time <- Sys.time()
+    mcmc_time <- mcmc_end_time - mcmc_start_time
+    message(paste("MCMC time:", round(mcmc_time, 4), units(mcmc_time)))
 
 
-# save parameter posteriors
-mcmc_results <- as.data.frame(fit) |> select(!lp__)
+    # save parameter posteriors
+    mcmc_results <- as.data.frame(fit) |> select(!lp__)
 
-# parameter estimates are taken to be posterior medians
-fit_mcmc_par <- apply(mcmc_results, MARGIN = 2, FUN = median)
+    # parameter estimates are taken to be posterior medians
+    fit_mcmc_par <- apply(mcmc_results, MARGIN = 2, FUN = median)
 
-# this bit is so that the write_report function does not insert a line break after 
-# each element in vector parameters. to be improved another day
-names(fit_mcmc_par)[grep("annual_age0devs", names(fit_mcmc_par))] <- "annual_age0devs"
-names(fit_mcmc_par)[grep("loginit_pop", names(fit_mcmc_par))] <- "loginit_pop"
-names(fit_mcmc_par)[grep("beta_mortality", names(fit_mcmc_par))] <- "beta_mortality"
+    # this bit is so that the write_report function does not insert a line break after 
+    # each element in vector parameters. to be improved another day
+    names(fit_mcmc_par)[grep("annual_age0devs", names(fit_mcmc_par))] <- "annual_age0devs"
+    names(fit_mcmc_par)[grep("loginit_pop", names(fit_mcmc_par))] <- "loginit_pop"
+    names(fit_mcmc_par)[grep("beta_mortality", names(fit_mcmc_par))] <- "beta_mortality"
 
-# write mcmc report
-write_report(
-    obj = model, par = fit_mcmc_par, 
-    file = here(dir_rep, "mcmc-report.txt"),
-    llik = llik, derived = derived, survey = survey, forecast = forecast
-)
+    # write mcmc report
+    write_report(
+        obj = model, par = fit_mcmc_par, 
+        file = here(dir_rep, "mcmc-report.txt"),
+        llik = llik, derived = derived, survey = survey, forecast = forecast
+    )
 
-# cool shiny app for mcmc chain diagnostics
-# shinystan::launch_shinystan(fit)
+    # cool shiny app for mcmc chain diagnostics
+    # shinystan::launch_shinystan(fit)
 
+}
 
 # ------------------------------------------------------------------------------ 
 
@@ -412,310 +417,318 @@ write_report(
 
 ## set up objects for saving mcmc results ----
 
-n_iters <- nrow(mcmc_results)
+if (run_mcmc) {
 
-# survey quantities
-SpAC <- matrix(NA, nrow = n_iters, ncol = A*Y)
-SeAC <- matrix(NA, nrow = n_iters, ncol = A*Y)
-HYD_ADFG <- matrix(NA, nrow = n_iters, ncol = Y)
-HYD_PWSSC <- matrix(NA, nrow = n_iters, ncol = Y)
-EGG <- matrix(NA, nrow = n_iters, ncol = Y)
-MDM <- matrix(NA, nrow = n_iters, ncol = Y)
-juv_schools <- matrix(NA, nrow = n_iters, ncol = Y)
-
-# population dynamics
-N <- matrix(NA, nrow = n_iters, ncol = A*Y)
-Ntilde <- matrix(NA, nrow = n_iters, ncol = A*Y)
-Btilde_y <- vector(mode = "list", length = n_iters)
-Btilde_post_y <- vector(mode = "list", length = n_iters)
-age_3 <- vector(mode = "list", length = n_iters)
-summer_survival <- matrix(NA, nrow = n_iters, ncol = A*Y)
-winter_survival <- matrix(NA, nrow = n_iters, ncol = A*Y)
-VARSreport <- matrix(NA, nrow = n_iters, ncol = 4)
-
-# forecast quantities
-mean_log_rec <- matrix(NA, nrow = n_iters, ncol = 1)
-N_a_forecast <- matrix(NA, nrow = n_iters, ncol = A)
-Ntilde_a_forecast <- matrix(NA, nrow = n_iters, ncol = A)
-Ntilde_agecomp_forecast <- matrix(NA, nrow = n_iters, ncol = A)
-Btilde_forecast <- matrix(NA, nrow = n_iters, ncol = 1)
-Btilde_a_forecast <- matrix(NA, nrow = n_iters, ncol = A)
-Btilde_agecomp_forecast <- matrix(NA, nrow = n_iters, ncol = A)
-winter_survival_forecast <- matrix(NA, nrow = n_iters, ncol = A)
-mdm_forecast <- matrix(NA, nrow = n_iters, ncol = 1)
-
-# objective function quantities
-likelihoods <- matrix(NA, nrow = n_iters, ncol = 8)
-penalties <- matrix(NA, nrow = n_iters, ncol = 5)
-priors <- matrix(NA, nrow = n_iters, ncol = 1)
-
-## extract raw mcmc results ----
-
-for(i in 1:n_iters){
-
-    other_posteriors <- model$report(mcmc_results[i,])
+    n_iters <- nrow(mcmc_results)
 
     # survey quantities
-    SpAC[i,] <- other_posteriors$spawn_age_comp_est |> t() |> c()
-    SeAC[i,] <- other_posteriors$seine_age_comp_est |> t() |> c()
-    HYD_ADFG[i,] <- other_posteriors$Hhat_adfg_y
-    HYD_PWSSC[i,] <- other_posteriors$Hhat_pwssc_y
-    EGG[i,] <- other_posteriors$Ehat_y
-    MDM[i,] <- other_posteriors$That_y
-    juv_schools[i,] <- other_posteriors$Jhat_y
+    SpAC <- matrix(NA, nrow = n_iters, ncol = A*Y)
+    SeAC <- matrix(NA, nrow = n_iters, ncol = A*Y)
+    HYD_ADFG <- matrix(NA, nrow = n_iters, ncol = Y)
+    HYD_PWSSC <- matrix(NA, nrow = n_iters, ncol = Y)
+    EGG <- matrix(NA, nrow = n_iters, ncol = Y)
+    MDM <- matrix(NA, nrow = n_iters, ncol = Y)
+    juv_schools <- matrix(NA, nrow = n_iters, ncol = Y)
 
     # population dynamics
-    N[i, ] <- other_posteriors$N_y_a |> t() |> c()
-    Ntilde[i, ] <- other_posteriors$Ntilde_y_a |> t() |> c()
-    Btilde_y[[i]] <- other_posteriors$Btilde_y
-    Btilde_post_y[[i]] <- other_posteriors$Btilde_post_y
-    age_3[[i]] <- other_posteriors$N_y_a[,4]
-    summer_survival[i,] <- other_posteriors$summer_survival |> t() |> c()
-    winter_survival[i,] <- other_posteriors$winter_survival |> t() |> c()
-    VARSreport[i,] <- unlist(
-        c(mcmc_results[i, c("milt_add_var")], fixed_pars["egg_add"],
-          mcmc_results[i, c("adfg_hydro_add_var", "pwssc_hydro_add_var")])
-    )
+    N <- matrix(NA, nrow = n_iters, ncol = A*Y)
+    Ntilde <- matrix(NA, nrow = n_iters, ncol = A*Y)
+    Btilde_y <- vector(mode = "list", length = n_iters)
+    Btilde_post_y <- vector(mode = "list", length = n_iters)
+    age_3 <- vector(mode = "list", length = n_iters)
+    summer_survival <- matrix(NA, nrow = n_iters, ncol = A*Y)
+    winter_survival <- matrix(NA, nrow = n_iters, ncol = A*Y)
+    VARSreport <- matrix(NA, nrow = n_iters, ncol = 4)
 
     # forecast quantities
-    mean_log_rec[i,] <- other_posteriors$mean_log_rec
-    N_a_forecast[i,] <- other_posteriors$N_a_forecast
-    Ntilde_a_forecast[i,] <- other_posteriors$Ntilde_a_forecast
-    Ntilde_agecomp_forecast[i,] <- other_posteriors$Ntilde_agecomp_forecast
-    Btilde_forecast[i,] <- other_posteriors$Btilde_forecast
-    Btilde_a_forecast[i,] <- other_posteriors$Btilde_a_forecast
-    Btilde_agecomp_forecast[i,] <- other_posteriors$Btilde_agecomp_forecast
-    winter_survival_forecast[i,] <- other_posteriors$winter_survival_forecast
-    mdm_forecast[i,] <- other_posteriors$mdm_forecast
+    mean_log_rec <- matrix(NA, nrow = n_iters, ncol = 1)
+    N_a_forecast <- matrix(NA, nrow = n_iters, ncol = A)
+    Ntilde_a_forecast <- matrix(NA, nrow = n_iters, ncol = A)
+    Ntilde_agecomp_forecast <- matrix(NA, nrow = n_iters, ncol = A)
+    Btilde_forecast <- matrix(NA, nrow = n_iters, ncol = 1)
+    Btilde_a_forecast <- matrix(NA, nrow = n_iters, ncol = A)
+    Btilde_agecomp_forecast <- matrix(NA, nrow = n_iters, ncol = A)
+    winter_survival_forecast <- matrix(NA, nrow = n_iters, ncol = A)
+    mdm_forecast <- matrix(NA, nrow = n_iters, ncol = 1)
 
     # objective function quantities
-    likelihoods[i,1] <- other_posteriors$L1
-    likelihoods[i,2] <- other_posteriors$L2
-    likelihoods[i,3] <- other_posteriors$L3
-    likelihoods[i,4] <- other_posteriors$L4
-    likelihoods[i,5] <- other_posteriors$L5
-    likelihoods[i,6] <- other_posteriors$L6
-    likelihoods[i,7] <- other_posteriors$L7
-    likelihoods[i,8] <- other_posteriors$negLogLik
-    penalties[i,] <- c(
-        other_posteriors$penCount, other_posteriors$naa_pen, other_posteriors$ntilde_pen,
-        other_posteriors$winter_surv_pen, other_posteriors$summer_surv_pen
-    )
-    priors[i,] <- other_posteriors$priors
+    likelihoods <- matrix(NA, nrow = n_iters, ncol = 8)
+    penalties <- matrix(NA, nrow = n_iters, ncol = 5)
+    priors <- matrix(NA, nrow = n_iters, ncol = 1)
+
+    ## extract raw mcmc results ----
+    for(i in 1:n_iters){
+
+        other_posteriors <- model$report(mcmc_results[i,])
+
+        # survey quantities
+        SpAC[i,] <- other_posteriors$spawn_age_comp_est |> t() |> c()
+        SeAC[i,] <- other_posteriors$seine_age_comp_est |> t() |> c()
+        HYD_ADFG[i,] <- other_posteriors$Hhat_adfg_y
+        HYD_PWSSC[i,] <- other_posteriors$Hhat_pwssc_y
+        EGG[i,] <- other_posteriors$Ehat_y
+        MDM[i,] <- other_posteriors$That_y
+        juv_schools[i,] <- other_posteriors$Jhat_y
+
+        # population dynamics
+        N[i, ] <- other_posteriors$N_y_a |> t() |> c()
+        Ntilde[i, ] <- other_posteriors$Ntilde_y_a |> t() |> c()
+        Btilde_y[[i]] <- other_posteriors$Btilde_y
+        Btilde_post_y[[i]] <- other_posteriors$Btilde_post_y
+        age_3[[i]] <- other_posteriors$N_y_a[,4]
+        summer_survival[i,] <- other_posteriors$summer_survival |> t() |> c()
+        winter_survival[i,] <- other_posteriors$winter_survival |> t() |> c()
+        VARSreport[i,] <- unlist(
+            c(mcmc_results[i, c("milt_add_var")], fixed_pars["egg_add"],
+            mcmc_results[i, c("adfg_hydro_add_var", "pwssc_hydro_add_var")])
+        )
+
+        # forecast quantities
+        mean_log_rec[i,] <- other_posteriors$mean_log_rec
+        N_a_forecast[i,] <- other_posteriors$N_a_forecast
+        Ntilde_a_forecast[i,] <- other_posteriors$Ntilde_a_forecast
+        Ntilde_agecomp_forecast[i,] <- other_posteriors$Ntilde_agecomp_forecast
+        Btilde_forecast[i,] <- other_posteriors$Btilde_forecast
+        Btilde_a_forecast[i,] <- other_posteriors$Btilde_a_forecast
+        Btilde_agecomp_forecast[i,] <- other_posteriors$Btilde_agecomp_forecast
+        winter_survival_forecast[i,] <- other_posteriors$winter_survival_forecast
+        mdm_forecast[i,] <- other_posteriors$mdm_forecast
+
+        # objective function quantities
+        likelihoods[i,1] <- other_posteriors$L1
+        likelihoods[i,2] <- other_posteriors$L2
+        likelihoods[i,3] <- other_posteriors$L3
+        likelihoods[i,4] <- other_posteriors$L4
+        likelihoods[i,5] <- other_posteriors$L5
+        likelihoods[i,6] <- other_posteriors$L6
+        likelihoods[i,7] <- other_posteriors$L7
+        likelihoods[i,8] <- other_posteriors$negLogLik
+        penalties[i,] <- c(
+            other_posteriors$penCount, other_posteriors$naa_pen, other_posteriors$ntilde_pen,
+            other_posteriors$winter_surv_pen, other_posteriors$summer_surv_pen
+        )
+        priors[i,] <- other_posteriors$priors
+
+    }
 
 }
 
 
 ## write results to .csv files ----
+if (write_mcmc_files) {
 
-## estimated parameters
+    if (!run_mcmc) stop("set run_mcmc to TRUE to run and write results")
 
-# all mcmc iterations 
-write.csv(
-    mcmc_results, here(dir_mcmc, "iterations.csv"), row.names = FALSE
-)
+    ## estimated parameters
 
-## survey quantities
-
-# estimated spawn age comps 
-write.table(
-    SpAC, sep = ",", here(dir_mcmc, "SpAC.csv"), 
-    row.names = FALSE, col.names = FALSE
-)
-
-# estimated seine age comps
-write.table(
-    SeAC, sep = ",", here(dir_mcmc, "SeAC.csv"), 
-    row.names = FALSE, col.names = FALSE
-)
-
-# adfg hydro fit 
-write.table(
-    HYD_ADFG, sep = ",", here(dir_mcmc, "HYD_ADFG.csv"), 
-    row.names = FALSE, col.names = FALSE
-)
-
-# pwssc hydro fit 
-write.table(
-    HYD_PWSSC, sep = ",", here(dir_mcmc, "HYD_PWSSC.csv"), 
-    row.names = FALSE, col.names = FALSE
-)
-
-# egg fit 
-write.table(
-    EGG, sep = ",", here(dir_mcmc, "EGG.csv"), 
-    row.names = FALSE, col.names = FALSE
-)
-
-# mdm fit 
-write.table(
-    MDM, sep = ",", here(dir_mcmc, "MDM.csv"), 
-    row.names = FALSE, col.names = FALSE
-)
-
-# juv aerial fit 
-write.table(
-    juv_schools, sep = ",", here(dir_mcmc, "juv_schools.csv"), 
-    row.names = FALSE, col.names = FALSE
-)
-
-## population dynamics
-
-# estimated numbers-at-age 
-write.csv(
-    N, here(dir_mcmc, "Num_at_age.csv"), 
-    row.names = FALSE
-)
-
-# estimated pre fishery spawning biomass 
-write.table(
-    cbind(t(do.call(cbind, Btilde_y)), Btilde_forecast), 
-    sep = ",", here(dir_mcmc, "PFRBiomass.csv"), 
-    row.names = FALSE, col.names = FALSE
-)
-
-# estimated post fishery spawning biomass
-write.csv(
-    do.call(cbind, Btilde_post_y), 
-    here(dir_mcmc, "post-fishery-spawning-biomass.csv"), 
-    row.names = FALSE
-)
-
-# estimated age-3 herring 
-write.table(
-    t(do.call(cbind, age_3)), sep = ",", here(dir_mcmc, "Age3.csv"), 
-    row.names = FALSE, col.names = FALSE
-)   
-
-# summer survival 
-write.csv(
-    summer_survival, 
-    here(dir_mcmc, "adult_survival_effects_summer.csv"), 
-    row.names = FALSE
-)
-
-# winter survival
-write.csv(
-    cbind(winter_survival, winter_survival_forecast), 
-    here(dir_mcmc, "adult_survival_effects_winter.csv"), 
-    row.names = FALSE
-)
-
-# estimated and fixed variances 
-write.table(
-    VARSreport, sep = ",", here(dir_mcmc, "VARSreport.csv"), 
-    row.names = FALSE, col.names = FALSE
-)
-
-## forecast quantities
-
-# numbers-at-age forecast
-write.csv(
-    N_a_forecast, here(dir_mcmc, "N_a_forecast.csv"), 
-    row.names = FALSE
-)
-
-# mature numbers-at-age forecast
-write.csv(
-    Ntilde_a_forecast, here(dir_mcmc, "Ntilde_a_forecast.csv"), 
-    row.names = FALSE
-)
-
-# biomass-at-age forecast
-write.csv(
-    Btilde_a_forecast, here(dir_mcmc, "Btilde_a_forecast.csv"), 
-    row.names = FALSE
-)
-
-
-# biomass agecomp forecast
-write.csv(
-    Btilde_agecomp_forecast, here(dir_mcmc, "Btilde_agecomp_forecast.csv"), 
-    row.names = FALSE
-)
-
-# mdm forecast
-write.csv(
-    mdm_forecast, here(dir_mcmc, "mdm_forecast.csv"), 
-    row.names = FALSE
-)
-
-
-## objective function quantities
-
-# likelihood components 
-write.csv(
-    likelihoods, here(dir_mcmc, "likelihoods.csv"), 
-    row.names = FALSE
-)
-
-# penalties 
-write.csv(
-    penalties, here(dir_mcmc, "penalties.csv"), 
-    row.names = FALSE
-)
-
-
-## estimates for mid-year management calculations 
-
-mid_year_management <- data.frame(
-    Btilde_forecast, Btilde_a_forecast, 
-    mcmc_results$logmdm_c, mdm_forecast, mcmc_results$milt_add_var, 
-    N_a_forecast, mcmc_results$mat_age3, mcmc_results$mat_age4, 
-    winter_survival_forecast, mean_log_rec,
-    Ntilde_agecomp_forecast, Btilde_agecomp_forecast
-)
-
-colnames(mid_year_management) <- c(
-    "Btilde_forecast", paste0("Btilde_age", 0:9, "_forecast"), 
-    "logmdm_c", "mdm_forecast", "milt_add_var",
-    paste0("N_a_forecast_age", 0:9), "mat_age3", "mat_age4",
-    paste0("survival_forecast_age", 0:9), 
-    "mean_log_rec", 
-    paste0("Ntilde_agecomp_forecast_age", 0:9),
-    paste0("Btilde_agecomp_forecast_age", 0:9)
-)
-
-mid_year_management <- mid_year_management |>
-    arrange(Btilde_forecast)
-
-write.csv(
-    mid_year_management, here(dir_mcmc, "mid-year-management.csv"), 
-    row.names = FALSE
-)
-
-# move data files to app dir
-if (app_data) {
-
-    file.copy(
-        from = here(dir_mcmc, "mid-year-management.csv"), 
-        to = here(dir_app_data, "mid-year-management.csv"),
-        overwrite = TRUE
+    # all mcmc iterations 
+    write.csv(
+        mcmc_results, here(dir_mcmc, "iterations.csv"), row.names = FALSE
     )
-    file.copy(
-        from = here(dir_model, "PWS_ASA.dat"), 
-        to = here(dir_app_data, "PWS_ASA.dat"),
-        overwrite = TRUE
+
+    ## survey quantities
+
+    # estimated spawn age comps 
+    write.table(
+        SpAC, sep = ",", here(dir_mcmc, "SpAC.csv"), 
+        row.names = FALSE, col.names = FALSE
     )
-    file.copy(
-        from = here(dir_mcmc, "PFRBiomass.csv"), 
-        to = here(dir_app_data, "PFRBiomass.csv"),
-        overwrite = TRUE
+
+    # estimated seine age comps
+    write.table(
+        SeAC, sep = ",", here(dir_mcmc, "SeAC.csv"), 
+        row.names = FALSE, col.names = FALSE
     )
+
+    # adfg hydro fit 
+    write.table(
+        HYD_ADFG, sep = ",", here(dir_mcmc, "HYD_ADFG.csv"), 
+        row.names = FALSE, col.names = FALSE
+    )
+
+    # pwssc hydro fit 
+    write.table(
+        HYD_PWSSC, sep = ",", here(dir_mcmc, "HYD_PWSSC.csv"), 
+        row.names = FALSE, col.names = FALSE
+    )
+
+    # egg fit 
+    write.table(
+        EGG, sep = ",", here(dir_mcmc, "EGG.csv"), 
+        row.names = FALSE, col.names = FALSE
+    )
+
+    # mdm fit 
+    write.table(
+        MDM, sep = ",", here(dir_mcmc, "MDM.csv"), 
+        row.names = FALSE, col.names = FALSE
+    )
+
+    # juv aerial fit 
+    write.table(
+        juv_schools, sep = ",", here(dir_mcmc, "juv_schools.csv"), 
+        row.names = FALSE, col.names = FALSE
+    )
+
+    ## population dynamics
+
+    # estimated numbers-at-age 
+    write.csv(
+        N, here(dir_mcmc, "Num_at_age.csv"), 
+        row.names = FALSE
+    )
+
+    # estimated pre fishery spawning biomass 
+    write.table(
+        cbind(t(do.call(cbind, Btilde_y)), Btilde_forecast), 
+        sep = ",", here(dir_mcmc, "PFRBiomass.csv"), 
+        row.names = FALSE, col.names = FALSE
+    )
+
+    # estimated post fishery spawning biomass
+    write.csv(
+        do.call(cbind, Btilde_post_y), 
+        here(dir_mcmc, "post-fishery-spawning-biomass.csv"), 
+        row.names = FALSE
+    )
+
+    # estimated age-3 herring 
+    write.table(
+        t(do.call(cbind, age_3)), sep = ",", here(dir_mcmc, "Age3.csv"), 
+        row.names = FALSE, col.names = FALSE
+    )   
+
+    # summer survival 
+    write.csv(
+        summer_survival, 
+        here(dir_mcmc, "adult_survival_effects_summer.csv"), 
+        row.names = FALSE
+    )
+
+    # winter survival
+    write.csv(
+        cbind(winter_survival, winter_survival_forecast), 
+        here(dir_mcmc, "adult_survival_effects_winter.csv"), 
+        row.names = FALSE
+    )
+
+    # estimated and fixed variances 
+    write.table(
+        VARSreport, sep = ",", here(dir_mcmc, "VARSreport.csv"), 
+        row.names = FALSE, col.names = FALSE
+    )
+
+    ## forecast quantities
+
+    # numbers-at-age forecast
+    write.csv(
+        N_a_forecast, here(dir_mcmc, "N_a_forecast.csv"), 
+        row.names = FALSE
+    )
+
+    # mature numbers-at-age forecast
+    write.csv(
+        Ntilde_a_forecast, here(dir_mcmc, "Ntilde_a_forecast.csv"), 
+        row.names = FALSE
+    )
+
+    # biomass-at-age forecast
+    write.csv(
+        Btilde_a_forecast, here(dir_mcmc, "Btilde_a_forecast.csv"), 
+        row.names = FALSE
+    )
+
+
+    # biomass agecomp forecast
+    write.csv(
+        Btilde_agecomp_forecast, here(dir_mcmc, "Btilde_agecomp_forecast.csv"), 
+        row.names = FALSE
+    )
+
+    # mdm forecast
+    write.csv(
+        mdm_forecast, here(dir_mcmc, "mdm_forecast.csv"), 
+        row.names = FALSE
+    )
+
+    ## objective function quantities
+
+    # likelihood components 
+    write.csv(
+        likelihoods, here(dir_mcmc, "likelihoods.csv"), 
+        row.names = FALSE
+    )
+
+    # penalties 
+    write.csv(
+        penalties, here(dir_mcmc, "penalties.csv"), 
+        row.names = FALSE
+    )
+
+    ## estimates for mid-year management calculations 
+
+    mid_year_management <- data.frame(
+        Btilde_forecast, Btilde_a_forecast, 
+        mcmc_results$logmdm_c, mdm_forecast, mcmc_results$milt_add_var, 
+        N_a_forecast, mcmc_results$mat_age3, mcmc_results$mat_age4, 
+        winter_survival_forecast, mean_log_rec,
+        Ntilde_agecomp_forecast, Btilde_agecomp_forecast
+    )
+
+    colnames(mid_year_management) <- c(
+        "Btilde_forecast", paste0("Btilde_age", 0:9, "_forecast"), 
+        "logmdm_c", "mdm_forecast", "milt_add_var",
+        paste0("N_a_forecast_age", 0:9), "mat_age3", "mat_age4",
+        paste0("survival_forecast_age", 0:9), 
+        "mean_log_rec", 
+        paste0("Ntilde_agecomp_forecast_age", 0:9),
+        paste0("Btilde_agecomp_forecast_age", 0:9)
+    )
+
+    mid_year_management <- mid_year_management |>
+        arrange(Btilde_forecast)
+
+    write.csv(
+        mid_year_management, here(dir_mcmc, "mid-year-management.csv"), 
+        row.names = FALSE
+    )
+
+    # move data files to app dir
+    if (app_data) {
+
+        file.copy(
+            from = here(dir_mcmc, "mid-year-management.csv"), 
+            to = here(dir_app_data, "mid-year-management.csv"),
+            overwrite = TRUE
+        )
+        file.copy(
+            from = here(dir_model, "PWS_ASA.dat"), 
+            to = here(dir_app_data, "PWS_ASA.dat"),
+            overwrite = TRUE
+        )
+        file.copy(
+            from = here(dir_mcmc, "PFRBiomass.csv"), 
+            to = here(dir_app_data, "PFRBiomass.csv"),
+            overwrite = TRUE
+        )
+
+    }
 
 }
 
 ## print diagnostics ----
 
-mon <- monitor(fit)
+if (run_mcmc) {
+    mon <- monitor(fit)
+    message(paste("maximum Rhat:", max(mon$Rhat)))
+    message(paste("minimum bulk ESS:", min(mon$Bulk_ESS)))
+    message(paste("minimum tail ESS:", min(mon$Tail_ESS)))
+    check_treedepth(fit)
+    check_divergences(fit)
+}
+
 end_time <- Sys.time()
 time <- end_time - start_time
-
-message(paste("maximum Rhat:", max(mon$Rhat)))
-message(paste("minimum bulk ESS:", min(mon$Bulk_ESS)))
-message(paste("minimum tail ESS:", min(mon$Tail_ESS)))
-check_treedepth(fit)
-check_divergences(fit)
 message(paste("Total model run time:", round(time, 4), units(time)))
 
 
