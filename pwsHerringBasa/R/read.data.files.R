@@ -35,8 +35,8 @@ read.data.files <- function(dat.dir){
   par.names <- c("seine_sample_size", "spawn_sample_size", "vhsv_sample_size", "ich_sample_size")
   names(agecomp_samp_sizes.txt) <- par.names
 
-  par.names <- c("vhsv_age_prevalence", "vhsv_obs_start", "vhsv_est_start", "vhsv_recov_prob",
-                 "ich_age_prevalence", "ich_obs_start", "ich_est_start", "ich_recov_prob")
+  par.names <- c("vhsv_obs", "vhsv_obs_start", "vhsv_est_start", "vhsv_recov_prob",
+                 "ich_obs", "ich_obs_start", "ich_est_start", "ich_recov_prob")
   names(PWS_ASA_disease.dat) <- par.names
 
   return(listN(PWS_ASA.dat,
