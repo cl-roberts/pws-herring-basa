@@ -48,8 +48,15 @@
 
 template <class Type>
 Type posfun(Type x, Type eps, Type &pen){
-  pen += CppAD::CondExpLt(x,eps,Type(0.01)*pow(x-eps,2),Type(0));
-  return CppAD::CondExpGe(x,eps,x,eps/(Type(2)-x/eps));
+    pen += CppAD::CondExpLt(x,eps,Type(0.01)*pow(x-eps,2),Type(0));
+    return CppAD::CondExpGe(x,eps,x,eps/(Type(2)-x/eps));
+}
+
+template <class Type>
+Type calculate_logistic(int a, Type a50, Type a95){
+    Type logistic = 0.0;
+    logistic = 1.0 / (1.0 + exp(-log(19)*(a - a50)/(a95 - a50)));
+    return logistic;
 }
 
 
@@ -93,11 +100,15 @@ Type objective_function<Type>::operator() ()
     DATA_MATRIX(disease_covs);              // excess mortality due to disease
     DATA_IMATRIX(mort_age_impact);           // which age does the mort cov impact?
 
+    // ---- model/PWS_ASA_disease.dat ---- //
+    DATA_MATRIX(vhsv_obs);       // VHSV seroprevalence
+    DATA_INTEGER(vhsv_est_start);            // start index seroprevalence model estimation
+    DATA_INTEGER(vhsv_obs_start);            // start index seroprevalence time series
+
     // ---- model/agecomp_samp_sizes.txt ---- //
     DATA_IVECTOR(seine_sample_size);        // purse seine raw sample sizes
     DATA_IVECTOR(spawn_sample_size);        // spawn survey raw sample sizes
     DATA_IVECTOR(vhsv_sample_size);         // antibody raw sample sizes
-    DATA_IVECTOR(ich_sample_size);          // I. hoferi raw sample sizes
 
     // ---- forecast controls ---- //
     DATA_INTEGER(recruitment_average_years);    // # years to average recruitments in forecast
@@ -141,6 +152,12 @@ Type objective_function<Type>::operator() ()
     PARAMETER(pwssc_hydro_add_var);     // hydroacoustic additional variance (PWSSC)
     PARAMETER(juvenile_overdispersion); // aerial juvenile additional variance
     
+    // PARAMETER(vhs_inf_a50);
+    // PARAMETER(vhs_inf_a95);
+    // PARAMETER(vhs_samp_a50);
+    // PARAMETER(vhs_samp_a95);
+    PARAMETER_VECTOR(vhs_inf_prob);
+    PARAMETER_VECTOR(vhs_rec_prob);
     
     // ------------------------------------------------------------------ //
     //                        Procedure Section                           //
@@ -190,20 +207,29 @@ Type objective_function<Type>::operator() ()
     // calculate disease mortality effects
     for (int y = 0; y < nyr; y++) {
         for(int a = 0; a < nage; a++) {
+
             for(int b = 0; b < n_covs; b++) {
+
                 if (disease_covs(y, b) == -9) {
                     disease_covs_calc(y, b) = 0;
                 } else if (disease_covs(y, b) != -9) {
                     disease_covs_calc(y, b) = disease_covs(y, b);
                 }
+
+                // temp measure to fix vhsv beta mortality param to zero
+                if (b == 2) {
+                    disease_covs_calc(y, b) = 0;
+                }
+
                 summer_mortality_effect(y, a) += beta_mortality(b)*disease_covs_calc(y, b)*mort_age_impact(a, b);
                 if(y < nyr-1) {
                     winter_mortality_effect(y+1, a) += beta_mortality(b)*disease_covs_calc(y, b)*mort_age_impact(a, b);
                 }              
             }
+
         }
     }
-    
+
     // calculate survival matrices
     for (int y = 0; y < nyr; y++) {
         for (int a = 0; a < (nage-1); a++) {
@@ -290,18 +316,61 @@ Type objective_function<Type>::operator() ()
         }
     }
 
+
+
+    // ---- VHSV seroprevalence dynamics ---- //
+    
+    // calculate VHS infection vulnerability
+    // the proportion of each age class vulnerable to transmissions (i.e. well mixed with the infected population)  
+    // matrix<Type> disease_inf_vul(nyr, nage);
+    // disease_inf_vul.setZero();
+    // for (int y = 0; y < nyr; y++){
+    //     for (int a = 0; a < nage; a++){
+    //         disease_inf_vul(y, a) = calculate_logistic(a, vhs_inf_a50, vhs_inf_a95);
+    //     }
+    // }
+    
+    // calculate VHS survey selectivity
+    // the proportion of infected fish each age class vulnerable to detection in survey 
+    // assumes survey sample vulnerability = maturity
+    vector<Type> disease_samp_vul(nage);
+    disease_samp_vul.setZero();
+    disease_samp_vul = maturity;
+
+    // for (int y = 0; y < nyr; y++){
+    //     for (int a = 0; a < nage; a++){
+    //         disease_samp_vul(y, a) = calculate_logistic(a, vhs_samp_a50, vhs_samp_a95);
+    //     }
+    // }
+    
+    
+    // these are vectors constructed from the estimated infection/recovery 
+    // parameters with the same length as the model time series for indexing purposes
+    
+    vector<Type> vhs_inf_prob_y(nyr);
+    vhs_inf_prob_y.setZero();
+    vector<Type> vhs_rec_prob_y(nyr);
+    vhs_rec_prob_y.setZero();
+    
+    for (int y = 0; y < nyr; y++) {
+        
+        int vhs_index = y - vhsv_est_start;
+        if (vhs_index >= 0) {
+            vhs_inf_prob_y(y-1) = vhs_inf_prob(vhs_index);
+            vhs_rec_prob_y(y-1) = vhs_rec_prob(vhs_index);
+        }
+
+    }
+    
     // ---- recruitment ---- //
     vector<Type> age_0(nyr);
     age_0.setZero();
 
     for (int y = 0; y < nyr-1; y++) {
-        // age_0(y) = exp(log_MeanAge0 + annual_age0devs(y) - 0.5*pow(sigma_age0devs, 2));
-        // age_0(y) = exp(log_MeanAge0 + annual_age0devs(y)/sigma_age0devs);
         age_0(y) = exp(log_MeanAge0 + annual_age0devs(y));
     }
-    // note: the TPL model sets the final recruitment deviation to 0, effectively
-    // forecasting the age-0 herring in the terminal year of the model to be
-    // the MeanAge0 (currently a fixed parameter) 
+
+    // set the recruitment deviation to 0 in the final year  
     age_0(nyr-1) = exp(log_MeanAge0);                                       
 
 
@@ -328,7 +397,6 @@ Type objective_function<Type>::operator() ()
         seine_age_comp_est(0, a) = seine_selex(a)*N_y_a(0, a) / seine_selected(0);
     }
 
-
     // estimate seine catch,  first year
     vector<Type> seine_catch_est(nyr);
     seine_catch_est.setZero();
@@ -352,6 +420,8 @@ Type objective_function<Type>::operator() ()
     // are populated (i.e. age-5 is plus group in 1980, age-6 is plus group in 
     // 1981, age-7 is plus group in 1982, age-8 is plus group in 1983, age-9 
     // is plus group in 1984)
+
+    // vhs survival ignored since there is no seroprevalence data for these years
 
     int index_1984 = (1984-1980)+1;             // index of year where plus group becomes 9+
     Type naa_min = 0.01;
@@ -420,30 +490,92 @@ Type objective_function<Type>::operator() ()
 
     // ---- model naa/caa dynamics 1985 to nyr ---- //
     // from 1985 on, the plus group is in a static age class (9+)
+    // VHS seroprevalence model dynamics begin
+
+    // objects for seroprevalence model
+    vector<Type> N_pre_vhs(nage);
+    N_pre_vhs = N_pre_vhs.setZero(nage);
+
+    matrix<Type> vhs_survival(nyr, nage);
+    vhs_survival.setConstant(1);
+    
+    matrix<Type> vhs_immune(nyr, nage);
+    vhs_immune.setZero();
+    
+    matrix<Type> vhs_susceptible(nyr, nage);
+    vhs_susceptible.setConstant(1);
 
     for (int y = index_1984; y < nyr; y++) { 
 
         // pre-fishery numbers-at-age
         N_y_a(y,0) = age_0(y);    
+        N_pre_vhs(0) = age_0(y);    
 
-        // populate age classes
+        // populate older age classes
         for (int a = 1; a < nage; a++) {
-
-            N_y_a(y, a) = N_y_a(y-1, a-1) - spring_removals(y-1, a-1);
-            N_y_a(y, a) *= summer_survival(y-1, a-1);
-            N_y_a(y, a) -= foodbait_catch(y-1, a-1);
-            N_y_a(y, a) *= winter_survival(y, a-1);
+            
+            // vhs survival ages 0 through 8
+            vhs_survival(y-1, a-1) = 1 - vhs_susceptible(y-1, a-1)*vhs_inf_prob_y(y-1);
+            vhs_survival(y-1, a-1) += vhs_susceptible(y-1, a-1)*vhs_inf_prob_y(y-1)*vhs_rec_prob_y(y-1);
+            
+            // vhs immunity/susceptibility ages 1 through 8
+            if (a < nage-1) {
+                
+                vhs_immune(y, a) = vhs_immune(y-1, a-1); 
+                vhs_immune(y, a) += vhs_susceptible(y-1, a-1)*vhs_inf_prob_y(y-1)*vhs_rec_prob_y(y-1);
+                vhs_immune(y, a) /= (1 - vhs_susceptible(y-1, a-1)*vhs_inf_prob_y(y-1)) + (vhs_susceptible(y-1, a-1)*vhs_inf_prob_y(y-1)*vhs_rec_prob_y(y-1));
+                
+                vhs_susceptible(y, a) = 1 - vhs_immune(y, a);
+                
+            }
+            
+            // pre-VHS mortality numbers-at-age
+            N_pre_vhs(a) = N_y_a(y-1, a-1) - spring_removals(y-1, a-1);
+            N_pre_vhs(a) *= summer_survival(y-1, a-1);
+            N_pre_vhs(a) -= foodbait_catch(y-1, a-1);
+            N_pre_vhs(a) *= winter_survival(y, a-1);
+            
+            // pre-fishery mortality numbers-at-age for start of year
+            N_y_a(y, a) = N_pre_vhs(a)*vhs_survival(y-1, a-1);
             
             if (a == nage-1) {
-                // plus group
+                
+                // VHS survival plus group
+                vhs_survival(y-1, a) = 1 - vhs_susceptible(y-1, a)*vhs_inf_prob_y(y-1);
+                vhs_survival(y-1, a) += vhs_susceptible(y-1, a)*vhs_inf_prob_y(y-1)*vhs_rec_prob_y(y-1);
+                
+                // temp scalars for calculating VHS immunity/susceptibility plus groups
+                // immune proportion of age-9's
+                Type vhs_immune_age9 = 0.0;
+                vhs_immune_age9 = vhs_immune(y-1, a-1);
+                vhs_immune_age9 += vhs_susceptible(y-1, a-1)*vhs_inf_prob_y(y-1)*vhs_rec_prob_y(y-1);
+                vhs_immune_age9 /= (1 - vhs_susceptible(y-1, a-1)*vhs_inf_prob_y(y-1)) + (vhs_susceptible(y-1, a-1)*vhs_inf_prob_y(y-1)*vhs_rec_prob_y(y-1)); 
+                
+                // immune proportion of age-10+
+                Type vhs_immune_age10_plus = 0.0;
+                vhs_immune_age10_plus = vhs_immune(y-1, a);
+                vhs_immune_age10_plus += vhs_susceptible(y-1, a)*vhs_inf_prob_y(y-1)*vhs_rec_prob_y(y-1);
+                vhs_immune_age10_plus /= (1 - vhs_susceptible(y-1, a)*vhs_inf_prob_y(y-1)) + (vhs_susceptible(y-1, a)*vhs_inf_prob_y(y-1)*vhs_rec_prob_y(y-1));
+                
+                // numbers-at-age age-10+
                 Type N_y_a_plus_group = 0.0;
-                N_y_a_plus_group = N_y_a(y-1, nage-1) - spring_removals(y-1, nage-1);
-                N_y_a_plus_group *= summer_survival(y-1, nage-1);
-                N_y_a_plus_group -= foodbait_catch(y-1, nage-1);
-                N_y_a_plus_group *= winter_survival(y, nage-1);
-                N_y_a(y, a) += N_y_a_plus_group;
-            }
+                N_y_a_plus_group = N_y_a(y-1, a) - spring_removals(y-1, a);
+                N_y_a_plus_group *= summer_survival(y-1, a);
+                N_y_a_plus_group -= foodbait_catch(y-1, a);
+                N_y_a_plus_group *= winter_survival(y, a);
 
+                // fill in VHS immunity/susceptibility plus groups
+                vhs_immune(y, a) = vhs_immune_age9*N_pre_vhs(a); 
+                vhs_immune(y, a) += vhs_immune_age10_plus*N_y_a_plus_group;
+                vhs_immune(y, a) /= N_pre_vhs(a) + N_y_a_plus_group;
+                vhs_susceptible(y, a) = 1 - vhs_immune(y, a);
+                N_pre_vhs(a) += N_y_a_plus_group;
+                
+                // accumulate age-10+ fish that survive VHS in numbers-at-age plus group 
+                N_y_a(y, a) += N_y_a_plus_group*vhs_survival(y-1, a);
+                
+            }
+            
             // penalize negative naa
             N_y_a(y, a) = posfun(N_y_a(y, a), naa_min, naa_pen);
             if(N_y_a(y, a) <= naa_min) penCount += 1;
@@ -537,6 +669,7 @@ Type objective_function<Type>::operator() ()
         }
     }
 
+
     // ---- biomass estimates ---- //
     
     vector<Type> B_y(nyr);                              // pre-fishery total biomass
@@ -551,6 +684,39 @@ Type objective_function<Type>::operator() ()
     B_y = (N_y_a.array() * waa.array()).rowwise().sum();
     Btilde_y = (N_y_a.array() * waa.array()).matrix() * maturity.matrix();
     Btilde_post_y = (Ntilde_y_a.array() * waa.array()).rowwise().sum();
+
+
+    // derived vectors for plotting seroprevalence fits
+
+    vector<Type> incidence_sp(nyr);
+    incidence_sp.setZero();
+    
+    vector<Type> fatalities_sp(nyr);
+    fatalities_sp.setZero();
+    
+    vector<Type> seroprev_sp(nyr);
+    seroprev_sp.setZero();
+
+    for(int y = 0; y < nyr; y++){
+
+        if (y >= vhsv_est_start) {
+
+            vector<Type> incidence_sp_numbers(nage);
+            vector<Type> fatalities_sp_numbers(nage);
+            vector<Type> seroprev_sp_numbers(nage);
+
+            for(int a = 0; a < nage; a++){
+                incidence_sp_numbers(a) = maturity(a)*N_y_a(y, a)*vhs_susceptible(y, a)*vhs_inf_prob_y(y);
+                fatalities_sp_numbers(a) = maturity(a)*N_y_a(y, a)*vhs_susceptible(y, a)*vhs_inf_prob_y(y)*(1-vhs_rec_prob_y(y));
+                seroprev_sp_numbers(a) = maturity(a)*N_y_a(y, a)*vhs_immune(y, a);
+            }
+                    
+            incidence_sp(y) = incidence_sp_numbers.sum() / Ntilde_y_a.row(y).sum();
+            fatalities_sp(y) = fatalities_sp_numbers.sum() / Ntilde_y_a.row(y).sum();
+            seroprev_sp(y) = seroprev_sp_numbers.sum() / Ntilde_y_a.row(y).sum();
+            
+        }
+    }
 
     // ----------------- ESTIMATED SURVEY QUANTITIES -------------------- //
     
@@ -615,6 +781,30 @@ Type objective_function<Type>::operator() ()
     for (int y = 0; y < nyr; y++){
         Jhat_y(y) = N_y_a(y,1) * exp(log_juvenile_q); 
     }
+
+    // ---- estimate seroprevalence survey ---- //
+
+    matrix<Type> vhsv_pred_numbers(nyr, nage*2);
+    vhsv_pred_numbers.setZero();
+
+    matrix<Type> vhsv_pred(nyr, nage*2);
+    vhsv_pred.setZero();
+
+    // the two age indices are used to alternate positive/negative seroprevalence
+    for (int y = vhsv_est_start; y < nyr; y++) {
+
+        for (int a = 0; a < nage; a++) {
+            // This assumes vhs prevalence samples target all mature individuals 
+            // i.e. maturity = survey vulnerability
+            vhsv_pred_numbers(y, 2*a) = disease_samp_vul(a) * N_y_a(y, a) * vhs_immune(y, a);
+            vhsv_pred_numbers(y, 2*a+1) = disease_samp_vul(a) * N_y_a(y, a) * vhs_susceptible(y, a);
+        }
+
+        vhsv_pred.row(y) = vhsv_pred_numbers.row(y) / vhsv_pred_numbers.row(y).sum();
+
+    }
+
+    dummy_matrix = vhsv_pred;
 
     // --------------------- FORECAST QUANTITIES ------------------------ //
 
@@ -908,6 +1098,31 @@ Type objective_function<Type>::operator() ()
         L7 -= dnbinom2(Type(juvenile_survey(y)), Jhat_y(y), L7_var(y), true);
     }
 
+    // ---- L8: Seroprevalence survey ---- //
+
+    Type L8 = 0.0;
+
+    for (int y = vhsv_obs_start; y < nyr; y++) {
+        for (int a = 0; a < nage; a++) {
+
+            if (vhsv_obs(y, 2*a) <= 0) continue;
+            if (vhsv_pred(y, 2*a) == 0) continue;
+            
+            Type x_bin = vhsv_obs(y, 2*a) * vhsv_ess(y);
+            Type n_bin = (vhsv_obs(y, 2*a) + vhsv_obs(y, 2*a+1)) * vhsv_ess(y);
+            Type p_bin = vhsv_pred(y, 2*a) / (vhsv_pred(y, 2*a) + vhsv_pred(y, 2*a+1));
+
+            // dummy_matrix(y, a) = dbinom(x_bin, n_bin, p_bin, true);
+
+            L8 -= dbinom(x_bin, n_bin, p_bin, true);
+
+        }
+    }
+
+    // matrix<Type> dummy_matrix(nyr, 2*nage);               // dummy matrix
+    // dummy_matrix.setZero();
+    // dummy_matrix = vhsv_pred;
+
     // ---- build objective function ---- //
 
     Type negLogLik = 0.0;        
@@ -921,6 +1136,7 @@ Type objective_function<Type>::operator() ()
     negLogLik += L5;    // PWSSC hydro
     negLogLik += L6;    // milt index
     negLogLik += L7;    // juvenile schools
+    negLogLik += L8;    // seroprevalence
     
     // add penalties
     negLogLik += 1000*naa_pen;                  // penalizes negative numbers-at-age
@@ -934,6 +1150,10 @@ Type objective_function<Type>::operator() ()
     priors -= dnorm(milt_add_var, Type(0.33), Type(0.10), true);
     priors -= dnorm(adfg_hydro_add_var, Type(0.30), Type(0.08), true);
     priors -= dnorm(pwssc_hydro_add_var, Type(0.32), Type(0.08), true);
+    for (int y = 0; y < nyr-vhsv_est_start; y++) {
+        priors -= dbeta(vhs_inf_prob(y), Type(1.5), Type(5.0), true);
+        priors -= dbeta(vhs_rec_prob(y), Type(4.0), Type(6.0), true);
+    }
 
     negLogLik += priors;
 
@@ -946,16 +1166,14 @@ Type objective_function<Type>::operator() ()
     REPORT(seine_age_comp_est);
     REPORT(spawn_age_comp_est);
     REPORT(Ehat_y);
-    REPORT(L3_total_var);
     REPORT(Hhat_adfg_y);
     REPORT(Hhat_pwssc_y);
-    REPORT(L5_total_var);
     REPORT(That_y);
     REPORT(Jhat_y);
-    REPORT(L7_var);
-
+    REPORT(vhsv_pred);
+    
     // ---- population dynamics ---- //
-
+    
     REPORT(age_0);
     REPORT(N_y_a);
     REPORT(maturity);
@@ -966,6 +1184,9 @@ Type objective_function<Type>::operator() ()
     REPORT(spawn_removals);
     REPORT(summer_survival);
     REPORT(winter_survival);
+    REPORT(incidence_sp);
+    REPORT(fatalities_sp);
+    REPORT(seroprev_sp);
     
     // ---- objective function quantities ---- //
     
@@ -973,10 +1194,14 @@ Type objective_function<Type>::operator() ()
     REPORT(L1);
     REPORT(L2);
     REPORT(L3);
+    REPORT(L3_total_var);
     REPORT(L4);
     REPORT(L5);
+    REPORT(L5_total_var);
     REPORT(L6);
     REPORT(L7);
+    REPORT(L7_var);
+    REPORT(L8);
     REPORT(negLogLik);
     
     // penalties

@@ -15,8 +15,8 @@ start_time <- Sys.time()
 
 ## control execution
 write_report_files <- TRUE         # write report files?
-run_mcmc <- FALSE                  # run MCMC sampler?
-write_mcmc_files <- FALSE          # write MCMC outputs to files?
+run_mcmc <- TRUE                  # run MCMC sampler?
+write_mcmc_files <- TRUE          # write MCMC outputs to files?
 run_retro <- FALSE                 # run retrospective analysis?
 app_data <- FALSE                  # copy outputs to mid-year management app directory?
 
@@ -40,8 +40,11 @@ fix <- c(
     # ------------------------------------------------------------------
     # "annual_age0devs",
     # ------------------------------------------------------------------
-    # "loginit_pop"
-
+    # "loginit_pop",
+    # ------------------------------------------------------------------
+    # "vhs_inf_a50", "vhs_inf_a95",
+    # "vhs_samp_a50", "vhs_samp_a95"
+    # "vhs_inf_prob", "vhs_rec_prob"
 ) 
 
 # MCMC controls
@@ -142,15 +145,24 @@ agecomp_samp_sizes <- read.data.files(dir_model)$"agecomp_samp_sizes.txt"
 # iteratively compute ESS's below
 PWS_ASA_ESS <- agecomp_samp_sizes
 
+# identify missing data in raw sample sizes with -9's
 seine_ac <- PWS_ASA$seine_age_comp
 seine_missing <- apply(seine_ac, MARGIN = 1, FUN = \(x) any(x == -9))
 
-# identify missing data in raw sample sizes with -9's
 spawn_ac <- PWS_ASA$spawn_age_comp
 spawn_missing <- apply(spawn_ac, MARGIN = 1, FUN = \(x) any(x == -9))
 
+vhsv_sero <- PWS_ASA_disease$vhsv_obs
+vhsv_missing <- apply(vhsv_sero, MARGIN = 1, FUN = \(x) all(x == -9))
+vhsv_sero[!vhsv_missing,] <- replace(
+    vhsv_sero[!vhsv_missing,], 
+    vhsv_sero[!vhsv_missing,] == -9, 
+    0
+)
+
 PWS_ASA_ESS$seine_sample_size[seine_missing,] <- -9
 PWS_ASA_ESS$spawn_sample_size[spawn_missing,] <- -9
+PWS_ASA_ESS$vhsv_sample_size[vhsv_missing,] <- -9
 
 names(PWS_ASA_ESS) <- c("seine_ess", "spawn_ess", "vhsv_ess", "ich_ess")
 
@@ -167,9 +179,12 @@ start.year <- 1980
 curr.year <- start.year+Y
 A <- model_data$nage
 
+# number of estimated VHS infection and recovery parameters
+n_vhs_pars <- length(model_data$vhsv_est_start:(Y-1))
+
 ## sections of report files
 
-llik <- c(paste0("L", 1:7), "penCount", "priors") 
+llik <- c(paste0("L", 1:8), "penCount", "priors") 
 derived <- c("Btilde_y", "Btilde_post_y", "N_y_a", "Ntilde_y_a", 
              "winter_survival", "summer_survival", "maturity")
 survey <- c("seine_age_comp_est", "spawn_age_comp_est", "Ehat_y", 
@@ -199,7 +214,10 @@ phase2_pars <- list(
 )
 phase3_pars <- list(
     VHSV_age3_4_mort_93 = 0.08, ICH_age5_8_mort_93 = 0.22,
-    mat_age3 = 0.60, mat_age4 = 0.99
+    mat_age3 = 0.60, mat_age4 = 0.99,
+    # vhs_inf_a50 = 1.00, vhs_inf_a95 = 2.00,
+    # vhs_samp_a50 = 2.00, vhs_samp_a95 = 3.00,
+    vhs_inf_prob = rep(0.30, n_vhs_pars), vhs_rec_prob = rep(0.30, n_vhs_pars)
 )
 phase4_pars <- list(
     seine_selex_alpha = 3.66, seine_selex_beta = 2.83
@@ -221,7 +239,7 @@ parameters <- c(
 
 # the map object is used to fix parameters
 map <- list(
-    pk = factor(NA), egg_add = factor(NA), Z_0_8 = factor(NA),       # fixed pars
+    pk = factor(NA), egg_add = factor(NA), Z_0_8 = factor(NA),      # fixed pars
     log_MeanAge0 = factor(NA),
     sigma_age0devs = factor(NA),                                   
     # ------------------------------------------------------------------ 
@@ -239,9 +257,14 @@ map <- list(
     log_juvenile_q = factor(NA), 
     juvenile_overdispersion = factor(NA),
     # ------------------------------------------------------------------
-    annual_age0devs = rep(factor(NA), Y-1),                           # recruit deviates
+    annual_age0devs = rep(factor(NA), Y-1),                         # recruit deviates
     # ------------------------------------------------------------------
-    loginit_pop = rep(factor(NA), 5)                                # init pop size (ages 1-5)
+    loginit_pop = rep(factor(NA), 5),                               # init pop size (ages 1-5)
+    # ------------------------------------------------------------------
+    # vhs_inf_a50 = factor(NA), vhs_inf_a95 = factor(NA),             # seroprev parameters
+    # vhs_samp_a50 = factor(NA), vhs_samp_a95 = factor(NA),
+    vhs_inf_prob = rep(factor(NA), n_vhs_pars), 
+    vhs_rec_prob = rep(factor(NA), n_vhs_pars)
 ) 
 
 map <- map[names(map) %in% fix]
@@ -260,7 +283,11 @@ lower <- c(
     seine_selex_alpha = 3, seine_selex_beta = 1,
     milt_add_var = 0.01, 
     adfg_hydro_add_var = 0.01, pwssc_hydro_add_var = 0.01,
-    juvenile_overdispersion = 0.01
+    juvenile_overdispersion = 0.01,
+    # vhs_inf_a50 = -3, vhs_inf_a95 = -2,             
+    # vhs_samp_a50 = -3, vhs_samp_a95 = -2,
+    vhs_inf_prob = rep(0.01, n_vhs_pars), 
+    vhs_rec_prob = rep(0.01, n_vhs_pars)
 ) 
 
 lower <- lower[!(names(lower) %in% fix)]
@@ -280,7 +307,11 @@ upper <- c(
     seine_selex_alpha = 5, seine_selex_beta = 7,
     milt_add_var = 0.9,  
     adfg_hydro_add_var = 0.7, pwssc_hydro_add_var = 0.6,
-    juvenile_overdispersion = 4
+    juvenile_overdispersion = 4,
+    # vhs_inf_a50 = 5, vhs_inf_a95 = 8,             
+    # vhs_samp_a50 = 5, vhs_samp_a95 = 8,
+    vhs_inf_prob = rep(0.99, n_vhs_pars), 
+    vhs_rec_prob = rep(0.99, n_vhs_pars)
 )
 
 upper <- upper[!(names(upper) %in% fix)]
@@ -303,7 +334,9 @@ ess <- calculate_ess(
 write(
     c(ess$message, 
       "\n#seine_ess", ess$seine_ess, 
-      "\n#spawn_ess", ess$spawn_ess),
+      "\n#spawn_ess", ess$spawn_ess,
+      "\n#vhsv_ess", ess$vhsv_ess
+    ),
     file = here(dir_model, "agecomp_effective_sample_size.txt"),
     sep = "\n"
 )
@@ -311,16 +344,10 @@ write(
 # save ESS's to model data for fitting BASA
 model_data$seine_ess <- ess$seine_ess
 model_data$spawn_ess <- ess$spawn_ess
+model_data$vhsv_ess <- ess$vhsv_ess
 
 
 # ------------------------------------------------------------------------------
-
-# compile model
-# if("PWS_ASA" %in% names(getLoadedDLLs())) {
-#     dyn.unload(dynlib(here(dir_model, "PWS_ASA")))
-# }
-# compile(here(dir_model, "PWS_ASA.cpp"))
-# dyn.load(dynlib(here(dir_model, "PWS_ASA")))
 
 
 #### create model object and write pre-optimization report ####
@@ -336,7 +363,7 @@ if (write_report_files) {
     write_report(
         obj = model, par = model$par, 
         file = here(dir_rep, "pre-optim-report.txt"),
-        # dummy = c("dummy", "dummy_vector"),
+        dummy = c("dummy", "dummy_vector", "dummy_matrix"),
         llik = llik, derived = derived, survey = survey, forecast = forecast
     )
 }
@@ -351,6 +378,7 @@ fit_ML <- nlminb(
     lower = lower, upper = upper,
     control = list(eval.max = 10000, iter.max = 1000, rel.tol = 1e-10)
 )
+
 
 # write maximum likelihood report
 if (write_report_files) {
@@ -429,6 +457,7 @@ if (run_mcmc) {
     EGG <- matrix(NA, nrow = n_iters, ncol = Y)
     MDM <- matrix(NA, nrow = n_iters, ncol = Y)
     juv_schools <- matrix(NA, nrow = n_iters, ncol = Y)
+    VHSV <- matrix(NA, nrow = n_iters, ncol = 2*A*Y)
 
     # population dynamics
     N <- matrix(NA, nrow = n_iters, ncol = A*Y)
@@ -438,6 +467,10 @@ if (run_mcmc) {
     age_3 <- vector(mode = "list", length = n_iters)
     summer_survival <- matrix(NA, nrow = n_iters, ncol = A*Y)
     winter_survival <- matrix(NA, nrow = n_iters, ncol = A*Y)
+    incidence <- matrix(NA, nrow = n_iters, ncol = Y)
+    fatalities <- matrix(NA, nrow = n_iters, ncol = Y)
+    seroprev <- matrix(NA, nrow = n_iters, ncol = Y)
+
     VARSreport <- matrix(NA, nrow = n_iters, ncol = 4)
 
     # forecast quantities
@@ -469,6 +502,7 @@ if (run_mcmc) {
         EGG[i,] <- other_posteriors$Ehat_y
         MDM[i,] <- other_posteriors$That_y
         juv_schools[i,] <- other_posteriors$Jhat_y
+        VHSV[i,] <- other_posteriors$vhsv_pred |> t() |> c()
 
         # population dynamics
         N[i, ] <- other_posteriors$N_y_a |> t() |> c()
@@ -478,6 +512,10 @@ if (run_mcmc) {
         age_3[[i]] <- other_posteriors$N_y_a[,4]
         summer_survival[i,] <- other_posteriors$summer_survival |> t() |> c()
         winter_survival[i,] <- other_posteriors$winter_survival |> t() |> c()
+        incidence[i,] <- other_posteriors$incidence_sp
+        fatalities[i,] <- other_posteriors$fatalities_sp
+        seroprev[i,] <- other_posteriors$seroprev_sp
+
         VARSreport[i,] <- unlist(
             c(mcmc_results[i, c("milt_add_var")], fixed_pars["egg_add"],
             mcmc_results[i, c("adfg_hydro_add_var", "pwssc_hydro_add_var")])
@@ -502,6 +540,7 @@ if (run_mcmc) {
         likelihoods[i,5] <- other_posteriors$L5
         likelihoods[i,6] <- other_posteriors$L6
         likelihoods[i,7] <- other_posteriors$L7
+        likelihoods[i,7] <- other_posteriors$L8
         likelihoods[i,8] <- other_posteriors$negLogLik
         penalties[i,] <- c(
             other_posteriors$penCount, other_posteriors$naa_pen, other_posteriors$ntilde_pen,
@@ -570,6 +609,12 @@ if (write_mcmc_files) {
         row.names = FALSE, col.names = FALSE
     )
 
+    # estimated seroprevalence
+    write.table(
+        VHSV, sep = ",", here(dir_mcmc, "VHSV.csv"), 
+        row.names = FALSE, col.names = FALSE
+    )
+
     ## population dynamics
 
     # estimated numbers-at-age 
@@ -610,6 +655,24 @@ if (write_mcmc_files) {
         cbind(winter_survival, winter_survival_forecast), 
         here(dir_mcmc, "adult_survival_effects_winter.csv"), 
         row.names = FALSE
+    )
+
+    # spawning VHSV incidence
+    write.table(
+        incidence, sep = ",", here(dir_mcmc, "VHSV_incidence.csv"), 
+        row.names = FALSE, col.names = FALSE
+    )
+
+    # spawning VHSV fatalities 
+    write.table(
+        fatalities, sep = ",", here(dir_mcmc, "VHSV_fatalities.csv"), 
+        row.names = FALSE, col.names = FALSE
+    )
+
+    # spawning VHSV seroprevalence
+    write.table(
+        seroprev, sep = ",", here(dir_mcmc, "VSHV_seroprevalence.csv"), 
+        row.names = FALSE, col.names = FALSE
     )
 
     # estimated and fixed variances 

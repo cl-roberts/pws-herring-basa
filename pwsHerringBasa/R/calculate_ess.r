@@ -19,8 +19,18 @@ calculate_ess <- function(data, max_iter = 10, ...) {
     args <- list(...)
 
     model_data <- data
+
+    # seine_ac <- model_data$seine_age_comp
+    # spawn_ac <- model_data$spawn_age_comp
+    # vhsv_sero <- model_data$vhsv_obs
+
     seine_samp_size <- model_data$seine_sample_size
     spawn_samp_size <- model_data$spawn_sample_size
+    vhsv_samp_size <- model_data$vhsv_sample_size
+
+    # seine_missing <- c(seine_samp_size == 0)
+    # spawn_missing <- c(spawn_samp_size == 0)
+    # vhsv_missing <- c(vhsv_samp_size == 0)
 
     convergence <- FALSE 
     its <- 0
@@ -60,6 +70,7 @@ calculate_ess <- function(data, max_iter = 10, ...) {
         # obtain estimated seine and spawner age comps
         seine_ac_est <- model_iteration$report(model_iteration$env$last.par.best)$seine_age_comp_est
         spawn_ac_est <- model_iteration$report(model_iteration$env$last.par.best)$spawn_age_comp_est
+        vhsv_sero_est <- model_iteration$report(model_iteration$env$last.par.best)$vhsv_pred
 
         # calculate the ESS's
         seine_ess_numer <- rowSums(seine_ac_est[!seine_missing,]*(1-seine_ac_est[!seine_missing,])) 
@@ -70,39 +81,50 @@ calculate_ess <- function(data, max_iter = 10, ...) {
         spawn_ess_denom <- rowSums((spawn_ac[!spawn_missing,]-spawn_ac_est[!spawn_missing,])^2) 
         spawn_ess <- spawn_ess_numer / spawn_ess_denom
 
+        vhsv_ess_numer <- rowSums(vhsv_sero_est[!vhsv_missing,]*(1-vhsv_sero_est[!vhsv_missing,])) 
+        vhsv_ess_denom <- rowSums((vhsv_sero[!vhsv_missing,]-vhsv_sero_est[!vhsv_missing,])^2) 
+        vhsv_ess <- vhsv_ess_numer / vhsv_ess_denom
+
         # calculate the ratio of ESS's to raw sample sizes
         seine_ratio <- seine_ess/seine_samp_size[!seine_missing,]
         spawn_ratio <- spawn_ess/spawn_samp_size[!spawn_missing,]
+        vhsv_ratio <- vhsv_ess/vhsv_samp_size[!vhsv_missing,]
 
         # calculate harmonic means (see Muradian et al. 2017 and Stewart & Hamel 2014)
         seine_hm <- 1 / mean(1/seine_ratio)
         spawn_hm <- 1 / mean(1/spawn_ratio)
+        vhsv_hm <- 1 / mean(1/vhsv_ratio)
 
         # compare this harmonic mean to the previous using a convergence criteria
         if(its > 1) {
 
             seine_test <- 100*abs(seine_hm_last - seine_hm) / seine_hm_last
             spawn_test <- 100*abs(spawn_hm_last - spawn_hm) / spawn_hm_last
+            vhsv_test <- 100*abs(vhsv_hm_last - vhsv_hm) / vhsv_hm_last
 
             # this criteria was arbitrarily chosen (0.1% change)
-            convergence <- all(seine_test < 0.09, spawn_test < 0.09) 
+            convergence <- all(seine_test < 0.09, spawn_test < 0.09, vhsv_test < 0.09) 
 
         }
 
         seine_hm_last <- seine_hm
         spawn_hm_last <- spawn_hm
+        vhsv_hm_last <- vhsv_hm
 
         # multiply the current harmonic mean by the sample size to get the new ESS
         seine_ess <- round(seine_hm*seine_samp_size)
         spawn_ess <- round(spawn_hm*spawn_samp_size)
+        vhsv_ess <- round(vhsv_hm*vhsv_samp_size)
 
         # identify the missing years
         seine_ess[seine_missing,] <- -9
         spawn_ess[spawn_missing,] <- -9
+        vhsv_ess[vhsv_missing,] <- -9
 
         # save new ess's to model data
         model_data$seine_ess <- seine_ess
         model_data$spawn_ess <- spawn_ess
+        model_data$vhsv_ess <- vhsv_ess
 
         exit_message <- paste("ESS calculations converged after", its, "iterations")
     
@@ -114,6 +136,9 @@ calculate_ess <- function(data, max_iter = 10, ...) {
         warning(exit_message)
     }
 
-    return(list("seine_ess" = seine_ess, "spawn_ess" = spawn_ess, message = exit_message))
+    return(
+        list("seine_ess" = seine_ess, "spawn_ess" = spawn_ess, "vhsv_ess" = vhsv_ess, 
+             message = exit_message)
+    )
 
 }
