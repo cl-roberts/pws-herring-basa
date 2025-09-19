@@ -42,7 +42,7 @@ fix <- c(
     # ------------------------------------------------------------------
     # "loginit_pop",
     # ------------------------------------------------------------------
-    # "vhs_inf_a50", "vhs_inf_a95",
+    # "vhs_inf_a50", "vhs_inf_delta",
     # "vhs_samp_a50", "vhs_samp_a95"
     # "vhs_inf_prob", "vhs_rec_prob"
 ) 
@@ -215,7 +215,7 @@ phase2_pars <- list(
 phase3_pars <- list(
     VHSV_age3_4_mort_93 = 0.08, ICH_age5_8_mort_93 = 0.22,
     mat_age3 = 0.60, mat_age4 = 0.99,
-    # vhs_inf_a50 = 1.00, vhs_inf_a95 = 2.00,
+    vhs_inf_a50 = 1.00, vhs_inf_delta = 1.00,
     # vhs_samp_a50 = 2.00, vhs_samp_a95 = 3.00,
     vhs_inf_prob = rep(0.30, n_vhs_pars), vhs_rec_prob = rep(0.30, n_vhs_pars)
 )
@@ -261,7 +261,7 @@ map <- list(
     # ------------------------------------------------------------------
     loginit_pop = rep(factor(NA), 5),                               # init pop size (ages 1-5)
     # ------------------------------------------------------------------
-    # vhs_inf_a50 = factor(NA), vhs_inf_a95 = factor(NA),             # seroprev parameters
+    vhs_inf_a50 = factor(NA), vhs_inf_delta = factor(NA),             # seroprev parameters
     # vhs_samp_a50 = factor(NA), vhs_samp_a95 = factor(NA),
     vhs_inf_prob = rep(factor(NA), n_vhs_pars), 
     vhs_rec_prob = rep(factor(NA), n_vhs_pars)
@@ -284,7 +284,7 @@ lower <- c(
     milt_add_var = 0.01, 
     adfg_hydro_add_var = 0.01, pwssc_hydro_add_var = 0.01,
     juvenile_overdispersion = 0.01,
-    # vhs_inf_a50 = -3, vhs_inf_a95 = -2,             
+    vhs_inf_a50 = -3, vhs_inf_delta = 0.01,             
     # vhs_samp_a50 = -3, vhs_samp_a95 = -2,
     vhs_inf_prob = rep(0.01, n_vhs_pars), 
     vhs_rec_prob = rep(0.01, n_vhs_pars)
@@ -308,7 +308,7 @@ upper <- c(
     milt_add_var = 0.9,  
     adfg_hydro_add_var = 0.7, pwssc_hydro_add_var = 0.6,
     juvenile_overdispersion = 4,
-    # vhs_inf_a50 = 5, vhs_inf_a95 = 8,             
+    vhs_inf_a50 = 5, vhs_inf_delta = 4,             
     # vhs_samp_a50 = 5, vhs_samp_a95 = 8,
     vhs_inf_prob = rep(0.99, n_vhs_pars), 
     vhs_rec_prob = rep(0.99, n_vhs_pars)

@@ -152,8 +152,8 @@ Type objective_function<Type>::operator() ()
     PARAMETER(pwssc_hydro_add_var);     // hydroacoustic additional variance (PWSSC)
     PARAMETER(juvenile_overdispersion); // aerial juvenile additional variance
     
-    // PARAMETER(vhs_inf_a50);
-    // PARAMETER(vhs_inf_a95);
+    PARAMETER(vhs_inf_a50);
+    PARAMETER(vhs_inf_delta);
     // PARAMETER(vhs_samp_a50);
     // PARAMETER(vhs_samp_a95);
     PARAMETER_VECTOR(vhs_inf_prob);
@@ -329,20 +329,33 @@ Type objective_function<Type>::operator() ()
     //         disease_inf_vul(y, a) = calculate_logistic(a, vhs_inf_a50, vhs_inf_a95);
     //     }
     // }
+    Type vhs_inf_a95 = vhs_inf_a50 + vhs_inf_delta;
+    vector<Type> disease_inf_vul(nage);
+    disease_inf_vul.setZero();
+    for (int a = 0; a < nage; a++){
+        disease_inf_vul(a) = calculate_logistic(a, vhs_inf_a50, vhs_inf_a95);
+    }
+
     
     // calculate VHS survey selectivity
     // the proportion of infected fish each age class vulnerable to detection in survey 
     // assumes survey sample vulnerability = maturity
-    vector<Type> disease_samp_vul(nage);
-    disease_samp_vul.setZero();
-    disease_samp_vul = maturity;
-
+    // vector<Type> disease_samp_vul(nage);
+    // disease_samp_vul.setZero();
+    // disease_samp_vul = maturity;
     // for (int y = 0; y < nyr; y++){
     //     for (int a = 0; a < nage; a++){
     //         disease_samp_vul(y, a) = calculate_logistic(a, vhs_samp_a50, vhs_samp_a95);
     //     }
     // }
-    
+
+    vector<Type> disease_samp_vul(nage);
+    disease_samp_vul.setZero();
+    disease_samp_vul = maturity;
+    // for (int a = 0; a < nage; a++){
+    //     disease_samp_vul(a) = calculate_logistic(a, vhs_samp_a50, vhs_samp_a95);
+    // }
+
     
     // these are vectors constructed from the estimated infection/recovery 
     // parameters with the same length as the model time series for indexing purposes
@@ -515,15 +528,15 @@ Type objective_function<Type>::operator() ()
         for (int a = 1; a < nage; a++) {
             
             // vhs survival ages 0 through 8
-            vhs_survival(y-1, a-1) = 1 - vhs_susceptible(y-1, a-1)*vhs_inf_prob_y(y-1);
-            vhs_survival(y-1, a-1) += vhs_susceptible(y-1, a-1)*vhs_inf_prob_y(y-1)*vhs_rec_prob_y(y-1);
+            vhs_survival(y-1, a-1) = 1 - disease_inf_vul(a-1)*vhs_susceptible(y-1, a-1)*vhs_inf_prob_y(y-1);
+            vhs_survival(y-1, a-1) += disease_inf_vul(a-1)*vhs_susceptible(y-1, a-1)*vhs_inf_prob_y(y-1)*vhs_rec_prob_y(y-1);
             
             // vhs immunity/susceptibility ages 1 through 8
             if (a < nage-1) {
                 
                 vhs_immune(y, a) = vhs_immune(y-1, a-1); 
-                vhs_immune(y, a) += vhs_susceptible(y-1, a-1)*vhs_inf_prob_y(y-1)*vhs_rec_prob_y(y-1);
-                vhs_immune(y, a) /= (1 - vhs_susceptible(y-1, a-1)*vhs_inf_prob_y(y-1)) + (vhs_susceptible(y-1, a-1)*vhs_inf_prob_y(y-1)*vhs_rec_prob_y(y-1));
+                vhs_immune(y, a) += disease_inf_vul(a-1)*vhs_susceptible(y-1, a-1)*vhs_inf_prob_y(y-1)*vhs_rec_prob_y(y-1);
+                vhs_immune(y, a) /= (1 - disease_inf_vul(a-1)*vhs_susceptible(y-1, a-1)*vhs_inf_prob_y(y-1)) + (disease_inf_vul(a-1)*vhs_susceptible(y-1, a-1)*vhs_inf_prob_y(y-1)*vhs_rec_prob_y(y-1));
                 
                 vhs_susceptible(y, a) = 1 - vhs_immune(y, a);
                 
@@ -548,14 +561,14 @@ Type objective_function<Type>::operator() ()
                 // immune proportion of age-9's
                 Type vhs_immune_age9 = 0.0;
                 vhs_immune_age9 = vhs_immune(y-1, a-1);
-                vhs_immune_age9 += vhs_susceptible(y-1, a-1)*vhs_inf_prob_y(y-1)*vhs_rec_prob_y(y-1);
-                vhs_immune_age9 /= (1 - vhs_susceptible(y-1, a-1)*vhs_inf_prob_y(y-1)) + (vhs_susceptible(y-1, a-1)*vhs_inf_prob_y(y-1)*vhs_rec_prob_y(y-1)); 
+                vhs_immune_age9 += disease_inf_vul(a-1)*vhs_susceptible(y-1, a-1)*vhs_inf_prob_y(y-1)*vhs_rec_prob_y(y-1);
+                vhs_immune_age9 /= (1 - disease_inf_vul(a-1)*vhs_susceptible(y-1, a-1)*vhs_inf_prob_y(y-1)) + (disease_inf_vul(a-1)*vhs_susceptible(y-1, a-1)*vhs_inf_prob_y(y-1)*vhs_rec_prob_y(y-1)); 
                 
                 // immune proportion of age-10+
                 Type vhs_immune_age10_plus = 0.0;
                 vhs_immune_age10_plus = vhs_immune(y-1, a);
-                vhs_immune_age10_plus += vhs_susceptible(y-1, a)*vhs_inf_prob_y(y-1)*vhs_rec_prob_y(y-1);
-                vhs_immune_age10_plus /= (1 - vhs_susceptible(y-1, a)*vhs_inf_prob_y(y-1)) + (vhs_susceptible(y-1, a)*vhs_inf_prob_y(y-1)*vhs_rec_prob_y(y-1));
+                vhs_immune_age10_plus += disease_inf_vul(a)*vhs_susceptible(y-1, a)*vhs_inf_prob_y(y-1)*vhs_rec_prob_y(y-1);
+                vhs_immune_age10_plus /= (1 - disease_inf_vul(a)*vhs_susceptible(y-1, a)*vhs_inf_prob_y(y-1)) + (disease_inf_vul(a)*vhs_susceptible(y-1, a)*vhs_inf_prob_y(y-1)*vhs_rec_prob_y(y-1));
                 
                 // numbers-at-age age-10+
                 Type N_y_a_plus_group = 0.0;
@@ -706,8 +719,8 @@ Type objective_function<Type>::operator() ()
             vector<Type> seroprev_sp_numbers(nage);
 
             for(int a = 0; a < nage; a++){
-                incidence_sp_numbers(a) = maturity(a)*N_y_a(y, a)*vhs_susceptible(y, a)*vhs_inf_prob_y(y);
-                fatalities_sp_numbers(a) = maturity(a)*N_y_a(y, a)*vhs_susceptible(y, a)*vhs_inf_prob_y(y)*(1-vhs_rec_prob_y(y));
+                incidence_sp_numbers(a) = maturity(a)*N_y_a(y, a)*disease_inf_vul(a)*vhs_susceptible(y, a)*vhs_inf_prob_y(y);
+                fatalities_sp_numbers(a) = maturity(a)*N_y_a(y, a)*disease_inf_vul(a)*vhs_susceptible(y, a)*vhs_inf_prob_y(y)*(1-vhs_rec_prob_y(y));
                 seroprev_sp_numbers(a) = maturity(a)*N_y_a(y, a)*vhs_immune(y, a);
             }
                     

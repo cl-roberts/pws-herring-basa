@@ -302,13 +302,15 @@ sero_obs_2 <- reshape2::melt(sero_obs_2,id.vars=c(1:2,5))
 # Now add columns for cohort year to add color coding to plot
 sero_obs_plot <- sero_obs_2 |> 
     filter(age!='0') |> 
-    group_by(years, age, antibody) |> 
+    group_by(years, age) |> 
+    # group_by(years, age, antibody) |> 
     mutate(cohort=cohort.indices$Cohort[cohort.indices$Year==years & cohort.indices$Age==age],
             variable=ifelse(variable=="seroprev","Seroprevalence","Age composition"))
 
 sero_fits_plot <- sero.fits.2 |> 
     filter(age!='0') |> 
-    group_by(years, age, antibody) |> 
+    group_by(years, age) |> 
+    # group_by(years, age, antibody) |> 
     mutate(cohort=cohort.indices$Cohort[cohort.indices$Year==years & cohort.indices$Age==age],
             variable=ifelse(variable=="seroprev","Seroprevalence","Age composition"))
 
