@@ -141,6 +141,10 @@ Type objective_function<Type>::operator() ()
     
     PARAMETER(VHSV_age3_4_mort_93);     // additional mortality 1992-93 ages 3-4 (VHSV)
     PARAMETER(ICH_age5_8_mort_93);      // additional mortality 1992-93 ages 5-8 (I. hoferi)
+
+    PARAMETER(age3_4_mort_pre_93);      // additional mortality 1980-92 ages 3-4 
+    PARAMETER(age5_8_mort_pre_93);      // additional mortality 1980-92 ages 5-8 
+
     PARAMETER(mat_age3);                // maturity prop age 3 (as frac of age 4 prop)
     PARAMETER(mat_age4);                // maturity proportion age 4
     
@@ -157,7 +161,7 @@ Type objective_function<Type>::operator() ()
     // PARAMETER(vhs_samp_a50);
     // PARAMETER(vhs_samp_a95);
     PARAMETER_VECTOR(vhs_inf_prob);
-    PARAMETER_VECTOR(vhs_rec_prob);
+    PARAMETER(vhs_rec_prob);
     
     // ------------------------------------------------------------------ //
     //                        Procedure Section                           //
@@ -215,27 +219,47 @@ Type objective_function<Type>::operator() ()
                 } else if (disease_covs(y, b) != -9) {
                     disease_covs_calc(y, b) = disease_covs(y, b);
                 }
-
-                // temp measure to fix vhsv beta mortality param to zero
-                if (b == 2) {
-                    disease_covs_calc(y, b) = 0;
-                }
-
+                
                 summer_mortality_effect(y, a) += beta_mortality(b)*disease_covs_calc(y, b)*mort_age_impact(a, b);
                 if(y < nyr-1) {
                     winter_mortality_effect(y+1, a) += beta_mortality(b)*disease_covs_calc(y, b)*mort_age_impact(a, b);
                 }              
-            }
 
+            }
+            
         }
     }
-
+    
     // calculate survival matrices
     for (int y = 0; y < nyr; y++) {
         for (int a = 0; a < (nage-1); a++) {
+
             // ages 0-8
             summer_survival(y, a) = exp(-0.5*Z_0_8 - summer_mortality_effect(y, a));
             winter_survival(y, a) = exp(-0.5*Z_0_8 - winter_mortality_effect(y, a));
+            
+            // TEMPORARY MEASURE TO INCREASE EARLY YEAR MORTALITY
+            if (a >= 3 && y < index_1992) {
+                if (a <= 4) {
+                    summer_survival(y, a) *= exp(-age3_4_mort_pre_93);
+                } else if (a > 4) {
+                    summer_survival(y, a) *= exp(-age5_8_mort_pre_93);
+                }
+            } else if (a >= 3 && y < index_1992+1) {
+                if (a <= 4) {
+                    summer_survival(y, a) *= exp(-age3_4_mort_pre_93);
+                    winter_survival(y, a) *= exp(-age3_4_mort_pre_93);
+                } else if (a > 4) {
+                    summer_survival(y, a) *= exp(-age5_8_mort_pre_93);
+                    winter_survival(y, a) *= exp(-age5_8_mort_pre_93);
+                }              
+            } else if (a >= 3 && y < index_1992+2) {
+                if (a <= 4) {
+                    winter_survival(y, a) *= exp(-age3_4_mort_pre_93);
+                } else if (a > 4) {
+                    winter_survival(y, a) *= exp(-age5_8_mort_pre_93);
+                }    
+            }
 
             if (a >= 3 && y == index_1992) {
                 if (a <= 4) {
@@ -357,20 +381,17 @@ Type objective_function<Type>::operator() ()
     // }
 
     
-    // these are vectors constructed from the estimated infection/recovery 
-    // parameters with the same length as the model time series for indexing purposes
+    // this vector is constructed from the estimated infection probability
+    // parameter with the same length as the model time series for indexing purposes
     
     vector<Type> vhs_inf_prob_y(nyr);
     vhs_inf_prob_y.setZero();
-    vector<Type> vhs_rec_prob_y(nyr);
-    vhs_rec_prob_y.setZero();
     
     for (int y = 0; y < nyr; y++) {
         
         int vhs_index = y - vhsv_est_start;
         if (vhs_index >= 0) {
             vhs_inf_prob_y(y-1) = vhs_inf_prob(vhs_index);
-            vhs_rec_prob_y(y-1) = vhs_rec_prob(vhs_index);
         }
 
     }
@@ -529,14 +550,14 @@ Type objective_function<Type>::operator() ()
             
             // vhs survival ages 0 through 8
             vhs_survival(y-1, a-1) = 1 - disease_inf_vul(a-1)*vhs_susceptible(y-1, a-1)*vhs_inf_prob_y(y-1);
-            vhs_survival(y-1, a-1) += disease_inf_vul(a-1)*vhs_susceptible(y-1, a-1)*vhs_inf_prob_y(y-1)*vhs_rec_prob_y(y-1);
+            vhs_survival(y-1, a-1) += disease_inf_vul(a-1)*vhs_susceptible(y-1, a-1)*vhs_inf_prob_y(y-1)*vhs_rec_prob;
             
             // vhs immunity/susceptibility ages 1 through 8
             if (a < nage-1) {
                 
                 vhs_immune(y, a) = vhs_immune(y-1, a-1); 
-                vhs_immune(y, a) += disease_inf_vul(a-1)*vhs_susceptible(y-1, a-1)*vhs_inf_prob_y(y-1)*vhs_rec_prob_y(y-1);
-                vhs_immune(y, a) /= (1 - disease_inf_vul(a-1)*vhs_susceptible(y-1, a-1)*vhs_inf_prob_y(y-1)) + (disease_inf_vul(a-1)*vhs_susceptible(y-1, a-1)*vhs_inf_prob_y(y-1)*vhs_rec_prob_y(y-1));
+                vhs_immune(y, a) += disease_inf_vul(a-1)*vhs_susceptible(y-1, a-1)*vhs_inf_prob_y(y-1)*vhs_rec_prob;
+                vhs_immune(y, a) /= (1 - disease_inf_vul(a-1)*vhs_susceptible(y-1, a-1)*vhs_inf_prob_y(y-1)) + (disease_inf_vul(a-1)*vhs_susceptible(y-1, a-1)*vhs_inf_prob_y(y-1)*vhs_rec_prob);
                 
                 vhs_susceptible(y, a) = 1 - vhs_immune(y, a);
                 
@@ -555,20 +576,20 @@ Type objective_function<Type>::operator() ()
                 
                 // VHS survival plus group
                 vhs_survival(y-1, a) = 1 - vhs_susceptible(y-1, a)*vhs_inf_prob_y(y-1);
-                vhs_survival(y-1, a) += vhs_susceptible(y-1, a)*vhs_inf_prob_y(y-1)*vhs_rec_prob_y(y-1);
+                vhs_survival(y-1, a) += vhs_susceptible(y-1, a)*vhs_inf_prob_y(y-1)*vhs_rec_prob;
                 
                 // temp scalars for calculating VHS immunity/susceptibility plus groups
                 // immune proportion of age-9's
                 Type vhs_immune_age9 = 0.0;
                 vhs_immune_age9 = vhs_immune(y-1, a-1);
-                vhs_immune_age9 += disease_inf_vul(a-1)*vhs_susceptible(y-1, a-1)*vhs_inf_prob_y(y-1)*vhs_rec_prob_y(y-1);
-                vhs_immune_age9 /= (1 - disease_inf_vul(a-1)*vhs_susceptible(y-1, a-1)*vhs_inf_prob_y(y-1)) + (disease_inf_vul(a-1)*vhs_susceptible(y-1, a-1)*vhs_inf_prob_y(y-1)*vhs_rec_prob_y(y-1)); 
+                vhs_immune_age9 += disease_inf_vul(a-1)*vhs_susceptible(y-1, a-1)*vhs_inf_prob_y(y-1)*vhs_rec_prob;
+                vhs_immune_age9 /= (1 - disease_inf_vul(a-1)*vhs_susceptible(y-1, a-1)*vhs_inf_prob_y(y-1)) + (disease_inf_vul(a-1)*vhs_susceptible(y-1, a-1)*vhs_inf_prob_y(y-1)*vhs_rec_prob); 
                 
                 // immune proportion of age-10+
                 Type vhs_immune_age10_plus = 0.0;
                 vhs_immune_age10_plus = vhs_immune(y-1, a);
-                vhs_immune_age10_plus += disease_inf_vul(a)*vhs_susceptible(y-1, a)*vhs_inf_prob_y(y-1)*vhs_rec_prob_y(y-1);
-                vhs_immune_age10_plus /= (1 - disease_inf_vul(a)*vhs_susceptible(y-1, a)*vhs_inf_prob_y(y-1)) + (disease_inf_vul(a)*vhs_susceptible(y-1, a)*vhs_inf_prob_y(y-1)*vhs_rec_prob_y(y-1));
+                vhs_immune_age10_plus += disease_inf_vul(a)*vhs_susceptible(y-1, a)*vhs_inf_prob_y(y-1)*vhs_rec_prob;
+                vhs_immune_age10_plus /= (1 - disease_inf_vul(a)*vhs_susceptible(y-1, a)*vhs_inf_prob_y(y-1)) + (disease_inf_vul(a)*vhs_susceptible(y-1, a)*vhs_inf_prob_y(y-1)*vhs_rec_prob);
                 
                 // numbers-at-age age-10+
                 Type N_y_a_plus_group = 0.0;
@@ -720,7 +741,7 @@ Type objective_function<Type>::operator() ()
 
             for(int a = 0; a < nage; a++){
                 incidence_sp_numbers(a) = maturity(a)*N_y_a(y, a)*disease_inf_vul(a)*vhs_susceptible(y, a)*vhs_inf_prob_y(y);
-                fatalities_sp_numbers(a) = maturity(a)*N_y_a(y, a)*disease_inf_vul(a)*vhs_susceptible(y, a)*vhs_inf_prob_y(y)*(1-vhs_rec_prob_y(y));
+                fatalities_sp_numbers(a) = maturity(a)*N_y_a(y, a)*disease_inf_vul(a)*vhs_susceptible(y, a)*vhs_inf_prob_y(y)*(1-vhs_rec_prob);
                 seroprev_sp_numbers(a) = maturity(a)*N_y_a(y, a)*vhs_immune(y, a);
             }
                     
@@ -1165,8 +1186,8 @@ Type objective_function<Type>::operator() ()
     priors -= dnorm(pwssc_hydro_add_var, Type(0.32), Type(0.08), true);
     for (int y = 0; y < nyr-vhsv_est_start; y++) {
         priors -= dbeta(vhs_inf_prob(y), Type(1.5), Type(5.0), true);
-        priors -= dbeta(vhs_rec_prob(y), Type(4.0), Type(6.0), true);
     }
+    priors -= dbeta(vhs_rec_prob, Type(4.0), Type(6.0), true);
 
     negLogLik += priors;
 
@@ -1197,6 +1218,7 @@ Type objective_function<Type>::operator() ()
     REPORT(spawn_removals);
     REPORT(summer_survival);
     REPORT(winter_survival);
+    REPORT(vhs_survival);
     REPORT(incidence_sp);
     REPORT(fatalities_sp);
     REPORT(seroprev_sp);

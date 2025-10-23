@@ -103,7 +103,8 @@ management_outputs <- ggarrange(
 )
 ggsave(here::here(dir_figures, "management_outputs.pdf"), management_outputs, 
        height=8.5, width=11)
-
+ggsave(here::here(dir_figures, "management_outputs.png"), management_outputs, 
+       height=8.5, width=11)
 
 # save outputs-for-management.csv table
 

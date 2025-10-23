@@ -27,6 +27,7 @@ fix <- c(
     # ------------------------------------------------------------------ 
     # "Z_9", 
     # "VHSV_age3_4_mort_93", "ICH_age5_8_mort_93" 
+    # "age3_4_mort_pre_93", "age5_8_mort_pre_93" 
     # "beta_mortality",
     # ------------------------------------------------------------------
     # "mat_age3", "mat_age4",                  
@@ -53,7 +54,10 @@ set.seed(seed)
 chains <- 4
 iter <- 2000
 warmup <- 700
-control <- list(adapt_delta = 0.95)
+control <- list(
+    # max_treedepth = 10,
+    adapt_delta = 0.975
+)
 
 # retrospective analysis controls
 n_peels <- 5
@@ -209,15 +213,16 @@ phase1_pars <- list(
     loginit_pop = c(6.35,  5.66,  5.92,  6.74,  4.74)
 )
 phase2_pars <- list(
-    Z_9 = 0.93, beta_mortality = rep(0.2, 3), 
+    Z_9 = 0.93, beta_mortality = rep(0.2, 2), 
     logmdm_c = 5.87, adfg_hydro_q = -0.38, pwssc_hydro_q = -0.21
 )
 phase3_pars <- list(
     VHSV_age3_4_mort_93 = 0.08, ICH_age5_8_mort_93 = 0.22,
+    age3_4_mort_pre_93 = 0.01, age5_8_mort_pre_93 = 0.01,
     mat_age3 = 0.60, mat_age4 = 0.99,
     vhs_inf_a50 = 1.00, vhs_inf_delta = 1.00,
     # vhs_samp_a50 = 2.00, vhs_samp_a95 = 3.00,
-    vhs_inf_prob = rep(0.30, n_vhs_pars), vhs_rec_prob = rep(0.30, n_vhs_pars)
+    vhs_inf_prob = rep(0.30, n_vhs_pars), vhs_rec_prob = 0.30
 )
 phase4_pars <- list(
     seine_selex_alpha = 3.66, seine_selex_beta = 2.83
@@ -245,7 +250,8 @@ map <- list(
     # ------------------------------------------------------------------ 
     Z_9 = factor(NA), VHSV_age3_4_mort_93 = factor(NA),             
     ICH_age5_8_mort_93 = factor(NA),                                # mort pars
-    beta_mortality = rep(factor(NA), 3),
+    age3_4_mort_pre_93 = factor(NA), age5_8_mort_pre_93 = factor(NA),
+    beta_mortality = rep(factor(NA), 2),
     # ------------------------------------------------------------------
     mat_age3 = factor(NA), mat_age4 = factor(NA),                   # maturity pars
     # ------------------------------------------------------------------
@@ -264,7 +270,7 @@ map <- list(
     vhs_inf_a50 = factor(NA), vhs_inf_delta = factor(NA),             # seroprev parameters
     # vhs_samp_a50 = factor(NA), vhs_samp_a95 = factor(NA),
     vhs_inf_prob = rep(factor(NA), n_vhs_pars), 
-    vhs_rec_prob = rep(factor(NA), n_vhs_pars)
+    vhs_rec_prob = factor(NA)
 ) 
 
 map <- map[names(map) %in% fix]
@@ -276,9 +282,10 @@ lower <- c(
     log_juvenile_q = -5,
     loginit_pop = rep(3, 5), 
     Z_9 = 0.3,  
-    beta_mortality = rep(-30, 3), 
+    beta_mortality = rep(0, 2), 
     logmdm_c = 2.3,  adfg_hydro_q = -5, pwssc_hydro_q = -5,     
     VHSV_age3_4_mort_93 = 0, ICH_age5_8_mort_93 = 0, 
+    age3_4_mort_pre_93 = 0.01, age5_8_mort_pre_93 = 0.01, 
     mat_age3 = 0.01, mat_age4 = 0.3,     
     seine_selex_alpha = 3, seine_selex_beta = 1,
     milt_add_var = 0.01, 
@@ -287,7 +294,7 @@ lower <- c(
     vhs_inf_a50 = -3, vhs_inf_delta = 0.01,             
     # vhs_samp_a50 = -3, vhs_samp_a95 = -2,
     vhs_inf_prob = rep(0.01, n_vhs_pars), 
-    vhs_rec_prob = rep(0.01, n_vhs_pars)
+    vhs_rec_prob = 0.01
 ) 
 
 lower <- lower[!(names(lower) %in% fix)]
@@ -300,9 +307,10 @@ upper <- c(
     log_juvenile_q = 8,
     loginit_pop = rep(8, 5), 
     Z_9 = 1.6, 
-    beta_mortality = rep(30, 3), 
+    beta_mortality = rep(1, 2), 
     logmdm_c = 9, adfg_hydro_q = 5, pwssc_hydro_q = 5,     
     VHSV_age3_4_mort_93 = 5, ICH_age5_8_mort_93 = 5, 
+    age3_4_mort_pre_93 = 1, age5_8_mort_pre_93 = 1, 
     mat_age3 = 0.9, mat_age4 = 1, 
     seine_selex_alpha = 5, seine_selex_beta = 7,
     milt_add_var = 0.9,  
@@ -311,7 +319,7 @@ upper <- c(
     vhs_inf_a50 = 5, vhs_inf_delta = 4,             
     # vhs_samp_a50 = 5, vhs_samp_a95 = 8,
     vhs_inf_prob = rep(0.99, n_vhs_pars), 
-    vhs_rec_prob = rep(0.99, n_vhs_pars)
+    vhs_rec_prob = 0.99
 )
 
 upper <- upper[!(names(upper) %in% fix)]
@@ -467,6 +475,7 @@ if (run_mcmc) {
     age_3 <- vector(mode = "list", length = n_iters)
     summer_survival <- matrix(NA, nrow = n_iters, ncol = A*Y)
     winter_survival <- matrix(NA, nrow = n_iters, ncol = A*Y)
+    vhs_survival <- matrix(NA, nrow = n_iters, ncol = A*Y)
     incidence <- matrix(NA, nrow = n_iters, ncol = Y)
     fatalities <- matrix(NA, nrow = n_iters, ncol = Y)
     seroprev <- matrix(NA, nrow = n_iters, ncol = Y)
@@ -512,6 +521,7 @@ if (run_mcmc) {
         age_3[[i]] <- other_posteriors$N_y_a[,4]
         summer_survival[i,] <- other_posteriors$summer_survival |> t() |> c()
         winter_survival[i,] <- other_posteriors$winter_survival |> t() |> c()
+        vhs_survival[i,] <- other_posteriors$vhs_survival |> t() |> c()
         incidence[i,] <- other_posteriors$incidence_sp
         fatalities[i,] <- other_posteriors$fatalities_sp
         seroprev[i,] <- other_posteriors$seroprev_sp
@@ -654,6 +664,13 @@ if (write_mcmc_files) {
     write.csv(
         cbind(winter_survival, winter_survival_forecast), 
         here(dir_mcmc, "adult_survival_effects_winter.csv"), 
+        row.names = FALSE
+    )
+
+    # annual vhs survival 
+    write.csv(
+        vhs_survival, 
+        here(dir_mcmc, "vhs_survival.csv"), 
         row.names = FALSE
     )
 

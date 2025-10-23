@@ -375,6 +375,8 @@ seroprevalence_fits_plot <- ggplot() +
 
 ggsave(filename = here(dir_figures, "seroprevalence_fit.pdf"),
        width = 6, height = 9, units = "in", dpi = 600)
+ggsave(filename = here(dir_figures, "seroprevalence_fit.png"),
+       width = 6, height = 9, units = "in")
 
 # ggsave(filename=here::here(paste0("results/figures/Figure_basa seroprevalence estimates_comp with binom.png")),
 #        width=9, height=9, units="in",dpi=600)
@@ -522,3 +524,5 @@ seroprevalence_fits_plot2 <- ggplot() +
 
 ggsave(filename=here(dir_figures, "seroprevalence_fit2.pdf"),
        width=6.5, height=9, units="in",dpi=600)  
+ggsave(filename=here(dir_figures, "seroprevalence_fit2.png"),
+       width=6.5, height=9, units="in")  

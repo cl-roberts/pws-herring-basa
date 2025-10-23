@@ -54,12 +54,21 @@ years <- seq(start.year, curr.year+nyr.sim-1)
 # read model output data
 summer_survival <- read.csv(here(dir_mcmc_out, "adult_survival_effects_summer.csv"))
 winter_survival <- read.csv(here(dir_mcmc_out, "adult_survival_effects_winter.csv"))
+vhs_survival <- read.csv(here(dir_mcmc_out, "vhs_survival.csv"))
 
 dim(summer_survival)
 dim(winter_survival) # 46 years
 
-beta_posteriors <- read.csv(here(dir_mcmc_out, "iterations.csv")) |>
+iterations <- read.csv(here(dir_mcmc_out, "iterations.csv"))
+
+beta_posteriors <- iterations |>
     select(contains("beta_mortality"))
+
+inf_posteriors <- iterations |>
+    select(contains("vhs_inf_prob"))
+
+rec_posteriors <- iterations |>
+    select(contains("vhs_rec_prob"))
 
 
 #-------------------------------------------------------------------------------
@@ -73,6 +82,8 @@ winter_mortality_age_3 <- -log(winter_survival)[seq(4, ncol(winter_survival), by
 
 summer_mortality_age_5 <- -log(summer_survival)[seq(6, ncol(summer_survival), by = 10)]
 winter_mortality_age_5 <- -log(winter_survival)[seq(6, ncol(winter_survival), by = 10)]
+
+vhs_mortality_age_3 <- -log(vhs_survival)[seq(4, ncol(vhs_survival), by = 10)]
 
 # combine mortalities into a single matrix for annual mortality rate 
 
@@ -173,6 +184,73 @@ beta_mortality_posteriors <- ggarrange(
     # nrow = 2, ncol = 2
     ncol = 2
 )
-# ggsave(here::here(dir_figures, "beta_mortality_posteriors.pdf"), beta_mortality_posteriors, height=8.5, width=11)
+ggsave(here::here(dir_figures, "beta_mortality_posteriors.pdf"), beta_mortality_posteriors, height=8.5, width=11)
 ggsave(here::here(dir_figures, "beta_mortality_posteriors.png"), beta_mortality_posteriors, height=5, width=7)
 # ggsave(here::here(dir_figures, "beta_mortality_posteriors.png"), beta_mortality_posteriors, height=2.5, width=7)
+
+
+#-------------------------------------------------------------------------------
+
+colnames(pivot_longer(inf_posteriors, cols = everything()))
+
+inf_posteriors_long <- pivot_longer(inf_posteriors, cols = everything())
+inf_posteriors_long$year <- gsub("\\D", "", inf_posteriors_long$name) |>
+    as.integer()
+inf_posteriors_long$year <- inf_posteriors_long$year + 2008
+
+ggplot(inf_posteriors_long) +
+    geom_histogram(aes(x = value)) +
+    facet_wrap(~ year, nrow = 4) +
+    labs(title = "VHS infection probability")
+ggsave(here::here(dir_figures, "vhs_inf_prob.png"), height=6, width=6)
+
+rec_posteriors_long <- pivot_longer(rec_posteriors, cols = everything())
+rec_posteriors_long$year <- gsub("\\D", "", rec_posteriors_long$name) |>
+    as.integer()
+rec_posteriors_long$year <- rec_posteriors_long$year + 2008
+
+ggplot(rec_posteriors_long) +
+    geom_histogram(aes(x = value)) +
+    facet_wrap(~ year, nrow = 4) +
+    labs(title = "VHS recovery probability")
+ggsave(here::here(dir_figures, "vhs_rec_prob.png"), height=6, width=6)
+
+#-------------------------------------------------------------------------------
+
+vhs_mortality_age_3 <- -log(vhs_survival)[seq(4, ncol(vhs_survival), by = 10)]
+
+mortality_age_3 <- data.frame(
+    Year = 1980:(curr.year-1),
+    Background = .25,
+    Ich = apply(annual_mortality_post_age_3, MARGIN = 2, FUN = median),
+    VHS = apply(vhs_mortality_age_3, MARGIN = 2, FUN = median)
+)
+
+ggplot(mortality_age_3) +
+    geom_line(aes(Year, Ich+VHS, color = "Background+VHS")) +
+    geom_line(aes(Year, Ich, color = "Background+1992 mortality")) +
+    geom_line(aes(Year, Background, color = "Background")) +
+    ylim(c(0, 1)) +
+    labs(title = "PWS herring mortality", subtitle = "Age 5") +
+    theme(legend.position = "bottom")
+ggsave(here::here(dir_figures, "total_mortality_age_3.png"), height=5, width=7)
+
+
+
+vhs_mortality_age_5 <- -log(vhs_survival)[seq(6, ncol(vhs_survival), by = 10)]
+
+mortality_age_5 <- data.frame(
+    Year = 1980:(curr.year-1),
+    Background = .25,
+    Ich = apply(annual_mortality_post_age_5, MARGIN = 2, FUN = median),
+    VHS = apply(vhs_mortality_age_5, MARGIN = 2, FUN = median)
+)
+
+ggplot(mortality_age_5) +
+    geom_line(aes(Year, Ich+VHS, color = "Background+Ich+VHS")) +
+    geom_line(aes(Year, Ich, color = "Background+Ich")) +
+    geom_line(aes(Year, Background, color = "Background")) +
+    ylim(c(0, 1)) +
+    labs(title = "PWS herring mortality", subtitle = "Age 5") +
+    theme(legend.position = "bottom")
+ggsave(here::here(dir_figures, "total_mortality_age_5.png"), height=5, width=7)
