@@ -15,9 +15,9 @@ start_time <- Sys.time()
 
 ## control execution
 write_report_files <- TRUE         # write report files?
-run_mcmc <- FALSE                  # run MCMC sampler?
-write_mcmc_files <- FALSE          # write MCMC outputs to files?
-run_retro <- FALSE                 # run retrospective analysis?
+run_mcmc <- TRUE                  # run MCMC sampler?
+write_mcmc_files <- TRUE          # write MCMC outputs to files?
+run_retro <- TRUE                 # run retrospective analysis?
 app_data <- FALSE                  # copy outputs to mid-year management app directory?
 
 ## declare which parameters to fix
@@ -56,13 +56,13 @@ control <- list(adapt_delta = 0.95)
 n_peels <- 5
 retro_iter <- 2000
 retro_warmup <- 700
-retro_chains <- 1
+retro_chains <- 4
 
 # forecast controls
 forecast_controls <- list(
     recruitment_average_years = 10,
     waa_average_years = 10, 
-    disease_cov_average_years = 1, 
+    disease_cov_average_years = 10, 
     expected_spring_harvest = 0,
     perc_female_forecast_years = 10    
 )
