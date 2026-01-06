@@ -1,0 +1,249 @@
+################################################################################
+
+# Analyze MSE outputs
+
+# CL Roberts
+
+
+################################################################################
+
+
+#### set up ####
+
+# attach packages
+library(here)
+library(ggplot2)
+theme_set(theme_bw())
+library(dplyr)
+library(tidyr)
+library(ggh4x)  # for nested facet plots
+library(gt)
+
+
+# directory handling
+dir_mse <- here("spatial-mse")
+dir_out <- here(dir_mse, "mse_out")
+dir_figures <- here(dir_mse, "figures")
+if (!dir.exists(dir_figures)) dir.create(dir_figures)
+dir_tables <- here(dir_mse, "tables")
+if (!dir.exists(dir_tables)) dir.create(dir_tables)
+# ---------------------------------------------------------------------------- #
+
+#### read outputs ####
+
+# read successful MSE iterations and only compare iterations in which all ems were successful
+# list.files(pattern = "successful_iterations.csv", recursive = TRUE) |>
+#     lapply(\(x) unlist(read.csv(x))) |>
+#     Reduce(f = intersect)
+
+ems <- list.dirs(dir_out, full.names = FALSE, recursive = FALSE)
+
+# read performance metrics
+metrics_list <- vector(mode = "list")
+list_index <- 0
+for (p in seq(ems)) {
+
+    metrics_files <- list.files(here(dir_out, ems[p]), pattern = "performance-metrics.csv", recursive = TRUE) 
+
+    for (f in seq(metrics_files)) {
+        list_index <- list_index + 1
+
+        metrics_list[[list_index]] <- read.csv(here(dir_out, ems[p], metrics_files[f]))
+        metrics_list[[list_index]]$em <- ems[p]
+        metrics_list[[list_index]]$state <- dirname(metrics_files[f])
+
+    }
+
+}
+
+metrics <- do.call(rbind, metrics_list)
+
+# ---------------------------------------------------------------------------- #
+
+#### plot performance metrics ####
+
+common_theme <- theme(
+    axis.text.x = element_text(angle = -45, vjust = -.25, hjust = .5)
+)
+
+metrics <- metrics |>
+    mutate(
+        lambda = paste("\u039B =", as.numeric(gsub("[^0-9.]", "", state))),
+        c = gsub("^([^_]+_){2}", "", state)
+        ) |>
+    mutate(c = factor(gsub("_", " ", c), c("all ages", "young ages", "new spawners")))
+
+boxplot_summary <- function(x) {
+    q <- quantile(x, probs = c(0.10, 0.25, 0.50, 0.75, 0.90))
+    names(q) <- c("ymin", "lower", "middle", "upper", "ymax")
+    return(data.frame(as.list(q)))
+}
+
+Btilde_ratio_plot <- ggplot(metrics, aes(x = em, y = Btilde_ratio)) +
+    stat_summary(fun.data = boxplot_summary, geom = "boxplot", width = 0.75) +
+    geom_hline(aes(yintercept = 1), color = "red") +
+    facet_grid2(vars(lambda), vars(c), scales = "free", independent = "y", render_empty = FALSE) +
+    xlab(NULL) + 
+    ylab("Ratio between true population in PWS and assessed population") +
+    # ylab(bquote(frac(hat(B)[Y+10], B[Y+10]))) +
+    common_theme 
+
+Btilde_prob_plot <- ggplot(metrics, aes(x = em, y = Btilde_prob)) +
+    stat_summary(fun.data = boxplot_summary, geom = "boxplot", width = 0.75) +
+    geom_hline(aes(yintercept = 1), color = "red") +
+    facet_grid2(vars(lambda), vars(c), scales = "free_y", independent = "y", render_empty = FALSE) +
+    xlab(NULL) + 
+    ylab("Probability of assessed population within 30% of true population") +
+    # ylab(bquote(P("|"^frac(B[Y+10] - hat(B)[Y+10], B[Y+10])~"|" < 0.3))) +
+    common_theme
+
+yield_difference_plot <- ggplot(metrics, aes(x = em, y = mean_yield_difference)) +
+    stat_summary(fun.data = boxplot_summary, geom = "boxplot", width = 0.75) +
+    geom_hline(aes(yintercept = 0), color = "red") +
+    facet_grid2(vars(lambda), vars(c), scales = "free_y", independent = "y", render_empty = FALSE) +
+    xlab(NULL) + 
+    ylab("Mean difference in catch from HCR applied to true biomass") +
+    common_theme
+
+lost_yield_plot <- ggplot(metrics, aes(x = em, y = mean_lost_yield)) +
+    stat_summary(fun.data = boxplot_summary, geom = "boxplot", width = 0.75) +
+    geom_hline(aes(yintercept = 0), color = "red") +
+    facet_grid2(vars(lambda), vars(c), scales = "free_y", independent = "y", render_empty = FALSE) +
+    common_theme
+
+
+# ---------------------------------------------------------------------------- #
+
+#### make risk tables ####
+
+head(metrics)
+
+metrics_summary <- metrics |>
+  group_by(em, state, lambda, c) |>
+  summarize(
+    Btilde_ratio = median(Btilde_ratio),
+    Btilde_prob = median(Btilde_prob),
+    mean_yield_difference = median(mean_yield_difference), 
+    .groups = "drop"
+  )
+
+metrics_summary$c[metrics_summary$lambda == "\u039B = 0"] <- NA
+
+Btilde_ratio_tbl <- metrics_summary |>
+    select(em, lambda, c, Btilde_ratio) |>
+    pivot_wider(names_from = c(lambda, c), values_from = Btilde_ratio)
+
+colnames(Btilde_ratio_tbl) <- gsub("_NA", "", colnames(Btilde_ratio_tbl))
+Btilde_ratio_tbl <- Btilde_ratio_tbl[,c(1,8,2,4,3,5,7,6)]
+
+Btilde_prob_tbl <- metrics_summary |>
+    select(em, lambda, c, Btilde_prob) |>
+    pivot_wider(names_from = c(lambda, c), values_from = Btilde_prob)
+
+colnames(Btilde_prob_tbl) <- gsub("_NA", "", colnames(Btilde_prob_tbl))
+Btilde_prob_tbl <- Btilde_prob_tbl[,c(1,8,2,4,3,5,7,6)]
+
+mean_yield_difference_tbl <- metrics_summary |>
+    select(em, lambda, c, mean_yield_difference) |>
+    pivot_wider(names_from = c(lambda, c), values_from = mean_yield_difference)
+
+colnames(mean_yield_difference_tbl) <- gsub("_NA", "", colnames(mean_yield_difference_tbl))
+mean_yield_difference_tbl <- mean_yield_difference_tbl[,c(1,8,2,4,3,5,7,6)]
+
+
+gt(Btilde_ratio_tbl, rowname_col = "Name") |> 
+  tab_spanner_delim(
+    delim = "_", reverse = TRUE
+  ) |>
+  fmt_number(decimals = 2) |>
+  cols_label(em = html("Estimation<br>model")) |>
+  tab_style(
+    style = cell_fill(color = "yellow"), locations = cells_body(columns = 2, rows = 1)
+  ) |>
+  tab_style(
+    style = cell_fill(color = "yellow"), locations = cells_body(columns = 3, rows = 2)
+  ) |>
+  tab_style(
+    style = cell_fill(color = "yellow"), locations = cells_body(columns = 4, rows = 2)
+  ) |>
+  tab_style(
+    style = cell_fill(color = "yellow"), locations = cells_body(columns = 5, rows = 3)
+  ) |>
+  tab_style(
+    style = cell_fill(color = "yellow"), locations = cells_body(columns = 6, rows = 3)
+  ) |>
+  tab_style(
+    style = cell_fill(color = "yellow"), locations = cells_body(columns = 7, rows = 3)
+  ) |>
+  tab_style(
+    style = cell_fill(color = "yellow"), locations = cells_body(columns = 8, rows = 2)
+  ) 
+
+gt(Btilde_prob_tbl, rowname_col = "Name") |> 
+  tab_spanner_delim(
+    delim = "_", reverse = TRUE
+  ) |>
+  fmt_number(decimals = 2) |>
+  cols_label(em = html("Estimation<br>model")) |>
+  tab_style(
+    style = cell_fill(color = "yellow"), locations = cells_body(columns = 2, rows = 3)
+  ) |>
+  tab_style(
+    style = cell_fill(color = "yellow"), locations = cells_body(columns = 3, rows = 2)
+  ) |>
+  tab_style(
+    style = cell_fill(color = "yellow"), locations = cells_body(columns = 4, rows = 2)
+  ) |>
+  tab_style(
+    style = cell_fill(color = "yellow"), locations = cells_body(columns = 5, rows = 3)
+  ) |>
+  tab_style(
+    style = cell_fill(color = "yellow"), locations = cells_body(columns = 6, rows = 3)
+  ) |>
+  tab_style(
+    style = cell_fill(color = "yellow"), locations = cells_body(columns = 7, rows = 3)
+  ) |>
+  tab_style(
+    style = cell_fill(color = "yellow"), locations = cells_body(columns = 8, rows = 2)
+  ) 
+
+gt(mean_yield_difference_tbl, rowname_col = "Name") |> 
+  tab_spanner_delim(
+    delim = "_", reverse = TRUE
+  ) |>
+  fmt_number(decimals = 0) |>
+  cols_label(em = html("Estimation<br>model")) |>
+  tab_style(
+    style = cell_fill(color = "yellow"), locations = cells_body(columns = 2, rows = 1)
+  ) |>
+  tab_style(
+    style = cell_fill(color = "yellow"), locations = cells_body(columns = 3, rows = 3)
+  ) |>
+  tab_style(
+    style = cell_fill(color = "yellow"), locations = cells_body(columns = 4, rows = 1)
+  ) |>
+  tab_style(
+    style = cell_fill(color = "yellow"), locations = cells_body(columns = 5, rows = 1)
+  ) |>
+  tab_style(
+    style = cell_fill(color = "yellow"), locations = cells_body(columns = 6, rows = 1)
+  ) |>
+  tab_style(
+    style = cell_fill(color = "yellow"), locations = cells_body(columns = 7, rows = 1)
+  ) |>
+  tab_style(
+    style = cell_fill(color = "yellow"), locations = cells_body(columns = 8, rows = 2)
+  ) 
+
+# ---------------------------------------------------------------------------- #
+
+#### save figures and tables ####
+
+ggsave(here(dir_figures, "Btilde-ratio-plot.png"), Btilde_ratio_plot, width = 7, height = 5)
+ggsave(here(dir_figures, "Btilde-prob-plot.png"), Btilde_prob_plot, width = 7, height = 5)
+ggsave(here(dir_figures, "yield-difference-plot.png"), yield_difference_plot, width = 7, height = 5)
+ggsave(here(dir_figures, "lost-yield-plot.png"), lost_yield_plot, width = 7, height = 5)
+
+write.csv(Btilde_ratio_tbl, here(dir_tables, "Btilde-ratio-tbl.csv"), row.names = FALSE)
+write.csv(Btilde_prob_tbl, here(dir_tables, "Btilde-prob-tbl.csv"), row.names = FALSE)
+write.csv(mean_yield_difference_tbl, here(dir_tables, "mean-yield-difference-tbl.csv"), row.names = FALSE)
