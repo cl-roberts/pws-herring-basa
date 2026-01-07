@@ -14,24 +14,33 @@
 #' that pre-fishery biomass lies below the 22,000 short-ton (19,958 metric ton)
 #' harvest threshold.
 #' @param curr.year Integer giving the current year in the model run
-#' @param font.size Plotting parameter passed to \link[ggplot2]{ggplot}
+#' @param font.size Text font size in `pt` units
 #'
 #' @returns A \link[ggplot2]{ggplot} object showing histogram of model-fit
 #' pre-fishery biomass (metric tons)
 #'
 
-plot_pfrb_posterior <- function(df, quants, prob, curr.year, font.size=1){
-  q3 <- q2 <- q1 <- NULL
+plot_pfrb_posterior <- function(df, quants, prob, curr.year, font.size=12){
 
-  extra <- data.frame(q1=quants[1], q2=quants[2], q3=quants[3], prob=prob)
+  plot_text <- paste0(
+    "Median: ", quants[2], "\n\n",
+    "95% interval:\n", "(", quants[1], ", ", quants[3], ")", "\n\n",
+    "Probability below\nthreshold: ", prob
+  )
+
+  text_layer <- grobTree(
+    textGrob(
+      plot_text,
+      x = unit(0.55, "npc"), y = unit(0.5, "npc"), # Positions at the center of the panel
+      hjust = 0,
+      gp = gpar(fontsize = font.size)
+    )
+  )
+
   out <- ggplot(df)+
     geom_histogram(aes(x=.data$biomass/1000, y= after_stat(density)), bins=60)+
-    # CLR: changed ..density.. to after_stat(density) to address deprecation warning
-    scale_fill_grey(start=0.8, end=0.6)+
-    geom_vline(xintercept = quants, linetype=c("dashed", "solid", "dashed"), linewidth=c(0.5, 1, 0.5))+
-    geom_text(data=extra, aes(x=75, y=0.05, label=paste("Median:", q2)), size=font.size, hjust=1)+
-    geom_text(data=extra, aes(x=75, y=0.035, label=paste0("95% interval:\n", "(", q1, ", ", q3, ")")), size=font.size, hjust=1)+
-    geom_text(data=extra, aes(x=75, y=0.02, label=paste("Probability below\nthreshold:", prob)), size=font.size, hjust=1)+
+    geom_vline(xintercept = quants, linetype=c("dashed", "solid", "dashed"), linewidth=c(0.5, 1, 0.5)) +
+    annotation_custom(text_layer) +
     # scale_x_continuous(paste(curr.year, "spawning biomass (mt)"), breaks=seq(0, 60, 5), expand=c(0, 0))+
     # scale_y_continuous("Probability density", breaks=seq(0, 0.10, 0.025), expand=c(0, 0))+
     # coord_cartesian(ylim=c(0, 0.15), xlim=c(0, 60))+

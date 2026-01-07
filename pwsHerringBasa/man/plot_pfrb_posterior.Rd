@@ -4,7 +4,7 @@
 \alias{plot_pfrb_posterior}
 \title{Plot Pre-fishery biomass posterior}
 \usage{
-plot_pfrb_posterior(df, quants, prob, curr.year, font.size = 1)
+plot_pfrb_posterior(df, quants, prob, curr.year, font.size = 18)
 }
 \arguments{
 \item{df}{A data frame returned by
@@ -22,7 +22,7 @@ harvest threshold.}
 
 \item{curr.year}{Integer giving the current year in the model run}
 
-\item{font.size}{Plotting parameter passed to \link[ggplot2]{ggplot}}
+\item{font.size}{Text font size in \code{pt} units}
 }
 \value{
 A \link[ggplot2]{ggplot} object showing histogram of model-fit
