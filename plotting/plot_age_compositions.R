@@ -26,18 +26,18 @@
 library(ggplot2)
 library(dplyr)
 library(tidyr)
-library(ggdist)
 library(pwsHerringBasa)
 library(data.table)
 library(ggridges)
+library(here)
 
 # directory handling
 
-dir_model <- here::here("model")
+dir_model <- here("model")
 
-dir_mcmc_out <- here::here(dir_model, "mcmc_out")
-dir_figures <- here::here("figures")
-dir_outputs <- here::here("data_outputs")
+dir_mcmc_out <- here(dir_model, "mcmc_out")
+dir_figures <- here("figures")
+dir_outputs <- here("data_outputs")
 
 if (!dir.exists(dir_figures)) {
     dir.create(dir_figures)
@@ -187,15 +187,15 @@ year.df <- data.frame(year=years, year_str=years)
 
 # read-in Numbers-at-age and output into nice tables (.csv) 
 
-n.y.a<-read.csv(here::here(dir_mcmc_out, "Num_at_age.csv"), header = FALSE, dec=".") 
-n.y.a<-n.y.a[-c(1:nburn), ] # Just 'cause it's easier to work with this scale
+n.y.a <- read.csv(here::here(dir_mcmc_out, "Num_at_age.csv"), header = TRUE, dec=".") 
+# n.y.a <- n.y.a[-c(1:nburn), ] # Just 'cause it's easier to work with this scale
 
 ## seine.age.comp.interval is a 2 X (# of ages in age comp * years) matrix; e.g. 10 ages (ages 0-9+) * 35 years (from 1980-2014)=350
 n.y.a.interval <- matrix(rep(0, 2*length(n.y.a[1, ])), nrow=2, ncol=length(n.y.a[1, ]))
 n.y.a.interval[1:2,] <- apply(n.y.a, 2, quantile, probs=c(0.025, 0.975), na.rm=T) # Fills first row with 0.025 percentile and second with 0.975 percentile
-n.y.a.median <- apply(n.y.a, 2, median)
-## Now cut each up into years
+n.y.a.median <- apply(n.y.a, 2, median, na.rm = TRUE)
 
+## Now cut each up into years
 n.y.a.median.mat <- matrix(n.y.a.median, nrow=nyr, ncol=ncol, byrow=T) # nyr x nages matrix filled with posterior predictive median
 n.y.a.lower.mat <- matrix(n.y.a.interval[1, ], nrow=nyr, ncol=ncol, byrow=T)
 n.y.a.upper.mat <- matrix(n.y.a.interval[2, ], nrow=nyr, ncol=ncol, byrow=T)
@@ -230,9 +230,10 @@ raw.df <- raw.df |>
     left_join(data.frame(year = 1982:(curr.year+nyr.sim-1), J = round(evenness.50, 2)))
 
 age.struct.plot <- ggplot(raw.df)+
-    geom_col(aes(x=type, y=val/100, color=age, fill=fill.color), position=position_dodge(0.9), size=0.0)+
+    geom_col(aes(x=type, y=val/100, color=age, fill=fill.color), position=position_dodge(0.9), linewidth = 0, alpha = .65)+
     scale_fill_manual(values=c(color.options, "grey")) + 
-    geom_pointinterval(data=age.comp.df, aes(x=type, y=`50%`/100, ymin=`2.5%`/100, ymax=`97.5%`/100, color=age), position=position_dodge(0.9)) +
+    geom_point(data=age.comp.df, aes(x=type, y=`50%`/100, color=age), position=position_dodge(0.9)) +
+    geom_errorbar(data=age.comp.df, aes(x=type, ymin=`2.5%`/100, ymax=`97.5%`/100, color=age), position=position_dodge(0.9), width=0) +
     geom_text(data=year.df, aes(x=0.7, y=1, label=year), size=4)+
     geom_text(aes(x=2.2, y=1, label=ifelse(is.na(J), NA, paste0("J=", J))), size=4)+
     geom_text(data=age.class.df, aes(x=type, y=-0.25, label=age, group=age), position=position_dodge(0.9), size=3)+
