@@ -28,7 +28,7 @@ plot_pfrb_posterior <- function(df, quants, prob, curr.year, font.size=1){
     geom_histogram(aes(x=.data$biomass/1000, y= after_stat(density)), bins=60)+
     # CLR: changed ..density.. to after_stat(density) to address deprecation warning
     scale_fill_grey(start=0.8, end=0.6)+
-    geom_vline(xintercept = quants, linetype=c("dashed", "solid", "dashed"), size=c(0.5, 1, 0.5))+
+    geom_vline(xintercept = quants, linetype=c("dashed", "solid", "dashed"), linewidth=c(0.5, 1, 0.5))+
     geom_text(data=extra, aes(x=75, y=0.05, label=paste("Median:", q2)), size=font.size, hjust=1)+
     geom_text(data=extra, aes(x=75, y=0.035, label=paste0("95% interval:\n", "(", q1, ", ", q3, ")")), size=font.size, hjust=1)+
     geom_text(data=extra, aes(x=75, y=0.02, label=paste("Probability below\nthreshold:", prob)), size=font.size, hjust=1)+

@@ -21,6 +21,10 @@ calculate_ess <- function(data, max_iter = 10, ...) {
     model_data <- data
     seine_samp_size <- model_data$seine_sample_size
     spawn_samp_size <- model_data$spawn_sample_size
+    seine_ac <- model_data$seine_age_comp
+    spawn_ac <- model_data$spawn_age_comp
+    seine_missing <- apply(seine_ac, MARGIN = 1, FUN = \(x) any(x == -9))
+    spawn_missing <- apply(spawn_ac, MARGIN = 1, FUN = \(x) any(x == -9))
 
     convergence <- FALSE 
     its <- 0

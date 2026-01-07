@@ -18,11 +18,10 @@
 plot_biomass_trajectory <- function(df, years, legend=TRUE, show.probs=TRUE){
 
   out <- ggplot(df) +
-    ggdist::geom_lineribbon(aes(x=.data$year, y=.data$biomass/1000,
-                                ymin=.data$.lower/1000, ymax=.data$.upper/1000, group=1),
-                            size=0.25)+
-    scale_fill_grey(start=0.8, end=0.4)+
-    scale_x_discrete("Year", breaks=seq(min(years), max(years), by=5), expand=c(0, 0))+
+    geom_ribbon(aes(x=year, ymin=lower_50/1000, ymax=upper_50/1000), alpha = .25) +
+    geom_ribbon(aes(x=year, ymin=lower_95/1000, ymax=upper_95/1000), alpha = .25) +
+    geom_line(aes(x=year, y = biomass/1000), linewidth=0.25) +
+    scale_x_continuous("Year", breaks=seq(min(years), max(years), by=5), expand=c(.05, .05))+
     geom_hline(yintercept=c(20, 40), linetype="dashed")+
     ggtitle("Biomass trajectory")+
     scale_y_continuous(
@@ -40,13 +39,13 @@ plot_biomass_trajectory <- function(df, years, legend=TRUE, show.probs=TRUE){
     )
 
   if(show.probs){
-    out <- out + geom_point(aes(x=.data$year, y=.data$prob*200))+
-      geom_line(aes(x=.data$year, y=.data$prob*200, group=1))+
+    out <- out + geom_point(aes(x=year, y=prob*200))+
+      geom_line(aes(x=year, y=prob*200))+
       scale_y_continuous(
         "Pre-fishery biomass (1000 mt)",
         breaks=c(0, 20, 40, 50, 100, 150, 200),
         expand=c(0, 0),
-        sec.axis = sec_axis(trans=~.*1/200, name="Probability below 20k metric tons")
+        sec.axis = sec_axis(transform=~.*1/200, name="Probability below 20k metric tons")
       )
   }
 
@@ -54,3 +53,4 @@ plot_biomass_trajectory <- function(df, years, legend=TRUE, show.probs=TRUE){
     out
   )
 }
+

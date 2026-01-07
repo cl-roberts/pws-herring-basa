@@ -14,7 +14,7 @@ post.pred.lognorm <- function(model.pred, sd){
   PP <- matrix(NA,nrow=nrow(model.pred),ncol=ncol(model.pred))
   for(i in 1:nrow(model.pred)){
     fits <- as.numeric(model.pred[i,]) # Take the true value of the survey estimate
-    errors <- as.numeric(sd[i]*fits) # Take the error based on the true value of the survey estimate
+    errors <- as.numeric(sd*fits) # Take the error based on the true value of the survey estimate
 
     # Need to reparameterize to calculate the log-normal mean and sd for the survey data
     # From: https://msalganik.wordpress.com/2017/01/21/making-sense-of-the-rlnorm-function-in-r/

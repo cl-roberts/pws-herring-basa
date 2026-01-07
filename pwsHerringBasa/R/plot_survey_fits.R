@@ -29,7 +29,7 @@ plot_survey_fits <- function(fits, survey.data, y.max, title, ylabel="",
 
   return(
     ggplot(fits) +
-      ggdist::geom_lineribbon(aes(x=.data$year, y=data/scale, ymin=.data$.lower/scale, ymax=.data$.upper/scale, group=1), size=0.25)+
+      ggdist::geom_lineribbon(aes(x=.data$year, y=data/scale, ymin=.data$.lower/scale, ymax=.data$.upper/scale, group=1), linewidth=0.25)+
       scale_fill_grey(start=0.8, end=0.6) +
       points +
       geom_line(data=survey.data, aes(x=.data$year, y=data/scale, group=1))+
