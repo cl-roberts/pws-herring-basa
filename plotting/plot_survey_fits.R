@@ -56,21 +56,23 @@ years <- seq(start.year, curr.year+nyr.sim-1)
 
 # model estimated variances
 
-variances <- read.table(here::here(dir_mcmc_out, "VARSReport.csv"), 
-                        sep=",", header=FALSE)[-1,]
-names(variances) <- c("mdm", "egg", "adfg.hydro", "pwssc.hydro")
+variances <- cbind(
+    read.table(here::here(dir_mcmc_out, "VARSReport.csv"), sep=",", header=FALSE)[-1,],
+    read.table(here::here(dir_mcmc_out, "iterations.csv"),header = TRUE, sep = ",")[-1, "juvenile_overdispersion"]
+)
+names(variances) <- c("mdm", "egg", "adfg.hydro", "pwssc.hydro", "juv")
+
+juv.schools.mask <- c(raw.data$juvenile_survey == -9)[1:nyr]
 
 add.vars <- apply(variances, 2, median)
 cvs <- list(
     mdm         = as.vector(rep(add.vars[1], nyr)),
     egg         = as.vector(sqrt(raw.data$egg_se[1:nyr]^2 + add.vars[2]^2)),
     adfg.hydro  = as.vector(rep(add.vars[3], nyr)),
-    pwssc.hydro = as.vector(sqrt((raw.data$pwssc_hydro_se[1:nyr]^2) + (add.vars[4]^2)))
+    pwssc.hydro = as.vector(sqrt((raw.data$pwssc_hydro_se[1:nyr]^2) + (add.vars[4]^2))),
+    juv         = as.vector(sqrt(raw.data$juvenile_survey + ((raw.data$juvenile_survey^2)/add.vars[5]))/raw.data$juvenile_survey)
 )
 
-juv.overdisp <- read.table(here::here(dir_mcmc_out, "iterations.csv"),  
-                           header = TRUE, sep = ",")[, "juvenile_overdispersion"]
-juv.schools.mask <- c(raw.data$juvenile_survey == -9)[1:nyr]
 
 # save file paths containing model outputs
 
@@ -89,17 +91,46 @@ adfg.hydro.pp <- generate.post.pred(fname = adfg.hydro.fname,
                                     var = variances$adfg.hydro, years = years)
 pwssc.hydro.pp <- generate.post.pred(fname = pwssc.hydro.fname, 
                                      var = variances$pwssc.hydro, years = years)
-juv.schools.pp <- generate.post.pred(fname = juv.schools.fname, var = juv.overdisp, 
+juv.schools.pp <- generate.post.pred(fname = juv.schools.fname, var = variances$juv, 
                                      years = years, dist="negbin", mask=juv.schools.mask)
 
 
 # save and format raw survey data for each annual survey
 
-mdm.data            <- data.frame(year=as.character(years), data=raw.data$mdm[1:length(years)], lower=raw.data$mdm[1:length(years)]/calc.buck.cv(cvs$mdm), upper=raw.data$mdm[1:length(years)]*calc.buck.cv(cvs$mdm))
-egg.data            <- data.frame(year=as.character(years), data=raw.data$egg[1:length(years)], lower=raw.data$egg[1:length(years)]/calc.buck.cv(cvs$egg), upper=raw.data$egg[1:length(years)]*calc.buck.cv(cvs$egg))
-adfg.hydro.data     <- data.frame(year=as.character(years), data=raw.data$adfg_hydro[1:length(years)], lower=raw.data$adfg_hydro[1:length(years)]/calc.buck.cv(cvs$adfg.hydro), upper=raw.data$adfg_hydro[1:length(years)]*calc.buck.cv(cvs$adfg.hydro))
-pwssc.hydro.data    <- data.frame(year=as.character(years), data=raw.data$pwssc_hydro[1:length(years)], lower=raw.data$pwssc_hydro[1:length(years)]/calc.buck.cv(cvs$pwssc.hydro), upper=raw.data$pwssc_hydro[1:length(years)]*calc.buck.cv(cvs$pwssc.hydro))
-aer.juvenile.data   <- data.frame(year=as.character(years), data=raw.data$juvenile_survey[1:length(years)])
+mdm.data <- data.frame(
+    year = as.character(years), 
+    data = raw.data$mdm[1:length(years)], 
+    lower = raw.data$mdm[1:length(years)]/calc.buck.cv(cvs$mdm), 
+    upper = raw.data$mdm[1:length(years)]*calc.buck.cv(cvs$mdm)
+)
+
+egg.data <- data.frame(
+    year = as.character(years), 
+    data = raw.data$egg[1:length(years)], 
+    lower = raw.data$egg[1:length(years)]/calc.buck.cv(cvs$egg), 
+    upper = raw.data$egg[1:length(years)]*calc.buck.cv(cvs$egg)
+)
+
+adfg.hydro.data <- data.frame(
+    year = as.character(years), 
+    data = raw.data$adfg_hydro[1:length(years)], 
+    lower = raw.data$adfg_hydro[1:length(years)]/calc.buck.cv(cvs$adfg.hydro), 
+    upper = raw.data$adfg_hydro[1:length(years)]*calc.buck.cv(cvs$adfg.hydro)
+)
+
+pwssc.hydro.data <- data.frame(
+    year = as.character(years), 
+    data = raw.data$pwssc_hydro[1:length(years)], 
+    lower = raw.data$pwssc_hydro[1:length(years)]/calc.buck.cv(cvs$pwssc.hydro), 
+    upper = raw.data$pwssc_hydro[1:length(years)]*calc.buck.cv(cvs$pwssc.hydro)
+)
+
+aer.juvenile.data <- data.frame(
+    year = as.character(years), 
+    data = raw.data$juvenile_survey[1:length(years)],
+    lower = raw.data$juvenile_survey[1:length(years)]/calc.buck.cv(cvs$juv), 
+    upper = raw.data$juvenile_survey[1:length(years)]*calc.buck.cv(cvs$juv)
+)
 
 data <- list(
     mdm = mdm.data,
@@ -118,11 +149,32 @@ for(i in 1:length(data)){
 # plot survey fits 
 # see pwsHerringBasa::plot_survey_fits()
 
-mdm.fit.plot <- plot_survey_fits(mdm.pp, data$mdm, y.max=500, title="Mile Days of Milt")
-egg.fit.plot <- plot_survey_fits(egg.pp, data$egg, y.max=21, title="Egg Deposition (trillions)")
-adfg.hydro.fit.plot <- plot_survey_fits(adfg.hydro.pp, data$adfg.hydro, y.max=175000, title="ADF&G Hydroacoustic Biomass (1000s tons)", scale=1000)
-pwssc.hydro.fit.plot <- plot_survey_fits(pwssc.hydro.pp, data$pwssc.hydro, y.max=205000, title="PWSSC Hydroacoustic Biomass (1000s tons)", scale=1000)
-aer.juvenile.fit.plot <- plot_survey_fits(juv.schools.pp, data$juvenile, y.max=40000, title="Age 1 Schools", cvs=FALSE)
+reformat_survey_data <- function(df) {
+    new_df <- df |>
+        filter(.width == 0.5) |>
+        select(year, data, .lower, .upper) |>
+        mutate(year = as.integer(year)) |>
+        rename(lower_50 = .lower, upper_50 = .upper)
+    new_df$lower_95 <- filter(df, .width == 0.95) |>
+        select(.lower) |>
+        unlist()
+    new_df$upper_95 <- filter(df, .width == 0.95) |>
+        select(.upper) |>
+        unlist()
+    return(new_df)
+}
+
+mdm_pp <- reformat_survey_data(mdm.pp) 
+egg_pp <- reformat_survey_data(egg.pp) 
+adfg_hydro_pp <- reformat_survey_data(adfg.hydro.pp) 
+pwssc_hydro_pp <- reformat_survey_data(pwssc.hydro.pp) 
+juv_schools_pp <- reformat_survey_data(juv.schools.pp) 
+
+mdm.fit.plot <- plot_survey_fits(mdm_pp, data$mdm, y.max=500, title="Mile Days of Milt")
+egg.fit.plot <- plot_survey_fits(egg_pp, data$egg, y.max=21, title="Egg Deposition (trillions)")
+adfg.hydro.fit.plot <- plot_survey_fits(adfg_hydro_pp, data$adfg.hydro, y.max=175000, title="ADF&G Hydroacoustic Biomass (1000s tons)", scale=1000)
+pwssc.hydro.fit.plot <- plot_survey_fits(pwssc_hydro_pp, data$pwssc.hydro, y.max=205000, title="PWSSC Hydroacoustic Biomass (1000s tons)", scale=1000)
+aer.juvenile.fit.plot <- plot_survey_fits(juv_schools_pp, data$juvenile, y.max=40000, title="Age 1 Schools")
 
 #-------------------------------------------------------------------------------
 

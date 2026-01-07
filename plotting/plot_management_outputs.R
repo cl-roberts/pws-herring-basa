@@ -64,16 +64,58 @@ years <- seq(start.year, curr.year+nyr.sim-1)
 # output of interest see ?pwsHerringBasa::compute.* and ?pwsHerringBasa::plot_* 
 # for more details
 
-recruit.df <- compute.recruitment(dir_mcmc_out, nyr, years)
-recruit.plot <- plot_recruitment_posterior(recruit.df, years, legend=FALSE)
+# recruitment ----
+
+recruit.df <- compute.recruitment(dir_mcmc_out, nyr, years) 
+
+recruit_df <- recruit.df |>
+    filter(.width == 0.5) |>
+    select(year, recruits, .lower, .upper) |>
+    mutate(year = as.integer(year)) |>
+    rename(lower_50 = .lower, upper_50 = .upper)
+
+recruit_df$lower_95 <- filter(recruit.df, .width == 0.95) |>
+    select(.lower) |>
+    unlist()
+
+recruit_df$upper_95 <- filter(recruit.df, .width == 0.95) |>
+    select(.upper) |>
+    unlist()
+
+recruit.plot <- plot_recruitment_posterior(recruit_df, years, legend = FALSE)
+
+# biomass ----
 
 biomass.df <- compute.biomass.traj(dir_mcmc_out, nyr)
-biomass.plot <- plot_biomass_trajectory(biomass.df, c(years, curr.year), legend=FALSE)
+
+biomass_df <- biomass.df |>
+    filter(.width == 0.5) |>
+    select(year, prob, biomass, .lower, .upper) |>
+    mutate(year = c(years, curr.year)) |>
+    rename(lower_50 = .lower, upper_50 = .upper)
+
+biomass_df$lower_95 <- filter(biomass.df, .width == 0.95) |>
+    select(.lower) |>
+    unlist()
+
+biomass_df$upper_95 <- filter(biomass.df, .width == 0.95) |>
+    select(.upper) |>
+    unlist()
+
+biomass.plot <- plot_biomass_trajectory(biomass_df, c(years, curr.year), legend=FALSE)
+
+# exploitation ----
 
 exploit.df <- compute.exploit.rate(dir_mcmc_out, nyr)
-exploit.rate.plot <- plot_exploit_rate(exploit.df$exploit.rate.df,
-                                       exploit.df$exploit.zeros,
-                                       years)
+
+exploit_df <- exploit.df$exploit.rate.df |>
+    select(year, exploit, .lower, .upper) |>
+    mutate(year = as.numeric(year)) |>
+    rename(lower_95 = .lower, upper_95 = .upper)
+
+exploit.rate.plot <- plot_exploit_rate(exploit_df, years)
+
+# exploitation ----
 
 pfrb.posterior <- compute.pfrb.posterior(dir_mcmc_out, nyr+1)
 pfrb.posterior.plot <- plot_pfrb_posterior(pfrb.posterior$biomass.df, 

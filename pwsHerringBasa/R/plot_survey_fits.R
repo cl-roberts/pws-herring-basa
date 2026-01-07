@@ -19,24 +19,18 @@
 plot_survey_fits <- function(fits, survey.data, y.max, title, ylabel="",
                              scale=1, cvs=TRUE){
 
-  if(cvs){
-    points <- ggdist::geom_pointinterval(data=survey.data,
-                                         aes(x=.data$year, y=data/scale,
-                                             ymin=.data$lower/scale, ymax=.data$upper/scale))
-  }else{
-    points <- geom_point(data=survey.data, aes(x=.data$year, y=data/scale))
-  }
+    survey.data$year <- as.numeric(survey.data$year)  
 
-  return(
-    ggplot(fits) +
-      ggdist::geom_lineribbon(aes(x=.data$year, y=data/scale, ymin=.data$.lower/scale, ymax=.data$.upper/scale, group=1), linewidth=0.25)+
-      scale_fill_grey(start=0.8, end=0.6) +
-      points +
-      geom_line(data=survey.data, aes(x=.data$year, y=data/scale, group=1))+
-      scale_x_discrete("Year", breaks=seq(min(survey.data$year), max(survey.data$year), by=5))+
+    out <- ggplot(fits) +
+      geom_ribbon(aes(x=year, ymin=lower_50/scale, ymax=upper_50/scale), alpha = .25) +
+      geom_ribbon(aes(x=year, ymin=lower_95/scale, ymax=upper_95/scale), alpha = .25) +
+      geom_line(aes(x=year, y = data/scale), linewidth=0.25) +
+      geom_point(data=survey.data, aes(x=.data$year, y=data/scale), na.rm=TRUE) +
+      geom_line(data=survey.data, aes(x=.data$year, y=data/scale, group=1), na.rm=TRUE)+
+      scale_x_continuous("Year", breaks=seq(min(survey.data$year), max(survey.data$year), by=5))+
       scale_y_continuous(expand=c(0, 0))+
       labs(y=ylabel, title=title)+
-      coord_cartesian(xlim=c(1, length(survey.data$year)), ylim=c(0, y.max/scale))+
+      coord_cartesian(xlim=range(survey.data$year), ylim=c(0, y.max/scale))+
       theme_bw(base_size = 12) +
       theme(
         panel.grid.minor = element_blank(),
@@ -44,5 +38,11 @@ plot_survey_fits <- function(fits, survey.data, y.max, title, ylabel="",
         panel.background = element_blank(),
         axis.line = element_line(colour = "black"),
       )
-  )
+
+  if(cvs){
+    out <- out + 
+      geom_errorbar(data=survey.data, aes(x=year, ymin=lower/scale, ymax=upper/scale), width=0)
+  }
+
+  return(out)
 }
