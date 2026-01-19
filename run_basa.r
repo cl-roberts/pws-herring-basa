@@ -16,8 +16,8 @@ start_time <- Sys.time()
 ## control execution
 write_report_files <- TRUE         # write report files?
 run_mcmc <- TRUE                  # run MCMC sampler?
-write_mcmc_files <- TRUE          # write MCMC outputs to files?
-run_retro <- TRUE                 # run retrospective analysis?
+write_mcmc_files <- TRUE         # write MCMC outputs to files?
+run_retro <- FALSE                 # run retrospective analysis?
 app_data <- FALSE                  # copy outputs to mid-year management app directory?
 
 ## declare which parameters to fix
@@ -253,7 +253,7 @@ lower <- c(
     log_juvenile_q = -5,
     loginit_pop = rep(3, 5), 
     Z_9 = 0.3,  
-    beta_mortality = rep(-30, 3), 
+    beta_mortality = rep(0, 3), 
     logmdm_c = 2.3,  adfg_hydro_q = -5, pwssc_hydro_q = -5,     
     VHSV_age3_4_mort_93 = 0, ICH_age5_8_mort_93 = 0, 
     mat_age3 = 0.01, mat_age4 = 0.3,     
@@ -273,7 +273,7 @@ upper <- c(
     log_juvenile_q = 8,
     loginit_pop = rep(8, 5), 
     Z_9 = 1.6, 
-    beta_mortality = rep(30, 3), 
+    beta_mortality = rep(1, 3), 
     logmdm_c = 9, adfg_hydro_q = 5, pwssc_hydro_q = 5,     
     VHSV_age3_4_mort_93 = 5, ICH_age5_8_mort_93 = 5, 
     mat_age3 = 0.9, mat_age4 = 1, 
@@ -460,6 +460,7 @@ if (run_mcmc) {
     for(i in 1:n_iters){
 
         other_posteriors <- model$report(mcmc_results[i,])
+        simulated_quantities <- model$simulate(mcmc_results[i,])
 
         # survey quantities
         SpAC[i,] <- other_posteriors$spawn_age_comp_est |> t() |> c()
@@ -485,14 +486,14 @@ if (run_mcmc) {
 
         # forecast quantities
         mean_log_rec[i,] <- other_posteriors$mean_log_rec
-        N_a_forecast[i,] <- other_posteriors$N_a_forecast
-        Ntilde_a_forecast[i,] <- other_posteriors$Ntilde_a_forecast
-        Ntilde_agecomp_forecast[i,] <- other_posteriors$Ntilde_agecomp_forecast
-        Btilde_forecast[i,] <- other_posteriors$Btilde_forecast
-        Btilde_a_forecast[i,] <- other_posteriors$Btilde_a_forecast
-        Btilde_agecomp_forecast[i,] <- other_posteriors$Btilde_agecomp_forecast
+        N_a_forecast[i,] <- simulated_quantities$N_a_forecast
+        Ntilde_a_forecast[i,] <- simulated_quantities$Ntilde_a_forecast
+        Ntilde_agecomp_forecast[i,] <- simulated_quantities$Ntilde_agecomp_forecast
+        Btilde_forecast[i,] <- simulated_quantities$Btilde_forecast
+        Btilde_a_forecast[i,] <- simulated_quantities$Btilde_a_forecast
+        Btilde_agecomp_forecast[i,] <- simulated_quantities$Btilde_agecomp_forecast
         winter_survival_forecast[i,] <- other_posteriors$winter_survival_forecast
-        mdm_forecast[i,] <- other_posteriors$mdm_forecast
+        mdm_forecast[i,] <- simulated_quantities$mdm_forecast
 
         # objective function quantities
         likelihoods[i,1] <- other_posteriors$L1

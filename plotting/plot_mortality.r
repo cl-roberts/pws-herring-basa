@@ -146,6 +146,16 @@ mortality_ts <- ggarrange(vhs_mortality_ts, ich_mortality_ts, ncol = 1, heights 
 ggsave(here::here(dir_figures, "mortality_ts.pdf"), mortality_ts, height=8.5, width=11)
 ggsave(here::here(dir_figures, "mortality_ts.png"), mortality_ts, height=5, width=7)
 
+
+# ich mortality between 1994 and 2006
+ich_mort_1994_2006 <- mortality |>
+    filter(age == 5, year >= 1994, year <= 2006) |>
+    select(`0.5`) |>
+    unlist()
+
+# average excess mortality between 1994 and 2006
+mean(ich_mort_1994_2006) - 0.25
+
 #-------------------------------------------------------------------------------
 
 #### plot beta mortality parameters posteriors ####
@@ -162,15 +172,15 @@ beta_hist_2 <- ggplot(data = beta_posteriors) +
     geom_vline(aes(xintercept = beta_quants[3,2]), color = "red") +
     labs(subtitle = paste0("Ich. Beta Mortality posterior (post-2007)")) 
 
-# beta_hist_3 <- ggplot(data = beta_posteriors) +
-#     geom_histogram(aes(beta_mortality.3.), bins = 50, fill = "white", color = "black") +
-#     geom_vline(aes(xintercept = beta_quants[3,3]), color = "red") +
-#     labs(subtitle = paste0("VHSV Beta Mortality posterior"))
+beta_hist_3 <- ggplot(data = beta_posteriors) +
+    geom_histogram(aes(beta_mortality.3.), bins = 50, fill = "white", color = "black") +
+    geom_vline(aes(xintercept = beta_quants[3,3]), color = "red") +
+    labs(subtitle = paste0("VHSV Beta Mortality posterior"))
 
 beta_mortality_posteriors <- ggarrange(
     beta_hist_1, beta_hist_2, 
-    # beta_hist_3, 
-    # nrow = 2, ncol = 2
+    beta_hist_3, 
+    nrow = 2,
     ncol = 2
 )
 # ggsave(here::here(dir_figures, "beta_mortality_posteriors.pdf"), beta_mortality_posteriors, height=8.5, width=11)
