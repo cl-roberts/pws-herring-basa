@@ -52,6 +52,29 @@ Type posfun(Type x, Type eps, Type &pen){
   return CppAD::CondExpGe(x,eps,x,eps/(Type(2)-x/eps));
 }
 
+template <class Type>
+vector<Type> rmultinom(Type ess, vector<Type> prob){
+    int A = prob.size();
+    vector<Type> cum_prob_vec(A);
+    cum_prob_vec.setZero();
+    vector<Type> multinomial_sample(A);
+    multinomial_sample.setZero();
+    Type cum_prob = 0.0;
+    for (int a = 0; a < A; a++) {
+        cum_prob += prob(a);
+        cum_prob_vec(a) = cum_prob;
+    }
+    while (multinomial_sample.sum() < ess) {
+        Type unif_sample = runif(Type(0.0), cum_prob);
+        int count = 0;
+        for (int a = 0; a < A-1; a++) {
+            if (unif_sample > cum_prob_vec(a)) count += 1;
+        }
+        multinomial_sample(count) += 1;
+    }
+    return multinomial_sample / ess;
+}
+
 
 // ---- define objective function ---- //
 
@@ -64,9 +87,9 @@ Type objective_function<Type>::operator() ()
     // ------------------------------------------------------------------ //
 
     // ---- model/PWS_ASA(ESS).ctl ---- //
-    DATA_IVECTOR(seine_ess);                // purse-seine effective sample sizes
-    DATA_IVECTOR(spawn_ess);                // spawn survey effective sample sizes
-    DATA_IVECTOR(vhsv_ess);                 // VHSV effective sample sizes
+    DATA_VECTOR(seine_ess);                // purse-seine effective sample sizes
+    DATA_VECTOR(spawn_ess);                // spawn survey effective sample sizes
+    DATA_VECTOR(vhsv_ess);                 // VHSV effective sample sizes
 
     // ---- model/PWS_ASA.dat ---- //
     DATA_INTEGER(nyr);                      // length of model data time series
@@ -94,10 +117,10 @@ Type objective_function<Type>::operator() ()
     DATA_IMATRIX(mort_age_impact);           // which age does the mort cov impact?
 
     // ---- model/agecomp_samp_sizes.txt ---- //
-    DATA_IVECTOR(seine_sample_size);        // purse seine raw sample sizes
-    DATA_IVECTOR(spawn_sample_size);        // spawn survey raw sample sizes
-    DATA_IVECTOR(vhsv_sample_size);         // antibody raw sample sizes
-    DATA_IVECTOR(ich_sample_size);          // I. hoferi raw sample sizes
+    DATA_VECTOR(seine_sample_size);        // purse seine raw sample sizes
+    DATA_VECTOR(spawn_sample_size);        // spawn survey raw sample sizes
+    DATA_VECTOR(vhsv_sample_size);         // antibody raw sample sizes
+    DATA_VECTOR(ich_sample_size);          // I. hoferi raw sample sizes
 
     // ---- forecast controls ---- //
     DATA_INTEGER(recruitment_average_years);    // # years to average recruitments in forecast
@@ -154,7 +177,7 @@ Type objective_function<Type>::operator() ()
 
     // ---- dummy objects ---- //
     Type dummy = 0;                                     // scalar for saving dummy variables for debugging
-    vector<Type> dummy_vector(nyr);                     // dummy vector
+    vector<Type> dummy_vector(nage);                     // dummy vector
     dummy_vector.setZero();
     matrix<Type> dummy_matrix(nyr, nage);               // dummy matrix
     dummy_matrix.setZero();
@@ -187,6 +210,10 @@ Type objective_function<Type>::operator() ()
     Type winter_surv_pen = 0.0;
     Type summer_surv_pen = 0.0;
 
+    // early year excess mortalities
+    Type age3_4_mort_pre_93 = 0;
+    Type age5_8_mort_pre_93 = 0.1141221;
+
     // calculate disease mortality effects
     for (int y = 0; y < nyr; y++) {
         for(int a = 0; a < nage; a++) {
@@ -210,6 +237,29 @@ Type objective_function<Type>::operator() ()
             // ages 0-8
             summer_survival(y, a) = exp(-0.5*Z_0_8 - summer_mortality_effect(y, a));
             winter_survival(y, a) = exp(-0.5*Z_0_8 - winter_mortality_effect(y, a));
+
+            // TEMPORARY MEASURE TO INCREASE EARLY YEAR MORTALITY
+            if (a >= 3 && y < index_1992) {
+                if (a <= 4) {
+                    summer_survival(y, a) *= exp(-age3_4_mort_pre_93);
+                } else if (a > 4) {
+                    summer_survival(y, a) *= exp(-age5_8_mort_pre_93);
+                }
+            } else if (a >= 3 && y < index_1992+1) {
+                if (a <= 4) {
+                    summer_survival(y, a) *= exp(-age3_4_mort_pre_93);
+                    winter_survival(y, a) *= exp(-age3_4_mort_pre_93);
+                } else if (a > 4) {
+                    summer_survival(y, a) *= exp(-age5_8_mort_pre_93);
+                    winter_survival(y, a) *= exp(-age5_8_mort_pre_93);
+                }              
+            } else if (a >= 3 && y < index_1992+2) {
+                if (a <= 4) {
+                    winter_survival(y, a) *= exp(-age3_4_mort_pre_93);
+                } else if (a > 4) {
+                    winter_survival(y, a) *= exp(-age5_8_mort_pre_93);
+                }    
+            }
 
             if (a >= 3 && y == index_1992) {
                 if (a <= 4) {
@@ -560,13 +610,39 @@ Type objective_function<Type>::operator() ()
     spawn_age_comp_est.setZero();
     vector<Type> total_spawners(nyr);                   // all spawners across ages
     total_spawners.setZero();
-    
+
+    matrix<Type> seine_agecomp_pp(nyr, nage);         // posterior prediction
+    seine_agecomp_pp.setConstant(-9);
+    matrix<Type> spawn_agecomp_pp(nyr, nage);         // distributions
+    spawn_agecomp_pp.setZero();
+
+    vector<Type> seine_agecomp_mean(nage);
+    vector<Type> spawn_agecomp_mean(nage);
+
     total_spawners = N_y_a * maturity; 
 
     for (int y = 0; y < nyr; y++) {
+
         for (int a = 0; a < nage; a++) {
             spawn_age_comp_est(y, a) = maturity(a)*N_y_a(y, a) / total_spawners(y);
         }
+
+        // posterior prediction
+        
+        if (seine_ess(y) != -9) {
+            SIMULATE {
+                seine_agecomp_mean = seine_age_comp_est.row(y);
+                seine_agecomp_pp.row(y) = rmultinom(Type(seine_ess(y)), seine_agecomp_mean);
+            }
+        }
+
+        if (spawn_ess(y) != -9) {
+            SIMULATE {
+                spawn_agecomp_mean = spawn_age_comp_est.row(y);
+                spawn_agecomp_pp.row(y) = rmultinom(Type(spawn_ess(y)), spawn_agecomp_mean);
+            }
+        }
+
     }
 
     // ---- estimate ADFG hydroacoustic biomass ---- //
@@ -603,17 +679,42 @@ Type objective_function<Type>::operator() ()
     vector<Type> That_y(nyr);
     That_y.setZero();
 
+    vector<Type> That_y_pp(nyr);
+
+    Type mdm_pp_mean = 0.0; 
+    Type mdm_pp_var = pow(milt_add_var, 2) + 1;
+
     for (int y = 0; y < nyr; y++) {
+
         That_y(y) = ((1 - perc_female(y)) * Btilde_post_y(y)) / exp(logmdm_c);
+
+        // posterior prediction        
+        SIMULATE {
+            mdm_pp_mean = pow(That_y(y), 2) / sqrt(pow(That_y(y), 2) + pow(That_y(y)*milt_add_var, 2));
+            That_y_pp(y) = exp(rnorm(log(mdm_pp_mean), sqrt(log(mdm_pp_var))));
+        }
+
     }
+
 
     // ---- estimate juvenile aerial survey ---- //
     
     vector<Type> Jhat_y(nyr);
     Jhat_y.setZero();
+
+    vector<Type> Jhat_y_pp(nyr);
+
+    Type juv_simulation_var = exp(juvenile_overdispersion); 
     
     for (int y = 0; y < nyr; y++){
+
         Jhat_y(y) = N_y_a(y,1) * exp(log_juvenile_q); 
+        
+        // posterior prediction        
+        SIMULATE {
+            Jhat_y_pp(y) = rnbinom(juv_simulation_var, juv_simulation_var / (juv_simulation_var+Jhat_y(y)));          
+        }
+
     }
 
     // --------------------- FORECAST QUANTITIES ------------------------ //
@@ -648,9 +749,21 @@ Type objective_function<Type>::operator() ()
 
     // forecast disease covariate prevalence
     for(int b = 0; b < n_covs; b++){
+
+        Type disease_cov_average_years_not_missing = disease_cov_average_years;
         for(int y = nyr - disease_cov_average_years; y < nyr; y++) {
-            mean_disease_cov(b) += disease_covs_calc(y, b) / disease_cov_average_years;
+            // only average years in which there is data
+            if (disease_covs(y, b) == -9) {
+                disease_cov_average_years_not_missing -= 1;
+            }
         }    
+        
+        if (disease_cov_average_years_not_missing == 0) continue;    
+        
+        for(int y = nyr - disease_cov_average_years; y < nyr; y++) {
+            mean_disease_cov(b) += disease_covs_calc(y, b) / disease_cov_average_years_not_missing;
+        }    
+    
     }
     
     // set up winter survival forecast vector
@@ -672,73 +785,93 @@ Type objective_function<Type>::operator() ()
     // take a mean (in log space) of age-2 fish for recruitment forecast
     // enables accounting for age-2 fish harvested in food/bait fishery
     Type mean_log_rec = 0.0;
+    Type var_log_rec = 0.0;
+    Type recruit_forecast = 0.0;
     for(int y = nyr - recruitment_average_years; y < nyr; y++) {
         mean_log_rec += log(N_y_a(y-1, 2)) / recruitment_average_years;
         // mean_log_rec += log(N_y_a(y, 3)) / recruitment_average_years;
     }
+    for(int y = nyr - recruitment_average_years; y < nyr; y++) {
+        var_log_rec += (log(N_y_a(y-1, 2)) - mean_log_rec) * (log(N_y_a(y-1, 2)) - mean_log_rec);
+    }
+    var_log_rec /= recruitment_average_years - 1;
 
-    // project naa matrix forward 1 year
-    for (int a = 0; a < nage; a++) {
+    // conduct forecast in simulation block
+    SIMULATE {
+        recruit_forecast = rnorm(mean_log_rec, sqrt(var_log_rec));
         
-        if (a < 3) {
-            
-            N_a_forecast(a) = 0;   
-            
-        } else if(a == 3) {
-            
-            N_a_forecast(a) = exp(mean_log_rec);
-            N_a_forecast(a) *= summer_survival(nyr-1, a-1);
-            N_a_forecast(a) -= foodbait_catch(nyr-1, a-1);
-            N_a_forecast(a) *= winter_survival_forecast(a-1);
-            
-        } else if (a >= 4) {
-
-            N_a_forecast(a) = N_y_a(nyr-1, a-1) - spring_removals(nyr-1, a-1);
-            N_a_forecast(a) *= summer_survival(nyr-1, a-1);
-            N_a_forecast(a) -= foodbait_catch(nyr-1, a-1);
-            N_a_forecast(a) *= winter_survival_forecast(a-1);       
-
-        } 
+        // int rec_forecast_index = nyr - 1 - std::floor(runif(0, recruitment_average_years));
+        // mean_log_rec = log(N_y_a(rec_forecast_index, 2));
+        // REPORT(rec_forecast_index);
+        // REPORT(mean_log_rec);
         
-        if (a == nage-1) {
-            // plus group
-            Type N_a_forecast_plus_group = 0.0;
-            N_a_forecast_plus_group += N_y_a(nyr-1, a) - spring_removals(nyr-1, a);
-            N_a_forecast_plus_group *= summer_survival(nyr-1, a);
-            N_a_forecast_plus_group -= foodbait_catch(nyr-1, a);
-            N_a_forecast_plus_group *= winter_survival_forecast(a);
-            N_a_forecast(a) += N_a_forecast_plus_group;
+        // project naa matrix forward 1 year
+        for (int a = 0; a < nage; a++) {
+            
+            if (a < 3) {
+                
+                N_a_forecast(a) = 0;   
+                
+            } else if(a == 3) {
+                
+                // N_a_forecast(a) = exp(mean_log_rec);
+                N_a_forecast(a) = exp(recruit_forecast);
+                N_a_forecast(a) *= summer_survival(nyr-1, a-1);
+                N_a_forecast(a) -= foodbait_catch(nyr-1, a-1);
+                N_a_forecast(a) *= winter_survival_forecast(a-1);
+                
+            } else if (a >= 4) {
+                
+                N_a_forecast(a) = N_y_a(nyr-1, a-1) - spring_removals(nyr-1, a-1);
+                N_a_forecast(a) *= summer_survival(nyr-1, a-1);
+                N_a_forecast(a) -= foodbait_catch(nyr-1, a-1);
+                N_a_forecast(a) *= winter_survival_forecast(a-1);       
+                
+            } 
+            
+            if (a == nage-1) {
+                // plus group
+                Type N_a_forecast_plus_group = 0.0;
+                N_a_forecast_plus_group += N_y_a(nyr-1, a) - spring_removals(nyr-1, a);
+                N_a_forecast_plus_group *= summer_survival(nyr-1, a);
+                N_a_forecast_plus_group -= foodbait_catch(nyr-1, a);
+                N_a_forecast_plus_group *= winter_survival_forecast(a);
+                N_a_forecast(a) += N_a_forecast_plus_group;
+            }
+            
         }
         
+        // forecast waa
+        for (int a = 0; a < nage; a++) {
+            waa_forecast(a) = waa.col(a).tail(waa_average_years).sum() / waa_average_years;
+        }
+        
+        // pre-fishery spawning biomass forecast
+        for (int a = 0; a < nage; a++) {
+            Ntilde_a_forecast(a) = maturity(a)*N_a_forecast(a);
+            Btilde_a_forecast(a) = Ntilde_a_forecast(a)*waa_forecast(a);
+            Btilde_forecast += Btilde_a_forecast(a);
+        }
+        
+        // agecomp forecasts
+        Ntilde_agecomp_forecast = Ntilde_a_forecast / Ntilde_a_forecast.sum();
+        Btilde_agecomp_forecast = Btilde_a_forecast / Btilde_a_forecast.sum();
+        
+        // forecast proportion of population that are female
+        Type perc_female_forecast = 0.0;
+        for(int y = nyr - perc_female_forecast_years; y < nyr; y++) {
+            perc_female_forecast += perc_female(y) / perc_female_forecast_years;
+        }
+        
+        // milt forecast
+        mdm_forecast = Btilde_forecast - expected_spring_harvest; 
+        mdm_forecast *= (1 - perc_female_forecast);
+        mdm_forecast /= exp(logmdm_c);
     }
+
+    REPORT(recruit_forecast);
+    REPORT(var_log_rec);
     
-    // forecast waa
-    for (int a = 0; a < nage; a++) {
-        waa_forecast(a) = waa.col(a).tail(waa_average_years).sum() / waa_average_years;
-    }
-
-    // pre-fishery spawning biomass forecast
-    for (int a = 0; a < nage; a++) {
-        Ntilde_a_forecast(a) = maturity(a)*N_a_forecast(a);
-        Btilde_a_forecast(a) = Ntilde_a_forecast(a)*waa_forecast(a);
-        Btilde_forecast += Btilde_a_forecast(a);
-    }
-
-    // agecomp forecasts
-    Ntilde_agecomp_forecast = Ntilde_a_forecast / Ntilde_a_forecast.sum();
-    Btilde_agecomp_forecast = Btilde_a_forecast / Btilde_a_forecast.sum();
-
-    // forecast proportion of population that are female
-    Type perc_female_forecast = 0.0;
-    for(int y = nyr - perc_female_forecast_years; y < nyr; y++) {
-        perc_female_forecast += perc_female(y) / perc_female_forecast_years;
-    }
-
-    // milt forecast
-    mdm_forecast = Btilde_forecast - expected_spring_harvest; 
-    mdm_forecast *= (1 - perc_female_forecast);
-    mdm_forecast /= exp(logmdm_c);
-
     // ------------------------- LIKELIHOODS ---------------------------- //
     
     // ---- L1: purse-seine age-composition ---- //
@@ -953,6 +1086,12 @@ Type objective_function<Type>::operator() ()
     REPORT(That_y);
     REPORT(Jhat_y);
     REPORT(L7_var);
+
+    // posterior prediction
+    REPORT(That_y_pp);
+    REPORT(Jhat_y_pp);
+    REPORT(seine_agecomp_pp);
+    REPORT(spawn_agecomp_pp);
 
     // ---- population dynamics ---- //
 

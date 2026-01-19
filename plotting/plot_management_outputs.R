@@ -122,7 +122,7 @@ pfrb.posterior.plot <- plot_pfrb_posterior(pfrb.posterior$biomass.df,
                                            pfrb.posterior$biomass.quants, 
                                            pfrb.posterior$prob.below.threshold,
                                            curr.year,
-                                           font.size=5)
+                                           font.size=14)
 
 #-------------------------------------------------------------------------------
 

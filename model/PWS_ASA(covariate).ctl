@@ -58,8 +58,10 @@
 -1
 -1
 -1
+-1
 
 # R_beta_change - turn on years for the offset to take effect
+0
 0
 0
 0
@@ -177,11 +179,12 @@
 -9	0.172222222	0
 -9	0.133333333	0 
 -9	0.190001883	0
--9	0.190001883	0 
--9  -9         -9 
--9  -9         -9
--9  -9         -9
--9  -9         -9
+-9  0.1702128 0 
+-9	0.1944444 -9 
+-9  0.1939799 0
+-9  0.2194093 0
+-9  0.3277778 0.005617978
+-9  0.2079768 0.0006242198
                                        
 # Observed WINTER Natural mortality deviates for year to be forecast (average of 3 preceding years)
 -9
@@ -189,6 +192,7 @@
 -9
 
 # M_beta_change - turn on years for the offset to take effect
+0
 0
 0
 0
