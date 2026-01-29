@@ -129,30 +129,23 @@ Type objective_function<Type>::operator() ()
     // ---- model/PWS_ASA(covariate).ctl ---- //
     DATA_MATRIX(disease_covs);              // excess mortality due to disease
     DATA_IMATRIX(mort_age_impact);           // which age does the mort cov impact?
-    
+
     // ---- model/agecomp_samp_sizes.txt ---- //
-    // DATA_VECTOR(seine_sample_size);        // purse seine raw sample sizes
-    // DATA_VECTOR(spawn_sample_size);        // spawn survey raw sample sizes
-    // DATA_VECTOR(vhsv_sample_size);         // antibody raw sample sizes
-    // DATA_VECTOR(ich_sample_size);          // I. hoferi raw sample sizes
-    
-    // ---- Kayak island data ---- //
-    DATA_VECTOR(KI_mdm);                    // Kayak Island mdm mile-days milt survey index
-    DATA_VECTOR(KI_spawn_ess);                // ess for KI spawn survey agecomp
-    DATA_MATRIX(KI_spawn_age_comp);           // survey agecomp for KI
+    DATA_VECTOR(seine_sample_size);        // purse seine raw sample sizes
+    DATA_VECTOR(spawn_sample_size);        // spawn survey raw sample sizes
+    DATA_VECTOR(vhsv_sample_size);         // antibody raw sample sizes
+    DATA_VECTOR(ich_sample_size);          // I. hoferi raw sample sizes
 
     // ---- simulation quantities ---- //
+    DATA_VECTOR(new_waa);                     // WAA used in simulation 
+    DATA_SCALAR(new_perc_female);             // perc female used in simulation
     DATA_VECTOR(lambda_ages);                 // ages that move
     DATA_VECTOR(KI_seine_yield);              // catch for KI
     DATA_MATRIX(KI_seine_age_comp);           // catch agecomp for KI
     DATA_VECTOR(KI_seine_ess);                // ess for KI catch agecomp
+    DATA_VECTOR(KI_spawn_ess);                // ess for KI catch agecomp
+    DATA_INTEGER(do_simulation);              // boolean for controlling simulation
 
-    // ---- forecast controls ---- //
-    DATA_INTEGER(recruitment_average_years);    // # years to average recruitments in forecast
-    DATA_INTEGER(waa_average_years);            // # years to average WAA in forecast 
-    DATA_INTEGER(disease_cov_average_years);    // # years to average disease covariates in forecast
-    DATA_SCALAR(expected_spring_harvest);       // metric tons of expected harvest for milt forecast
-    DATA_INTEGER(perc_female_forecast_years);   // # years to average percent females in milt forecast
 
     // ------------------------------------------------------------------ //
     //                        Parameter Section                           //
@@ -189,29 +182,23 @@ Type objective_function<Type>::operator() ()
     PARAMETER(pwssc_hydro_add_var);          // hydroacoustic additional variance (PWSSC)
     PARAMETER(juvenile_overdispersion);      // aerial juvenile additional variance
    
-    // ---- spatial component parameters ---- //
-    // PARAMETER_VECTOR(KI_loginit_pop);        // kayak island 1980 numbers-at-age
-    // PARAMETER(KI_log_MeanAge0);              // Kayak island mean recruits, log-space
-    PARAMETER_VECTOR(KI_annual_age0devs);       // kayak island recruitment deviates
-    // PARAMETER(logit_lambda);                    // fraction that move from KI to PWS
-    PARAMETER(lambda);                    // fraction that move from KI to PWS
-    PARAMETER(KI_recruitment_factor);           // relative size of KI to PWS mean recruits
-    PARAMETER(R_corr);                          // correlation between KI and PWS recruitments
-    PARAMETER(KI_milt_add_var);                // kayak island milt additional variance
-
+    PARAMETER(R_corr);                // kayak island milt additional variance fixed
+    PARAMETER(KI_milt_add_var);                // kayak island milt additional variance fixed
+   
+    // ---- simulation parameters ---- //
+    PARAMETER_VECTOR(KI_loginit_pop);        // kayak island 1980 numbers-at-age
+    PARAMETER(KI_log_MeanAge0);              // Kayak island mean recruits, log-space
+    PARAMETER_VECTOR(KI_annual_age0devs);    // kayak island recruitment deviates
+    PARAMETER(KI_lambda);                    // fraction that move from KI to PWS
+    PARAMETER(PWS_lambda);                   // fraction that move from PWS to KI
+    
     // ------------------------------------------------------------------ //
     //                        Procedure Section                           //
     // ------------------------------------------------------------------ //
 
     // ---- convert some parameters from log-space ---- //
     vector<Type> init_pop = exp(loginit_pop);           // initial population vector
-    // vector<Type> KI_init_pop = exp(KI_loginit_pop);     // KI initial pop
-    vector<Type> KI_init_pop = init_pop * KI_recruitment_factor;     // KI initial pop
-
-    // Type PWS_lambda = 0.0;
-    // PWS_lambda = 1 / (1+exp(-logit_lambda));
-    Type KI_lambda = lambda;
-    Type PWS_lambda = lambda;
+    vector<Type> KI_init_pop = exp(KI_loginit_pop);     // KI initial pop
 
     // ---- penalty objects ---- //
     int penCount = 0;                                   // count instances of penalties
@@ -401,13 +388,11 @@ Type objective_function<Type>::operator() ()
     vector<Type> KI_age_0(nyr);
     KI_age_0.setZero();
 
-    Type KI_log_MeanAge0 = log_MeanAge0 + log(KI_recruitment_factor);
-
     for (int y = 0; y < nyr-1; y++) {
-        // age_0(y) = exp(log_MeanAge0 + annual_age0devs(y));
-        // KI_age_0(y) = exp(KI_log_MeanAge0 + KI_annual_age0devs(y));
-        age_0(y) = exp(log_MeanAge0 + annual_age0devs(y) - pow(sigma_age0devs, 2)/2);
-        KI_age_0(y) = exp(KI_log_MeanAge0 + KI_annual_age0devs(y) - pow(sigma_age0devs, 2)/2);
+        age_0(y) = exp(log_MeanAge0 + annual_age0devs(y));
+        KI_age_0(y) = exp(KI_log_MeanAge0 + KI_annual_age0devs(y));
+        // age_0(y) = exp(log_MeanAge0 + annual_age0devs(y) - pow(sigma_age0devs, 2)/2);
+        // KI_age_0(y) = exp(KI_log_MeanAge0 + KI_annual_age0devs(y) - pow(sigma_age0devs, 2)/2);
     }
 
     // fix age-0's in last year of model to mean 
@@ -437,12 +422,6 @@ Type objective_function<Type>::operator() ()
     vector<Type> seine_selected(nyr);
     seine_selected.setZero();
     
-    matrix<Type> KI_seine_age_comp_est(nyr, nage);         // seine age composition
-    KI_seine_age_comp_est.setZero();
-    vector<Type> KI_seine_selected(nyr);
-    KI_seine_selected.setZero();
-
-
     // estimate fully selected seine catch to calculate age comp estimate
     seine_selected(0) = N_y_a.row(0).dot(seine_selex.matrix().transpose());      
     for (int a = 0; a < nage; a++) {
@@ -620,10 +599,8 @@ Type objective_function<Type>::operator() ()
 
         // seine age comps estimates
         seine_selected(y) = N_y_a.row(y).dot(seine_selex.matrix().transpose());      
-        KI_seine_selected(y) = KI_N_y_a.row(y).dot(seine_selex.matrix().transpose());      
         for (int a = 0; a < nage; a++) {
             seine_age_comp_est(y, a) = seine_selex(a)*N_y_a(y, a) / seine_selected(y);
-            KI_seine_age_comp_est(y, a) = seine_selex(a)*KI_N_y_a(y, a) / KI_seine_selected(y);
         }
 
         // estimate seine catch
@@ -785,47 +762,13 @@ Type objective_function<Type>::operator() ()
     spawn_age_comp_est.setZero();
     vector<Type> total_spawners(nyr);                   // all spawners across ages
     total_spawners.setZero();
-
-    matrix<Type> KI_spawn_age_comp_est(nyr, nage);         // spawning age composition
-    KI_spawn_age_comp_est.setZero();
-    vector<Type> KI_total_spawners(nyr);                   // all spawners across ages
-    KI_total_spawners.setZero();
-
-    matrix<Type> seine_agecomp_pp(nyr, nage);         // posterior prediction
-    seine_agecomp_pp.setConstant(-9);
-    matrix<Type> spawn_agecomp_pp(nyr, nage);         // distributions
-    spawn_agecomp_pp.setZero();
-
-    vector<Type> seine_agecomp_mean(nage);
-    vector<Type> spawn_agecomp_mean(nage);
-
+    
     total_spawners = N_y_a * maturity; 
-    KI_total_spawners = KI_N_y_a * maturity; 
-
 
     for (int y = 0; y < nyr; y++) {
-
         for (int a = 0; a < nage; a++) {
             spawn_age_comp_est(y, a) = maturity(a)*N_y_a(y, a) / total_spawners(y);
-            KI_spawn_age_comp_est(y, a) = maturity(a)*KI_N_y_a(y, a) / KI_total_spawners(y);
         }
-
-        // posterior prediction
-        
-        if (seine_ess(y) != -9) {
-            SIMULATE {
-                seine_agecomp_mean = seine_age_comp_est.row(y);
-                seine_agecomp_pp.row(y) = rmultinom(Type(seine_ess(y)), seine_agecomp_mean);
-            }
-        }
-
-        if (spawn_ess(y) != -9) {
-            SIMULATE {
-                spawn_agecomp_mean = spawn_age_comp_est.row(y);
-                spawn_agecomp_pp.row(y) = rmultinom(Type(spawn_ess(y)), spawn_agecomp_mean);
-            }
-        }
-
     }
 
     // ---- estimate ADFG hydroacoustic biomass ---- //
@@ -862,21 +805,8 @@ Type objective_function<Type>::operator() ()
     vector<Type> That_y(nyr);
     That_y.setZero();
 
-    vector<Type> That_y_pp(nyr);
-
-    Type mdm_pp_mean = 0.0; 
-    Type mdm_pp_var = pow(milt_add_var, 2) + 1;
-
     for (int y = 0; y < nyr; y++) {
-
         That_y(y) = ((1 - perc_female(y)) * Btilde_post_y(y)) / exp(logmdm_c);
-
-        // posterior prediction        
-        SIMULATE {
-            mdm_pp_mean = pow(That_y(y), 2) / sqrt(pow(That_y(y), 2) + pow(That_y(y)*milt_add_var, 2));
-            That_y_pp(y) = exp(rnorm(log(mdm_pp_mean), sqrt(log(mdm_pp_var))));
-        }
-
     }
 
 
@@ -884,437 +814,400 @@ Type objective_function<Type>::operator() ()
     
     vector<Type> Jhat_y(nyr);
     Jhat_y.setZero();
-
-    vector<Type> Jhat_y_pp(nyr);
-
-    Type juv_simulation_var = exp(juvenile_overdispersion); 
     
     for (int y = 0; y < nyr; y++){
+        Jhat_y(y) = N_y_a(y, 1) * exp(log_juvenile_q); 
+    }
 
-        Jhat_y(y) = N_y_a(y,1) * exp(log_juvenile_q); 
+    // ------------------------------------------------------------------ //
+    //                        Simulation Section                          //
+    // ------------------------------------------------------------------ //
+    
+    // ---- simulate PWS survey data ---- //
+
+    vector<Type> N_a_simulation(nage);                   // simulated numbers-at-age
+    N_a_simulation.setZero();
+
+    vector<Type> Ntilde_a_simulation(nage);              // simulated mature numbers-at-age
+    Ntilde_a_simulation.setZero();
+    
+    vector<Type> Btilde_a_simulation(nage);               // simulated mature biomass-at-age
+    Btilde_a_simulation.setZero();
+    
+    Type Btilde_simulation = 0.0;                         // simulated mature biomass in spring
+    
+    vector<Type> seine_agecomp_simulation(nage);         // simulated seine numbers agecomp
+    seine_agecomp_simulation.setZero();
+    
+    vector<Type> spawn_agecomp_simulation(nage);         // simulated spawn numbers agecomp
+    spawn_agecomp_simulation.setZero();
+
+    // project forward 1 year
+    for (int a = 0; a < nage; a++) {
+        N_a_simulation(a) = N_y_a(nyr-1, a) - spring_removals(nyr-1, a);
+        Ntilde_a_simulation(a) = maturity(a)*N_a_simulation(a);
+        Btilde_a_simulation(a) = Ntilde_a_simulation(a)*new_waa(a);
+        Btilde_simulation += Btilde_a_simulation(a);
+    }
         
-        // posterior prediction        
-        SIMULATE {
-            Jhat_y_pp(y) = rnbinom(juv_simulation_var, juv_simulation_var / (juv_simulation_var+Jhat_y(y)));          
-        }
+    // projected seine age comps (in terms of numbers-at-age)
+    Type seine_selected_simulation = N_a_simulation.matrix().dot(seine_selex.matrix().transpose());      
+    for (int a = 0; a < nage; a++) {
+        seine_agecomp_simulation(a) = seine_selex(a)*N_a_simulation(a) / seine_selected_simulation;
+    }
+    
+    // projected spawn age comps (in terms of numbers-at-age)
+    spawn_agecomp_simulation = Ntilde_a_simulation / Ntilde_a_simulation.sum();
+    
+    // Simulate mile-days milt 
+    SIMULATE {
+
+        Type mdm_mean = 0.0;
+        Type mdm_simulation_mean = 0.0; 
+        Type mdm_simulation_var = 0.0; 
+        Type new_mdm = 0.0;
+
+        mdm_mean = Btilde_simulation; 
+        mdm_mean *= (1 - new_perc_female);
+        mdm_mean /= exp(logmdm_c);
+
+        mdm_simulation_mean = pow(mdm_mean, 2) / sqrt(pow(mdm_mean, 2) + pow(mdm_mean*milt_add_var, 2));
+        mdm_simulation_var = pow(milt_add_var, 2) + 1;
+
+        // new_mdm = exp(rnorm(log(mdm_mean), milt_add_var));            
+        new_mdm = exp(rnorm(log(mdm_simulation_mean), sqrt(log(mdm_simulation_var))));          
+
+        REPORT(new_mdm);                    
 
     }
 
-    // ---- calculate milt hindcast ---- //
+    // Simulate juvenile schools 
+    SIMULATE {
+
+        Type juv_simulation_mean = 0.0; 
+        Type juv_simulation_var = 0.0; 
+        Type new_juv = 0.0;
+
+        juv_simulation_mean = N_y_a(nyr-1, 1) * exp(log_juvenile_q);
+        juv_simulation_var = exp(juvenile_overdispersion);
+        
+        // new_juv = rnbinom2(juv_simulation_mean, juv_simulation_var);          
+        new_juv = rnbinom(juv_simulation_var, juv_simulation_var / (juv_simulation_var+juv_simulation_mean));          
+
+        REPORT(new_juv);                    
+
+    }
+
+    // Simulate seine agecomps 
+    SIMULATE {
+
+        vector<Type> new_seine_agecomp(nage);
+
+        new_seine_agecomp = rmultinom(seine_ess(nyr-1), seine_agecomp_simulation);
+        
+        REPORT(new_seine_agecomp);        
+
+    }
+
+    // Simulate spawn agecomps 
+    SIMULATE {
+
+        vector<Type> new_spawn_agecomp(nage);
+
+        new_spawn_agecomp = rmultinom(spawn_ess(nyr-1), spawn_agecomp_simulation);
+        
+        REPORT(new_spawn_agecomp);                    
+
+    }
+
+    // ---- simulate KI milt survey data ---- //
+
+    vector<Type> KI_N_a_simulation(nage);                   // KI simulated numbers-at-age
+    KI_N_a_simulation.setZero();
+
+    vector<Type> KI_Ntilde_a_simulation(nage);           // KI simulated mature numbers-at-age
+    KI_Ntilde_a_simulation.setZero();    
+
+    vector<Type> KI_Btilde_a_simulation(nage);               // KI simulated mature biomass-at-age
+    KI_Btilde_a_simulation.setZero();
+    
+    vector<Type> KI_spawn_agecomp_simulation(nage);         // KI simulated spawn numbers agecomp
+    KI_spawn_agecomp_simulation.setZero();
+
+    Type KI_Btilde_simulation = 0.0;                         // KI simulated mature biomass in spring
+
+    // project biomass forward
+    for (int a = 0; a < nage; a++) {
+        KI_N_a_simulation(a) = KI_N_y_a(nyr-1, a) - KI_spring_removals(nyr-1, a);
+        KI_Ntilde_a_simulation(a) = maturity(a)*KI_N_a_simulation(a);
+        KI_Btilde_a_simulation(a) = KI_Ntilde_a_simulation(a)*new_waa(a);
+        KI_Btilde_simulation += KI_Btilde_a_simulation(a);
+    }
+
+    KI_spawn_agecomp_simulation = KI_Ntilde_a_simulation / KI_Ntilde_a_simulation.sum();
+
+    // Simulate new kayak island spawn agecomps 
+    SIMULATE {
+
+        vector<Type> KI_new_spawn_agecomp(nage);
+
+        KI_new_spawn_agecomp = rmultinom(KI_spawn_ess(nyr-1), KI_spawn_agecomp_simulation);
+        
+        REPORT(KI_new_spawn_agecomp);                    
+
+    }
+
+    // calculate milt hindcast
     vector<Type> KI_That_y(nyr);
     KI_That_y.setZero();
 
     for (int y = 0; y < nyr; y++) {
         KI_That_y(y) = ((1 - perc_female(y)) * KI_Btilde_post_y(y)) / exp(logmdm_c);
-    }
-    
+    }    
 
-    // --------------------- FORECAST QUANTITIES ------------------------ //
+    // simulate new kayak island milt
+    SIMULATE {
 
-    vector<Type> N_a_forecast(nage);                   // numbers-at-age forecast
-    N_a_forecast.setZero();
+        Type KI_mdm_mean = 0.0;
+        Type KI_mdm_simulation_mean = 0.0; 
+        Type KI_mdm_simulation_var = 0.0; 
+        Type KI_new_mdm = 0.0;
 
-    vector<Type> Ntilde_a_forecast(nage);              // mature numbers-at-age forecast
-    Ntilde_a_forecast.setZero();
+        KI_mdm_mean = KI_Btilde_simulation; 
+        KI_mdm_mean *= (1 - new_perc_female);
+        KI_mdm_mean /= exp(logmdm_c);
 
-    vector<Type> Ntilde_agecomp_forecast(nage);         // mature numbers agecomp forecast
-    Ntilde_agecomp_forecast.setZero();
+        KI_mdm_simulation_mean = pow(KI_mdm_mean, 2) / sqrt(pow(KI_mdm_mean, 2) + pow(KI_mdm_mean*KI_milt_add_var, 2));
+        KI_mdm_simulation_var = pow(KI_milt_add_var, 2) + 1;
 
-    vector<Type> waa_forecast(nage);                    // weight-at-age forecast
-    waa_forecast.setZero();
-    
-    vector<Type> winter_survival_forecast(nage);        // winter survival for forecast
-    winter_survival_forecast.setZero();
-    
-    vector<Type> mean_disease_cov(n_covs);              // disease covariate for forecast
-    mean_disease_cov.setZero();
-    
-    Type Btilde_forecast = 0.0;                         // mature biomass forecast
+        KI_new_mdm = exp(rnorm(log(KI_mdm_simulation_mean), sqrt(log(KI_mdm_simulation_var))));          
 
-    vector<Type> Btilde_a_forecast(nage);               // mature biomass-at-age forecast
-    Btilde_a_forecast.setZero();
+        REPORT(KI_new_mdm);                    
 
-    vector<Type> Btilde_agecomp_forecast(nage);         // mature biomass agecomp forecast
-    Btilde_agecomp_forecast.setZero();
-
-    Type mdm_forecast = 0.0;                            // mile-days milt forecast
-
-    // forecast disease covariate prevalence
-    for(int b = 0; b < n_covs; b++){
-        for(int y = nyr - disease_cov_average_years; y < nyr; y++) {
-            mean_disease_cov(b) += disease_covs_calc(y, b) / disease_cov_average_years;
-        }    
-    }
-    
-    // set up winter survival forecast vector
-    for (int a = 0; a < nage; a++) {
-
-        if(a < nage - 1) {
-            winter_survival_forecast(a) = exp(-0.5*Z_0_8);
-        } else if (a == nage - 1) { 
-            winter_survival_forecast(a) = exp(-0.5*Z_9);            
-        }
-
-        for (int b = 0; b < n_covs; b++) {
-            winter_survival_forecast(a) *= exp(-beta_mortality(b)*mean_disease_cov(b)*mort_age_impact(a, b));
-        }
-        
-    }
-
-    // forecast recruitment
-    // take a mean (in log space) of age-2 fish for recruitment forecast
-    // enables accounting for age-2 fish harvested in food/bait fishery
-    Type mean_log_rec = 0.0;
-    for(int y = nyr - recruitment_average_years; y < nyr; y++) {
-        mean_log_rec += log(N_y_a(y-1, 2)) / recruitment_average_years;
-        // mean_log_rec += log(N_y_a(y, 3)) / recruitment_average_years;
-    }
-
-    // project naa matrix forward 1 year
-    for (int a = 0; a < nage; a++) {
-        
-        if (a < 3) {
-            
-            N_a_forecast(a) = 0;   
-            
-        } else if(a == 3) {
-            
-            N_a_forecast(a) = exp(mean_log_rec);
-            N_a_forecast(a) *= summer_survival(nyr-1, a-1);
-            N_a_forecast(a) -= foodbait_catch(nyr-1, a-1);
-            N_a_forecast(a) *= winter_survival_forecast(a-1);
-            
-        } else if (a >= 4) {
-
-            N_a_forecast(a) = N_y_a(nyr-1, a-1) - spring_removals(nyr-1, a-1);
-            N_a_forecast(a) *= summer_survival(nyr-1, a-1);
-            N_a_forecast(a) -= foodbait_catch(nyr-1, a-1);
-            N_a_forecast(a) *= winter_survival_forecast(a-1);       
-
-        } 
-        
-        if (a == nage-1) {
-            // plus group
-            Type N_a_forecast_plus_group = 0.0;
-            N_a_forecast_plus_group += N_y_a(nyr-1, a) - spring_removals(nyr-1, a);
-            N_a_forecast_plus_group *= summer_survival(nyr-1, a);
-            N_a_forecast_plus_group -= foodbait_catch(nyr-1, a);
-            N_a_forecast_plus_group *= winter_survival_forecast(a);
-            N_a_forecast(a) += N_a_forecast_plus_group;
-        }
-        
-    }
-    
-    // forecast waa
-    for (int a = 0; a < nage; a++) {
-        waa_forecast(a) = waa.col(a).tail(waa_average_years).sum() / waa_average_years;
-    }
-
-    // pre-fishery spawning biomass forecast
-    for (int a = 0; a < nage; a++) {
-        Ntilde_a_forecast(a) = maturity(a)*N_a_forecast(a);
-        Btilde_a_forecast(a) = Ntilde_a_forecast(a)*waa_forecast(a);
-        Btilde_forecast += Btilde_a_forecast(a);
-    }
-
-    // agecomp forecasts
-    Ntilde_agecomp_forecast = Ntilde_a_forecast / Ntilde_a_forecast.sum();
-    Btilde_agecomp_forecast = Btilde_a_forecast / Btilde_a_forecast.sum();
-
-    // forecast proportion of population that are female
-    Type perc_female_forecast = 0.0;
-    for(int y = nyr - perc_female_forecast_years; y < nyr; y++) {
-        perc_female_forecast += perc_female(y) / perc_female_forecast_years;
-    }
-
-    // milt forecast
-    mdm_forecast = Btilde_forecast - expected_spring_harvest; 
-    mdm_forecast *= (1 - perc_female_forecast);
-    mdm_forecast /= exp(logmdm_c);
+    }    
 
     // ------------------------------------------------------------------ //
     //                       Likelihood Section                           //
     // ------------------------------------------------------------------ //
 
     Type negLogLik = 0.0;        
+
+    // only calculate likelioods and priors when fitting model
+    if (do_simulation < 1) {
         
-    // ---- L1: purse-seine age-composition ---- //
-    
-    // Calculate likelihoods from 1980 to 1984
-    // increments plus group from age-5 in 1980 to age-9 in 1984 in a similar 
-    // fashion to the numbers-at-age calculation 
-    
-    Type L1 = 0.0;
-    vector<Type> L1_years(nyr);
-    L1_years.setZero();
-    
-    for (int y = 0; y < index_1984; y++) {
+        // ---- L1: purse-seine age-composition ---- //
         
-        if (seine_ess(y) == -9) continue;               // skip years with no fishery
-        int plus_group_index = 5 + y;                   // index of plus group 
-        Type seine_plus_group = seine_age_comp.row(y).tail(nage-plus_group_index).sum();
+        // Calculate likelihoods from 1980 to 1984
+        // increments plus group from age-5 in 1980 to age-9 in 1984 in a similar 
+        // fashion to the numbers-at-age calculation 
         
-        for (int a = 3; a < plus_group_index; a++) {
-            // protects observed age classes with 0% from blowing up likelihood
-            if (seine_age_comp(y, a) <= 0) continue;
-            if (seine_age_comp_est(y, a) == 0) continue;
-            L1_years(y) += seine_age_comp(y, a)*log(seine_age_comp_est(y, a)/seine_age_comp(y, a));
+        Type L1 = 0.0;
+        vector<Type> L1_years(nyr);
+        L1_years.setZero();
+        
+        for (int y = 0; y < index_1984; y++) {
+            
+            if (seine_ess(y) == -9) continue;               // skip years with no fishery
+            int plus_group_index = 5 + y;                   // index of plus group 
+            Type seine_plus_group = seine_age_comp.row(y).tail(nage-plus_group_index).sum();
+            
+            for (int a = 3; a < plus_group_index; a++) {
+                // protects observed age classes with 0% from blowing up likelihood
+                if (seine_age_comp(y, a) <= 0) continue;
+                if (seine_age_comp_est(y, a) == 0) continue;
+                L1_years(y) += seine_age_comp(y, a)*log(seine_age_comp_est(y, a)/seine_age_comp(y, a));
+            }
+            
+            L1_years(y) += seine_plus_group*log(seine_age_comp_est(y,plus_group_index)/seine_plus_group);
+            L1 -= seine_ess(y)*L1_years(y);
+            
+        } 
+        
+        
+        for (int y = index_1984; y < nyr; y++) {
+            
+            if (seine_ess(y) == -9) continue;              // skip years with no fishery
+            
+            for (int a = 3; a < nage; a++) {
+                if (seine_age_comp(y, a) <= 0) continue;
+                if (seine_age_comp_est(y, a) == 0) continue;
+                L1_years(y) += seine_age_comp(y, a)*log(seine_age_comp_est(y, a)/seine_age_comp(y, a));
+            }
+            
+            L1 -= seine_ess(y)*L1_years(y);
+            
+        } 
+        
+        
+        // ---- L2: spawn survey age-composition ---- //
+        
+        // Calculate likelihoods from 1980 to 1984
+        // increments plus group from age-5 in 1980 to age-9 in 1984 in a similar 
+        // fashion to the numbers-at-age calculation 
+        
+        Type L2 = 0.0;
+        vector<Type> L2_years(nyr);
+        L2_years.setZero();
+        
+        for (int y = 0; y < index_1984; y++) {
+            
+            if (spawn_ess(y) == -9) continue;               // skip years with no survey
+            int plus_group_index = 5 + y;                   // index of plus group 
+            Type spawn_plus_group = spawn_age_comp.row(y).tail(nage-plus_group_index).sum();
+            
+            for (int a = 3; a < plus_group_index; a++) {
+                // protects observed age classes with 0% from blowing up likelihood
+                if (spawn_age_comp(y, a) <= 0) continue;
+                if (spawn_age_comp_est(y, a) == 0) continue;
+                L2_years(y) += spawn_age_comp(y, a)*log(spawn_age_comp_est(y, a)/spawn_age_comp(y, a));
+            }
+            
+            L2_years(y) += spawn_plus_group*log(spawn_age_comp_est(y,plus_group_index)/spawn_plus_group);
+            L2 -= spawn_ess(y)*L2_years(y);
+            
+        } 
+        
+        // Calculate likelihoods from 1984 to nyr
+        
+        for (int y = index_1984; y < nyr; y++) {
+            
+            if (spawn_ess(y) == -9) continue;               // skip years with no survey
+            
+            for (int a = 3; a < nage; a++) {
+                if (spawn_age_comp(y, a) <= 0) continue;
+                if (spawn_age_comp_est(y, a) == 0) continue;
+                L2_years(y) += spawn_age_comp(y, a)*log(spawn_age_comp_est(y, a)/spawn_age_comp(y, a));
+            }
+            
+            L2 -= spawn_ess(y)*L2_years(y);
+            
+        } 
+        
+        // ---- L3: Number of eggs deposited ---- //
+        
+        Type L3 = 0.0;
+        vector<Type> L3_total_var(nyr);
+        L3_total_var.setZero();
+        
+        
+        // number of years in egg index
+        int n_egg = 0;
+        
+        for (int y = 0; y < nyr; y++) {
+            if (egg(y) == -9) continue;                     // skip years with no egg index
+            L3_total_var(y) = pow(egg_se(y), 2) + pow(egg_add, 2);
+            L3 += log(pow(L3_total_var(y), .5));
+            L3 += (pow(log(Ehat_y(y)/egg(y)), 2) / (2*L3_total_var(y)));
+            n_egg += 1; 
+        }
+    
+        // ---- L4: ADFG Hydroacoustic biomass ---- //
+        
+        Type L4 = 0.0;
+        
+        // number of years in ADFG hydroacoustic survey
+        int n_adfg_hydro = 0;
+        
+        for (int y = 0; y < nyr; y++) {
+            if (adfg_hydro(y) == -9) continue;              // skip years when no ADFG hydro survey
+            n_adfg_hydro += 1;
+            L4 += pow(log(Hhat_adfg_y(y)/adfg_hydro(y)), 2);
+        }
+        L4 /= 2*pow(adfg_hydro_add_var, 2);
+        L4 += n_adfg_hydro*log(adfg_hydro_add_var);
+        
+        // ---- L5: PWSSC Hydroacoustic biomass ---- //
+        
+        Type L5 = 0.0;
+        vector<Type> L5_total_var(nyr);
+        L5_total_var.setZero();
+        
+        // number of years in PWSSC hydroacoustic survey
+        int n_pwssc_hydro = 0;
+        
+        for (int y = 0; y < nyr; y++) {
+            if (pwssc_hydro_se(y) == -9) continue;          // skip years when no PWSSC hydro survey
+            L5_total_var(y) = pow(pwssc_hydro_se(y), 2) + pow(pwssc_hydro_add_var, 2);
+            L5 += log(pow(L5_total_var(y), .5));
+            L5 += (pow(log(Hhat_pwssc_y(y)/pwssc_hydro(y)), 2) / (2*L5_total_var(y)));
+            n_pwssc_hydro += 1;
         }
         
-        L1_years(y) += seine_plus_group*log(seine_age_comp_est(y,plus_group_index)/seine_plus_group);
-        L1 -= seine_ess(y)*L1_years(y);
+        // ---- L6: Mile-days milt ---- //
         
-    } 
-    
-    
-    for (int y = index_1984; y < nyr; y++) {
+        Type L6 = 0.0;
         
-        if (seine_ess(y) == -9) continue;              // skip years with no fishery
+        // number of years in MDM index
+        int n_mdm = 0;
         
-        for (int a = 3; a < nage; a++) {
-            if (seine_age_comp(y, a) <= 0) continue;
-            if (seine_age_comp_est(y, a) == 0) continue;
-            L1_years(y) += seine_age_comp(y, a)*log(seine_age_comp_est(y, a)/seine_age_comp(y, a));
+        for (int y = 0; y < nyr; y++) {
+            if (mdm(y) == -9) continue;
+            n_mdm += 1;
+            L6 += pow(log(That_y(y) / mdm(y)), 2);
         }
         
-        L1 -= seine_ess(y)*L1_years(y);
+        L6 /= 2*pow(milt_add_var, 2);
+        L6 += n_mdm*log(milt_add_var);
         
-    } 
-    
-    
-    // ---- L2: spawn survey age-composition ---- //
-    
-    // Calculate likelihoods from 1980 to 1984
-    // increments plus group from age-5 in 1980 to age-9 in 1984 in a similar 
-    // fashion to the numbers-at-age calculation 
-    
-    Type L2 = 0.0;
-    vector<Type> L2_years(nyr);
-    L2_years.setZero();
-    
-    for (int y = 0; y < index_1984; y++) {
+        // ---- L7: Juvenile aerial survey ---- //
         
-        if (spawn_ess(y) == -9) continue;               // skip years with no survey
-        int plus_group_index = 5 + y;                   // index of plus group 
-        Type spawn_plus_group = spawn_age_comp.row(y).tail(nage-plus_group_index).sum();
+        Type L7 = 0.0;
+        vector<Type> L7_var(nyr);
+        L7_var.setZero();
         
-        for (int a = 3; a < plus_group_index; a++) {
-            // protects observed age classes with 0% from blowing up likelihood
-            if (spawn_age_comp(y, a) <= 0) continue;
-            if (spawn_age_comp_est(y, a) == 0) continue;
-            L2_years(y) += spawn_age_comp(y, a)*log(spawn_age_comp_est(y, a)/spawn_age_comp(y, a));
+        for (int y = 0; y < nyr; y++) {
+            L7_var(y) = Jhat_y(y) + (pow(Jhat_y(y), 2)/juvenile_overdispersion);
+            if (juvenile_survey(y) == -9) continue;
+            L7 -= dnbinom2(Type(juvenile_survey(y)), Jhat_y(y), L7_var(y), true);
         }
         
-        L2_years(y) += spawn_plus_group*log(spawn_age_comp_est(y,plus_group_index)/spawn_plus_group);
-        L2 -= spawn_ess(y)*L2_years(y);
+        // ---- build objective function ---- //
         
-    } 
-    
-    // Calculate likelihoods from 1984 to nyr
-    
-    for (int y = index_1984; y < nyr; y++) {
+        Type priors = 0.0;
         
-        if (spawn_ess(y) == -9) continue;               // skip years with no survey
+        // add likelihood components
+        negLogLik += L1;    // seine age comp 
+        negLogLik += L2;    // spawn age comp 
+        negLogLik += L3;    // egg dep 
+        negLogLik += L4;    // ADFG hydro
+        negLogLik += L5;    // PWSSC hydro
+        negLogLik += L6;    // milt index
+        negLogLik += L7;    // juvenile schools
         
-        for (int a = 3; a < nage; a++) {
-            if (spawn_age_comp(y, a) <= 0) continue;
-            if (spawn_age_comp_est(y, a) == 0) continue;
-            L2_years(y) += spawn_age_comp(y, a)*log(spawn_age_comp_est(y, a)/spawn_age_comp(y, a));
-        }
+        // add penalties
+        negLogLik += 1000*naa_pen;                  // penalizes negative numbers-at-age
+        negLogLik += 1000*ntilde_pen;               // penalizes negetive post fishery naa
+        negLogLik += 1000*winter_surv_pen;          // penalizes >1 winter survival
+        negLogLik += 1000*summer_surv_pen;          // penalizes >1 summer survival
         
-        L2 -= spawn_ess(y)*L2_years(y);
-        
-    } 
-    
-    // ---- L3: Number of eggs deposited ---- //
-    
-    Type L3 = 0.0;
-    vector<Type> L3_total_var(nyr);
-    L3_total_var.setZero();
-    
-    
-    // number of years in egg index
-    int n_egg = 0;
-    
-    for (int y = 0; y < nyr; y++) {
-        if (egg(y) == -9) continue;                     // skip years with no egg index
-        L3_total_var(y) = pow(egg_se(y), 2) + pow(egg_add, 2);
-        L3 += log(pow(L3_total_var(y), .5));
-        L3 += (pow(log(Ehat_y(y)/egg(y)), 2) / (2*L3_total_var(y)));
-        n_egg += 1; 
-    }
+        // add priors
+        priors -= dbeta(mat_age3, Type(9.0), Type(11.0), true);
+        priors -= dbeta(mat_age4, Type(18.0), Type(2.0), true);
+        priors -= dnorm(milt_add_var, Type(0.33), Type(0.10), true);
+        priors -= dnorm(adfg_hydro_add_var, Type(0.30), Type(0.08), true);
+        priors -= dnorm(pwssc_hydro_add_var, Type(0.32), Type(0.08), true);
 
-    // ---- L4: ADFG Hydroacoustic biomass ---- //
+        matrix<Type> Sigma(2,2);
+        Sigma(0,0) = pow(sigma_age0devs, 2);
+        Sigma(1,1) = pow(sigma_age0devs, 2);
+        Sigma(1,0) = R_corr * pow(sigma_age0devs, 2);
+        Sigma(0,1) = R_corr * pow(sigma_age0devs, 2);
+
+        Type res = 0.0;
+        for (int y = 0; y < nyr-1; y++) {
+            vector<Type> mu(2);
+            mu(0) = annual_age0devs(y);
+            mu(1) = KI_annual_age0devs(y);
+            res -= density::MVNORM(Sigma)(mu);            // evaluates neg log lik
+            // res -= dnorm(annual_age0devs(y), Type(-1.5), sigma_age0devs, true);            
+        }        
     
-    Type L4 = 0.0;
-    
-    // number of years in ADFG hydroacoustic survey
-    int n_adfg_hydro = 0;
-    
-    for (int y = 0; y < nyr; y++) {
-        if (adfg_hydro(y) == -9) continue;              // skip years when no ADFG hydro survey
-        n_adfg_hydro += 1;
-        L4 += pow(log(Hhat_adfg_y(y)/adfg_hydro(y)), 2);
-    }
-    L4 /= 2*pow(adfg_hydro_add_var, 2);
-    L4 += n_adfg_hydro*log(adfg_hydro_add_var);
-    
-    // ---- L5: PWSSC Hydroacoustic biomass ---- //
-    
-    Type L5 = 0.0;
-    vector<Type> L5_total_var(nyr);
-    L5_total_var.setZero();
-    
-    // number of years in PWSSC hydroacoustic survey
-    int n_pwssc_hydro = 0;
-    
-    for (int y = 0; y < nyr; y++) {
-        if (pwssc_hydro_se(y) == -9) continue;          // skip years when no PWSSC hydro survey
-        L5_total_var(y) = pow(pwssc_hydro_se(y), 2) + pow(pwssc_hydro_add_var, 2);
-        L5 += log(pow(L5_total_var(y), .5));
-        L5 += (pow(log(Hhat_pwssc_y(y)/pwssc_hydro(y)), 2) / (2*L5_total_var(y)));
-        n_pwssc_hydro += 1;
+        // priors -= res;
+
+        negLogLik += priors;
+
     }
     
-    // ---- L6: Mile-days milt ---- //
-    
-    Type L6 = 0.0;
-    
-    // number of years in MDM index
-    int n_mdm = 0;
-    
-    for (int y = 0; y < nyr; y++) {
-        if (mdm(y) == -9) continue;
-        n_mdm += 1;
-        L6 += pow(log(That_y(y) / mdm(y)), 2);
-    }
-    
-    L6 /= 2*pow(milt_add_var, 2);
-    L6 += n_mdm*log(milt_add_var);
-    
-    // ---- L7: Juvenile aerial survey ---- //
-    
-    Type L7 = 0.0;
-    vector<Type> L7_var(nyr);
-    L7_var.setZero();
-    
-    for (int y = 0; y < nyr; y++) {
-        L7_var(y) = Jhat_y(y) + (pow(Jhat_y(y), 2)/juvenile_overdispersion);
-        if (juvenile_survey(y) == -9) continue;
-        L7 -= dnbinom2(Type(juvenile_survey(y)), Jhat_y(y), L7_var(y), true);
-    }
-
-    // ---- L8: KI purse-seine age-composition ---- //
-        
-    Type L8 = 0.0;
-    vector<Type> L8_years(nyr);
-    L8_years.setZero();
-    
-    
-    for (int y = 0; y < nyr; y++) {
-        
-        if (KI_seine_ess(y) <= 0) continue;              // skip years with no fishery
-        
-        for (int a = 3; a < nage; a++) {
-            if (KI_seine_age_comp(y, a) <= 0) continue;
-            if (KI_seine_age_comp_est(y, a) <= 0) continue;
-            L8_years(y) += KI_seine_age_comp(y, a)*log(KI_seine_age_comp_est(y, a)/KI_seine_age_comp(y, a));
-        }
-        
-        L8 -= KI_seine_ess(y)*L8_years(y);
-        
-    } 
-    
-    
-    // ---- L9: KI spawn survey age-composition ---- //
-        
-    Type L9 = 0.0;
-    vector<Type> L9_years(nyr);
-    L9_years.setZero();
-    
-                
-    for (int y = 0; y < nyr; y++) {
-        
-        if (KI_spawn_ess(y) <= 0) continue;               // skip years with no survey
-        
-        for (int a = 3; a < nage; a++) {
-            if (KI_spawn_age_comp(y, a) <= 0) continue;
-            if (KI_spawn_age_comp_est(y, a) <= 0) continue;
-            L9_years(y) += KI_spawn_age_comp(y, a)*log(KI_spawn_age_comp_est(y, a)/KI_spawn_age_comp(y, a));
-        }
-        
-        L9 -= KI_spawn_ess(y)*L9_years(y);
-        
-    } 
-
-    // ---- L10: KI Mile-days milt ---- //
-    
-    Type L10 = 0.0;
-    
-    // number of years in MDM index
-    int n_KI_mdm = 0;
-    
-    for (int y = 0; y < nyr; y++) {
-        if (KI_mdm(y) == -9) continue;
-        n_KI_mdm += 1;
-        L10 += pow(log(KI_That_y(y) / KI_mdm(y)), 2);
-    }
-    
-    L10 /= 2*pow(KI_milt_add_var, 2);
-    L10 += n_KI_mdm*log(KI_milt_add_var);
-
-    // ---- build objective function ---- //
-    
-    Type priors = 0.0;
-    
-    // add likelihood components
-    negLogLik += L1;    // seine age comp 
-    negLogLik += L2;    // spawn age comp 
-    negLogLik += L3;    // egg dep 
-    negLogLik += L4;    // ADFG hydro
-    negLogLik += L5;    // PWSSC hydro
-    negLogLik += L6;    // milt index
-    negLogLik += L7;    // juvenile schools
-    negLogLik += L8;    // KI seine age comp 
-    negLogLik += L9;    // KI spawn age comp 
-    negLogLik += L10;    // KI milt index
-    
-    // add penalties
-    negLogLik += 1000*naa_pen;                  // penalizes negative numbers-at-age
-    negLogLik += 1000*ntilde_pen;               // penalizes negetive post fishery naa
-    negLogLik += 1000*winter_surv_pen;          // penalizes >1 winter survival
-    negLogLik += 1000*summer_surv_pen;          // penalizes >1 summer survival
-    
-    // add priors
-    priors -= dbeta(mat_age3, Type(9.0), Type(11.0), true);
-    priors -= dbeta(mat_age4, Type(18.0), Type(2.0), true);
-    priors -= dnorm(milt_add_var, Type(0.33), Type(0.10), true);
-    priors -= dnorm(KI_milt_add_var, Type(0.5), Type(0.10), true);
-    priors -= dnorm(adfg_hydro_add_var, Type(0.30), Type(0.08), true);
-    priors -= dnorm(pwssc_hydro_add_var, Type(0.32), Type(0.08), true);
-    // priors -= dbeta(KI_lambda, Type(0.125), Type(1.125), true);
-    // priors -= dbeta(PWS_lambda, Type(0.125), Type(1.125), true);
-
-
-    matrix<Type> Sigma(2,2);
-    Sigma(0,0) = pow(sigma_age0devs, 2);
-    Sigma(1,1) = pow(sigma_age0devs, 2);
-    Sigma(1,0) = R_corr * pow(sigma_age0devs, 2);
-    Sigma(0,1) = R_corr * pow(sigma_age0devs, 2);
-
-    Type res = 0.0;
-    for (int y = 0; y < nyr-1; y++) {
-        vector<Type> mu(2);
-        mu(0) = annual_age0devs(y);
-        mu(1) = KI_annual_age0devs(y);
-        res -= density::MVNORM(Sigma)(mu);            // evaluates neg log lik
-        // res -= dnorm(annual_age0devs(y), Type(-1.5), sigma_age0devs, true);            
-    }
-    
-    REPORT(res); 
-    priors -= res;
-
-    negLogLik += priors;    
     
     
     // ------------------------------------------------------------------ //
@@ -1323,22 +1216,14 @@ Type objective_function<Type>::operator() ()
     
     // ---- survey quantities ---- //
 
+    REPORT(seine_catch_est);
     REPORT(seine_age_comp_est);
     REPORT(spawn_age_comp_est);
     REPORT(Ehat_y);
-    REPORT(L3_total_var);
     REPORT(Hhat_adfg_y);
     REPORT(Hhat_pwssc_y);
-    REPORT(L5_total_var);
     REPORT(That_y);
     REPORT(Jhat_y);
-    REPORT(L7_var);
-
-    // posterior prediction
-    REPORT(That_y_pp);
-    REPORT(Jhat_y_pp);
-    REPORT(seine_agecomp_pp);
-    REPORT(spawn_agecomp_pp);
 
     // ---- population dynamics ---- //
 
@@ -1353,48 +1238,13 @@ Type objective_function<Type>::operator() ()
     REPORT(summer_survival);
     REPORT(winter_survival);
     
-    // ---- objective function quantities ---- //
-    
-    // likelihood components
-    REPORT(L1);
-    REPORT(L2);
-    REPORT(L3);
-    REPORT(L4);
-    REPORT(L5);
-    REPORT(L6);
-    REPORT(L7);
-    REPORT(L8);
-    REPORT(L9);
-    REPORT(L10);
-    REPORT(negLogLik);
-    
-    // penalties
-    REPORT(penCount);
-    REPORT(naa_pen);
-    REPORT(ntilde_pen);
-    REPORT(winter_surv_pen);
-    REPORT(summer_surv_pen);
-    
-    // priors
-    REPORT(priors);
-    
-    // ---- forecast quantities ---- //
-    REPORT(winter_survival_forecast);
-    REPORT(mean_log_rec);
-    REPORT(mean_disease_cov);
-    REPORT(N_a_forecast);
-    REPORT(Ntilde_a_forecast);
-    REPORT(Ntilde_agecomp_forecast);
-    REPORT(waa_forecast);
-    REPORT(Btilde_forecast); 
-    REPORT(Btilde_a_forecast); 
-    REPORT(Btilde_agecomp_forecast); 
-    REPORT(mdm_forecast);    
-    
-    
-    // ---- spatial model quantities ---- //
+    // ---- simulation quantities ---- //
 
-    REPORT(KI_spawn_age_comp_est);
+    REPORT(N_a_simulation);
+    REPORT(Ntilde_a_simulation);
+    REPORT(Btilde_a_simulation); 
+    REPORT(Btilde_simulation); 
+    REPORT(spawn_agecomp_simulation);
     REPORT(KI_lambda_a);
     REPORT(PWS_lambda_a);
     REPORT(KI_spring_removals);

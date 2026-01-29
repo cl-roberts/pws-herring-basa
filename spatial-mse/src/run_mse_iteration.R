@@ -136,7 +136,7 @@ run_mse_iteration <- function (num_sim_years, new_R_deviates, om_data, om_map, o
         )
 
         # if spatial model, update em with KI catch and survey information
-        if (!is.null(em_data$KI_mdm)) {
+        if (em_data$em == "spatialmodel") {
             em_data$KI_mdm <- rbind(em_data$KI_mdm, KI_new_mdm)
             em_data$KI_seine_yield <- rbind(em_data$KI_seine_yield, KI_ghl)
             em_data$KI_seine_ess <- rbind(em_data$KI_seine_ess, new_KI_seine_ess)

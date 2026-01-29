@@ -14,6 +14,7 @@
 # num_sim_years: integer, number of years to simulate in each MSE iteration
 # KI_recruitment_factor: numeric, controls relative size of KI to PWS log mean recruits
 # R_corr: numeric, correlation between KI and PWS recruitments
+# KI_milt_add_var: variance for KI milt index
 # KI_lambda: numeric, proportion that move from KI to PWS
 # PWS_lambda: numeric, proportion that move from PWS to KI
 # lambda_ages: integer vector, ones denote ages that move between PWS and KI. Model uses new spawners if all zero
@@ -26,6 +27,8 @@
 # start Rscript processes with high priority
 # shell('cmd.exe /c start "" /high "C:\Program Files\R\R-4.4.1\bin\Rscript.exe"')
 
+rm(list = ls())
+
 start_time <- Sys.time()
 
 #### script controls ####
@@ -33,16 +36,23 @@ start_time <- Sys.time()
 #### mse controls ----
 
 em <- "spatialmodel"
-num_mse_iters <- 55
+# num_mse_iters <- 55
+# num_sim_years <- 10
+num_mse_iters <- 10
 num_sim_years <- 10
 KI_recruitment_factor <- 3/4
 R_corr <- 0.25
+KI_milt_add_var <- 0.8
 lambda_states <- c(0, 0.01, 0.15) 
+# lambda_states <- 0.15 
 lambda_ages_states <- list(
     all_ages = rep(1, 10),
     young_ages = c(rep(1, 5), rep(0, 5)),
     new_spawners = rep(0, 10)
 )
+# lambda_ages_states <- list(
+#     all_ages = rep(1, 10)
+# )
 # KI_lambda <- .2
 # PWS_lambda <- KI_lambda
 # lambda_ages <- rep(1, 10)
@@ -62,7 +72,7 @@ write_outputs <- TRUE
 write_log <- TRUE
 test_em <- FALSE
 
-n_cores <- 11
+n_cores <- 10
 
 #### model controls ----
 
@@ -203,6 +213,13 @@ spawn_missing <- apply(spawn_ac, MARGIN = 1, FUN = \(x) any(x == -9))
 agecomp_samp_sizes$seine_sample_size[seine_missing,] <- -9
 agecomp_samp_sizes$spawn_sample_size[spawn_missing,] <- -9
 
+# KI data
+KI_data <- list(
+    KI_mdm = as.matrix(read.csv(here(dir_mse, "data", "KI_mdm.csv"))$KI_mdm),
+    KI_spawn_ess = as.matrix(read.csv(here(dir_mse, "data", "KI_spawn_ess.csv"))$KI_spawn_ess),
+    KI_spawn_age_comp = as.matrix(read.csv(here(dir_mse, "data", "KI_spawn_age_comp.csv"))[,-1])
+)
+
 # will later calculate ESS's from raw sample sizes
 PWS_ASA_ESS <- agecomp_samp_sizes
 names(PWS_ASA_ESS) <- c("seine_ess", "spawn_ess", "vhsv_ess", "ich_ess")
@@ -210,7 +227,7 @@ names(PWS_ASA_ESS) <- c("seine_ess", "spawn_ess", "vhsv_ess", "ich_ess")
 # collate data into single list to pass to model
 model_data <- c(
     PWS_ASA, PWS_ASA_covariate, PWS_ASA_disease, 
-    agecomp_samp_sizes, PWS_ASA_ESS,
+    agecomp_samp_sizes, PWS_ASA_ESS, KI_data,
     forecast_controls
 )
 
@@ -314,6 +331,7 @@ upper <- upper[!(names(upper) %in% fix)]
 #### non-base estimation model assets ####
 
 em_data <- model_data 
+em_data$em <- em
 em_parameters <- model_parameters 
 em_lower <- lower 
 em_upper <- upper 
@@ -335,14 +353,14 @@ if (em == "spatialmodel") {
 
     em_data$lambda_ages <- lambda_ages_states[[1]]
 
-    em_data$KI_mdm <- as.matrix(read.csv(here(dir_em, "KI_mdm.csv"))$KI_mdm)
+    em_data$KI_mdm <- KI_data$KI_mdm
     em_data$KI_seine_yield <- matrix(0, nrow = Y, ncol = 1)          
     em_data$KI_seine_age_comp <- matrix(-9, nrow = Y, ncol = A)      
     em_data$KI_seine_ess <- matrix(0, nrow = Y, ncol = 1)            
 
     # em_data$KI_spawn_sample_size <- as.matrix(read.csv(here(dir_em, "KI_spawn_sample_size.csv"))$KI_spawn_sample_size)
-    em_data$KI_spawn_age_comp <- as.matrix(read.csv(here(dir_em, "KI_spawn_age_comp.csv"))[,-1])
-    em_data$KI_spawn_ess <- as.matrix(read.csv(here(dir_em, "KI_spawn_ess.csv"))$KI_spawn_ess)
+    em_data$KI_spawn_age_comp <- KI_data$KI_spawn_age_comp
+    em_data$KI_spawn_ess <- KI_data$KI_spawn_ess
     # em_parameters$KI_loginit_pop <- rep(1.5, 5)
     # em_parameters$KI_log_MeanAge0 <-  log(exp(model_parameters$log_MeanAge0)*KI_recruitment_factor)
     em_parameters$KI_annual_age0devs <- rep(0, Y-1) 
@@ -351,7 +369,7 @@ if (em == "spatialmodel") {
     # em_map$logit_lambda <- factor(NA) 
     em_parameters$lambda <- 0
     em_map$lambda <- factor(NA) 
-    em_parameters$KI_milt_add_var <- 0.33 
+    em_parameters$KI_milt_add_var <- KI_milt_add_var
     em_map$KI_milt_add_var <- factor(NA) 
     # em_map$log_MeanAge0 <- factor(NA)
     # em_map$KI_log_MeanAge0 <- factor(NA)
@@ -506,7 +524,7 @@ for (cc in seq(lambda_ages_states)) {
 
         om_data <- c(
             PWS_ASA, PWS_ASA_covariate, PWS_ASA_disease, 
-            agecomp_samp_sizes, PWS_ASA_ESS,
+            agecomp_samp_sizes, PWS_ASA_ESS, KI_data,
             simulation_inputs
         )
 
@@ -530,7 +548,7 @@ for (cc in seq(lambda_ages_states)) {
                 warmup = 700
             )
 
-            colMeans(fit_em$mcmc_results[,1:44]) |> mean()
+            colMeans(fit_em$mcmc_results)
 
             ggplot(fit_em$mcmc_results) +
                 geom_histogram(aes(x = logit_lambda))
@@ -587,14 +605,20 @@ for (cc in seq(lambda_ages_states)) {
         om_parameters$KI_annual_age0devs <- rep(0, Y-1)
         om_parameters$KI_lambda <- KI_lambda                       
         om_parameters$PWS_lambda <- PWS_lambda
+        om_parameters$sigma_age0devs <- 2
+        om_parameters$R_corr <- R_corr
+        om_parameters$KI_milt_add_var <- KI_milt_add_var
 
         # don't estimate spatial model parameters
         om_map <- map
-        om_map$KI_loginit_pop <- rep(factor(NA), length(om_parameters$loginit_pop))
+        om_map$KI_loginit_pop <- rep(factor(NA), length(om_parameters$KI_loginit_pop))
         om_map$KI_log_MeanAge0 <- factor(NA)
         om_map$KI_annual_age0devs <- rep(factor(NA), length(om_parameters$KI_annual_age0devs))
         om_map$KI_lambda <- factor(NA)                       
         om_map$PWS_lambda <- factor(NA)
+        om_map$sigma_age0devs <- factor(NA)
+        om_map$R_corr <- factor(NA)
+        om_map$KI_milt_add_var <- factor(NA)
 
         # fit operating model
         fit_om <- fit_basa(
@@ -617,7 +641,6 @@ for (cc in seq(lambda_ages_states)) {
             lapply(FUN = \(x) setNames(x, gsub("\\[\\d+\\]", "", colnames(x)))) |>
             lapply(FUN = \(x) c(fixed_pars, split(unlist(x), colnames(x)))[names(model_parameters)]) |>
             lapply(FUN = \(x) c(x, om_parameters[!(names(om_parameters) %in% names(x))]))
-
 
         # assumed recruitment parameters used in simulations
         low_regime_index <- 1993:(curr.year-1) - 1980
@@ -688,6 +711,7 @@ for (cc in seq(lambda_ages_states)) {
             om_parameters$KI_annual_age0devs <- hindcast_KI_R_deviates[[run]]
 
             # project forward one MSE iteration
+            if (em == "spatialmodel") message(paste0("em: lambda=", em_parameters$lambda))
             suppressWarnings({
                 mse_iteration <- tryCatch(
                     run_mse_iteration(

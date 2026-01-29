@@ -155,7 +155,7 @@ Type objective_function<Type>::operator() ()
     PARAMETER(pk);                      // pound spawn-on-kelp mortality proportion
     PARAMETER(egg_add);                 // egg deposition additional variance term
     PARAMETER(Z_0_8);                   // background mortality, ages 0-8
-    // PARAMETER(sigma_age0devs);          // variance term for recruitment deviates
+    PARAMETER(sigma_age0devs);          // variance term for recruitment deviates
     
     // ---- estimated parameters ---- //
     PARAMETER(log_MeanAge0);                 // mean recruits, log-space
@@ -181,7 +181,10 @@ Type objective_function<Type>::operator() ()
     PARAMETER(adfg_hydro_add_var);           // hydroacoustic additional variance (ADFG)
     PARAMETER(pwssc_hydro_add_var);          // hydroacoustic additional variance (PWSSC)
     PARAMETER(juvenile_overdispersion);      // aerial juvenile additional variance
-   
+
+    PARAMETER(R_corr);                // kayak island milt additional variance fixed
+    PARAMETER(KI_milt_add_var);                // kayak island milt additional variance fixed
+
     // ---- simulation parameters ---- //
     PARAMETER_VECTOR(KI_loginit_pop);        // kayak island 1980 numbers-at-age
     PARAMETER(KI_log_MeanAge0);              // Kayak island mean recruits, log-space
@@ -972,8 +975,8 @@ Type objective_function<Type>::operator() ()
         KI_mdm_mean *= (1 - new_perc_female);
         KI_mdm_mean /= exp(logmdm_c);
 
-        KI_mdm_simulation_mean = pow(KI_mdm_mean, 2) / sqrt(pow(KI_mdm_mean, 2) + pow(KI_mdm_mean*milt_add_var, 2));
-        KI_mdm_simulation_var = pow(milt_add_var, 2) + 1;
+        KI_mdm_simulation_mean = pow(KI_mdm_mean, 2) / sqrt(pow(KI_mdm_mean, 2) + pow(KI_mdm_mean*KI_milt_add_var, 2));
+        KI_mdm_simulation_var = pow(KI_milt_add_var, 2) + 1;
 
         KI_new_mdm = exp(rnorm(log(KI_mdm_simulation_mean), sqrt(log(KI_mdm_simulation_var))));          
 
@@ -1182,9 +1185,26 @@ Type objective_function<Type>::operator() ()
         priors -= dnorm(adfg_hydro_add_var, Type(0.30), Type(0.08), true);
         priors -= dnorm(pwssc_hydro_add_var, Type(0.32), Type(0.08), true);
         
+        matrix<Type> Sigma(2,2);
+        Sigma(0,0) = pow(sigma_age0devs, 2);
+        Sigma(1,1) = pow(sigma_age0devs, 2);
+        Sigma(1,0) = R_corr * pow(sigma_age0devs, 2);
+        Sigma(0,1) = R_corr * pow(sigma_age0devs, 2);
+
+        Type res = 0.0;
+        for (int y = 0; y < nyr-1; y++) {
+            vector<Type> mu(2);
+            mu(0) = annual_age0devs(y);
+            mu(1) = KI_annual_age0devs(y);
+            res -= density::MVNORM(Sigma)(mu);            // evaluates neg log lik
+            // res -= dnorm(annual_age0devs(y), Type(-1.5), sigma_age0devs, true);            
+        }        
+    
+        // priors -= res;
+
         negLogLik += priors;
 
-    }
+    }    
     
     
     
