@@ -13,7 +13,7 @@
 # attach packages
 library(here)
 library(ggplot2)
-theme_set(theme_bw())
+theme_set(theme_bw(base_size = 14))
 library(dplyr)
 library(tidyr)
 library(ggh4x)  # for nested facet plots
@@ -68,10 +68,15 @@ common_theme <- theme(
 
 metrics <- metrics |>
     mutate(
-        lambda = paste("\u039B =", as.numeric(gsub("[^0-9.]", "", state))),
-        c = gsub("^([^_]+_){2}", "", state)
-        ) |>
-    mutate(c = factor(gsub("_", " ", c), c("all ages", "young ages", "new spawners")))
+      lambda = paste(as.numeric(gsub("[^0-9.]", "", state))),
+      c = gsub("^([^_]+_){2}", "", state)
+    ) |>
+    mutate(
+      c = factor(gsub("_", " ", c), c("all ages", "young ages", "new spawners")),
+      em = factor(em, levels = c("base", "mvtweedie", "weibull", "spatialmodel"))  
+    ) 
+
+metrics$lambda <- recode_factor(metrics$lambda, `0` = "no\nmovement", `0.01` = "low\nmovement", `0.15` = "high\nmovement")
 
 boxplot_summary <- function(x) {
     q <- quantile(x, probs = c(0.10, 0.25, 0.50, 0.75, 0.90))
@@ -84,7 +89,8 @@ Btilde_ratio_plot <- ggplot(metrics, aes(x = em, y = Btilde_ratio)) +
     geom_hline(aes(yintercept = 1), color = "red") +
     facet_grid2(vars(lambda), vars(c), scales = "free", independent = "y", render_empty = FALSE) +
     xlab(NULL) + 
-    ylab("Ratio between true population in PWS and assessed population") +
+    ylab("Assessment accuracy ratio") +
+    scale_y_continuous(breaks = seq(0, 1.5, by = 0.5)) +
     # ylab(bquote(frac(hat(B)[Y+10], B[Y+10]))) +
     common_theme 
 
@@ -93,7 +99,8 @@ Btilde_prob_plot <- ggplot(metrics, aes(x = em, y = Btilde_prob)) +
     geom_hline(aes(yintercept = 1), color = "red") +
     facet_grid2(vars(lambda), vars(c), scales = "free_y", independent = "y", render_empty = FALSE) +
     xlab(NULL) + 
-    ylab("Probability of assessed population within 30% of true population") +
+    ylab("Assessment precision probability") +
+    scale_y_continuous(breaks = seq(0, 1.5, by = 0.5)) +
     # ylab(bquote(P("|"^frac(B[Y+10] - hat(B)[Y+10], B[Y+10])~"|" < 0.3))) +
     common_theme
 
@@ -239,11 +246,211 @@ gt(mean_yield_difference_tbl, rowname_col = "Name") |>
 
 #### save figures and tables ####
 
-ggsave(here(dir_figures, "Btilde-ratio-plot.png"), Btilde_ratio_plot, width = 7, height = 5)
-ggsave(here(dir_figures, "Btilde-prob-plot.png"), Btilde_prob_plot, width = 7, height = 5)
-ggsave(here(dir_figures, "yield-difference-plot.png"), yield_difference_plot, width = 7, height = 5)
-ggsave(here(dir_figures, "lost-yield-plot.png"), lost_yield_plot, width = 7, height = 5)
+ggsave(here(dir_figures, "Btilde-ratio-plot.png"), Btilde_ratio_plot, width = 7.5, height = 4)
+ggsave(here(dir_figures, "Btilde-prob-plot.png"), Btilde_prob_plot, width = 7.5, height = 4)
+ggsave(here(dir_figures, "yield-difference-plot.png"), yield_difference_plot, width = 7.5, height = 4)
+ggsave(here(dir_figures, "lost-yield-plot.png"), lost_yield_plot, width = 7.5, height = 4)
 
 write.csv(Btilde_ratio_tbl, here(dir_tables, "Btilde-ratio-tbl.csv"), row.names = FALSE)
 write.csv(Btilde_prob_tbl, here(dir_tables, "Btilde-prob-tbl.csv"), row.names = FALSE)
 write.csv(mean_yield_difference_tbl, here(dir_tables, "mean-yield-difference-tbl.csv"), row.names = FALSE)
+
+
+# ---------------------------------------------------------------------------- #
+
+#### plot mse examples ####
+
+# fit to real data
+
+  # mutate(
+  #   em = "base", 
+  #   Btilde_lower_95 = if_else(Year <= 2024, spatialmodel_om$Btilde_lower_95, Btilde_lower_95),
+  #   Btilde_lower_50 = if_else(Year <= 2024, spatialmodel_om$Btilde_lower_50, Btilde_lower_50),
+  #   Btilde_upper_50 = if_else(Year <= 2024, spatialmodel_om$Btilde_upper_50, Btilde_upper_50),
+  #   Btilde_upper_95 = if_else(Year <= 2024, spatialmodel_om$Btilde_upper_95, Btilde_upper_95)
+  # )
+
+# no movement
+
+spatialmodel_om <- read.csv(here(dir_out, "spatialmodel", "lambda_0_all_ages", "simulation-results.csv")) |>
+  mutate(em = "spatialmodel")
+spatialmodel_em <- read.csv(here(dir_out, "spatialmodel", "lambda_0_all_ages", "assessment-results.csv")) |>
+  mutate(em = "spatialmodel")
+
+base_om <- read.csv(here(dir_out, "base", "lambda_0_all_ages", "simulation-results.csv")) |>
+    mutate(
+      em = "base", 
+      Btilde_lower_95 = spatialmodel_om$Btilde_lower_95,
+      Btilde_lower_50 = spatialmodel_om$Btilde_lower_50,
+      Btilde_upper_50 = spatialmodel_om$Btilde_upper_50,
+      Btilde_upper_95 = spatialmodel_om$Btilde_upper_95
+  )
+
+base_em <- read.csv(here(dir_out, "base", "lambda_0_all_ages", "assessment-results.csv")) |>
+  mutate(em = "base")
+
+mvtweedie_om <- read.csv(here(dir_out, "mvtweedie", "lambda_0_all_ages", "simulation-results.csv")) |>
+  mutate(
+    em = "mvtweedie", 
+      Btilde_lower_95 = spatialmodel_om$Btilde_lower_95,
+      Btilde_lower_50 = spatialmodel_om$Btilde_lower_50,
+      Btilde_upper_50 = spatialmodel_om$Btilde_upper_50,
+      Btilde_upper_95 = spatialmodel_om$Btilde_upper_95
+  )
+mvtweedie_em <- read.csv(here(dir_out, "mvtweedie", "lambda_0_all_ages", "assessment-results.csv")) |>
+  mutate(em = "mvtweedie")
+
+weibull_om <- read.csv(here(dir_out, "weibull", "lambda_0_all_ages", "simulation-results.csv")) |>
+  mutate(
+    em = "weibull", 
+      Btilde_lower_95 = spatialmodel_om$Btilde_lower_95,
+      Btilde_lower_50 = spatialmodel_om$Btilde_lower_50,
+      Btilde_upper_50 = spatialmodel_om$Btilde_upper_50,
+      Btilde_upper_95 = spatialmodel_om$Btilde_upper_95
+  )
+weibull_em <- read.csv(here(dir_out, "weibull", "lambda_0_all_ages", "assessment-results.csv")) |>
+  mutate(em = "weibull")
+
+
+all_om <- rbind(base_om, mvtweedie_om, weibull_om, spatialmodel_om)
+all_em <- rbind(base_em, mvtweedie_em, weibull_em, spatialmodel_em)
+
+all_om$em <- factor(factor(all_om$em, levels = c("base", "mvtweedie", "weibull", "spatialmodel")))
+all_em$em <- factor(factor(all_em$em, levels = c("base", "mvtweedie", "weibull", "spatialmodel")))
+
+ggplot(all_om, aes(x = Year)) +
+  geom_vline(aes(xintercept = 2024, linetype = "Simulation start")) +
+  geom_ribbon(aes(ymin = Btilde_lower_95/1000, ymax = Btilde_upper_95/1000, fill = "True biomass"), alpha = .25) +
+  geom_ribbon(aes(ymin = Btilde_lower_50/1000, ymax = Btilde_upper_50/1000, fill = "True biomass"), alpha = .25) +
+  geom_line(data = filter(all_em, iteration <= 10), aes(y = biomass/1000, group = iteration, color = "Assessed biomass"), linewidth = .25) +
+  facet_wrap(~ em, scales = "fixed") +
+  scale_color_manual(values = "black") +
+  scale_fill_manual(values = "black") +
+  scale_linetype_manual(values = "dotted") +
+  labs(color = NULL, fill = NULL, linetype = NULL, y = "Spring mature biomass (1000 mt)") +
+  theme(legend.position = "bottom")
+ggsave(here(dir_figures, "mse-example-lambda_0_all_ages.png"), width = 7.5, height = 4)
+
+
+# low movement
+
+spatialmodel_om <- read.csv(here(dir_out, "spatialmodel", "lambda_0.01_young_ages", "simulation-results.csv")) |>
+  mutate(em = "spatialmodel")
+spatialmodel_em <- read.csv(here(dir_out, "spatialmodel", "lambda_0.01_young_ages", "assessment-results.csv")) |>
+  mutate(em = "spatialmodel")
+
+base_om <- read.csv(here(dir_out, "base", "lambda_0.01_young_ages", "simulation-results.csv")) |>
+  mutate(
+    em = "base", 
+      Btilde_lower_95 = spatialmodel_om$Btilde_lower_95,
+      Btilde_lower_50 = spatialmodel_om$Btilde_lower_50,
+      Btilde_upper_50 = spatialmodel_om$Btilde_upper_50,
+      Btilde_upper_95 = spatialmodel_om$Btilde_upper_95
+  )
+base_em <- read.csv(here(dir_out, "base", "lambda_0.01_young_ages", "assessment-results.csv")) |>
+  mutate(em = "base")
+
+mvtweedie_om <- read.csv(here(dir_out, "mvtweedie", "lambda_0.01_young_ages", "simulation-results.csv")) |>
+  mutate(
+    em = "mvtweedie", 
+      Btilde_lower_95 = spatialmodel_om$Btilde_lower_95,
+      Btilde_lower_50 = spatialmodel_om$Btilde_lower_50,
+      Btilde_upper_50 = spatialmodel_om$Btilde_upper_50,
+      Btilde_upper_95 = spatialmodel_om$Btilde_upper_95
+  )
+mvtweedie_em <- read.csv(here(dir_out, "mvtweedie", "lambda_0.01_young_ages", "assessment-results.csv")) |>
+  mutate(em = "mvtweedie")
+
+weibull_om <- read.csv(here(dir_out, "weibull", "lambda_0.01_young_ages", "simulation-results.csv")) |>
+  mutate(
+    em = "weibull", 
+      Btilde_lower_95 = spatialmodel_om$Btilde_lower_95,
+      Btilde_lower_50 = spatialmodel_om$Btilde_lower_50,
+      Btilde_upper_50 = spatialmodel_om$Btilde_upper_50,
+      Btilde_upper_95 = spatialmodel_om$Btilde_upper_95
+  )
+weibull_em <- read.csv(here(dir_out, "weibull", "lambda_0.01_young_ages", "assessment-results.csv")) |>
+  mutate(em = "weibull")
+
+all_om <- rbind(base_om, mvtweedie_om, weibull_om, spatialmodel_om)
+all_em <- rbind(base_em, mvtweedie_em, weibull_em, spatialmodel_em)
+
+all_om$em <- factor(factor(all_om$em, levels = c("base", "mvtweedie", "weibull", "spatialmodel")))
+all_em$em <- factor(factor(all_em$em, levels = c("base", "mvtweedie", "weibull", "spatialmodel")))
+
+ggplot(all_om, aes(x = Year)) +
+  geom_vline(aes(xintercept = 2024, linetype = "Simulation start")) +
+  geom_ribbon(aes(ymin = Btilde_lower_95/1000, ymax = Btilde_upper_95/1000, fill = "True biomass"), alpha = .25) +
+  geom_ribbon(aes(ymin = Btilde_lower_50/1000, ymax = Btilde_upper_50/1000, fill = "True biomass"), alpha = .25) +
+  geom_line(data = filter(all_em, iteration <= 10), aes(y = biomass/1000, group = iteration, color = "Assessed biomass"), linewidth = .25) +
+  facet_wrap(~ em, scales = "fixed") +
+  scale_color_manual(values = "black") +
+  scale_fill_manual(values = "black") +
+  scale_linetype_manual(values = "dotted") +
+  labs(color = NULL, fill = NULL, linetype = NULL, y = "Spring mature biomass (1000 mt)") +
+  theme(legend.position = "bottom")
+ggsave(here(dir_figures, "mse-example-lambda_0.01_young_ages.png"), width = 7.5, height = 4)
+
+
+
+# high movement
+
+spatialmodel_om <- read.csv(here(dir_out, "spatialmodel", "lambda_0.15_all_ages", "simulation-results.csv")) |>
+  mutate(em = "spatialmodel")
+spatialmodel_em <- read.csv(here(dir_out, "spatialmodel", "lambda_0.15_all_ages", "assessment-results.csv")) |>
+  mutate(em = "spatialmodel")
+
+base_om <- read.csv(here(dir_out, "base", "lambda_0.15_all_ages", "simulation-results.csv")) |>
+  mutate(
+    em = "base", 
+      Btilde_lower_95 = spatialmodel_om$Btilde_lower_95,
+      Btilde_lower_50 = spatialmodel_om$Btilde_lower_50,
+      Btilde_upper_50 = spatialmodel_om$Btilde_upper_50,
+      Btilde_upper_95 = spatialmodel_om$Btilde_upper_95
+  )
+base_em <- read.csv(here(dir_out, "base", "lambda_0.15_all_ages", "assessment-results.csv")) |>
+  mutate(em = "base")
+
+mvtweedie_om <- read.csv(here(dir_out, "mvtweedie", "lambda_0.15_all_ages", "simulation-results.csv")) |>
+  mutate(
+    em = "mvtweedie", 
+      Btilde_lower_95 = spatialmodel_om$Btilde_lower_95,
+      Btilde_lower_50 = spatialmodel_om$Btilde_lower_50,
+      Btilde_upper_50 = spatialmodel_om$Btilde_upper_50,
+      Btilde_upper_95 = spatialmodel_om$Btilde_upper_95
+  )
+mvtweedie_em <- read.csv(here(dir_out, "mvtweedie", "lambda_0.15_all_ages", "assessment-results.csv")) |>
+  mutate(em = "mvtweedie")
+
+weibull_om <- read.csv(here(dir_out, "weibull", "lambda_0.15_all_ages", "simulation-results.csv")) |>
+  mutate(
+    em = "weibull", 
+      Btilde_lower_95 = spatialmodel_om$Btilde_lower_95,
+      Btilde_lower_50 = spatialmodel_om$Btilde_lower_50,
+      Btilde_upper_50 = spatialmodel_om$Btilde_upper_50,
+      Btilde_upper_95 = spatialmodel_om$Btilde_upper_95
+  )
+weibull_em <- read.csv(here(dir_out, "weibull", "lambda_0.15_all_ages", "assessment-results.csv")) |>
+  mutate(em = "weibull")
+
+
+all_om <- rbind(base_om, mvtweedie_om, weibull_om, spatialmodel_om)
+all_em <- rbind(base_em, mvtweedie_em, weibull_em, spatialmodel_em)
+
+all_om$em <- factor(factor(all_om$em, levels = c("base", "mvtweedie", "weibull", "spatialmodel")))
+all_em$em <- factor(factor(all_em$em, levels = c("base", "mvtweedie", "weibull", "spatialmodel")))
+
+ggplot(all_om, aes(x = Year)) +
+  geom_vline(aes(xintercept = 2024, linetype = "Simulation start")) +
+  geom_ribbon(aes(ymin = Btilde_lower_95/1000, ymax = Btilde_upper_95/1000, fill = "True biomass"), alpha = .25) +
+  geom_ribbon(aes(ymin = Btilde_lower_50/1000, ymax = Btilde_upper_50/1000, fill = "True biomass"), alpha = .25) +
+  geom_line(data = filter(all_em, iteration <= 10), aes(y = biomass/1000, group = iteration, color = "Assessed biomass"), linewidth = .25) +
+  # geom_line(data = all_om, aes(y = KI_Btilde_median/1000, color = "KI")) +
+  # geom_errorbar(data = all_om, aes(ymin = KI_Btilde_lower_95/1000, ymax = KI_Btilde_upper_95/1000, color = "KI")) +
+  facet_wrap(~ em, scales = "free_y") +
+  scale_color_manual(values = "black") +
+  scale_fill_manual(values = "black") +
+  scale_linetype_manual(values = "dotted") +
+  labs(color = NULL, fill = NULL, linetype = NULL, y = "Spring mature biomass (1000 mt)") +
+  theme(legend.position = "bottom")
+ggsave(here(dir_figures, "mse-example-lambda_0.15_all_ages.png"), width = 7.5, height = 4)
