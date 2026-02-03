@@ -301,6 +301,7 @@ recruit.matrix <- recruit.df |>
 exploit.matrix <- exploit.df$exploit.rate.df |> 
     filter(.width==0.95) |> 
     select(exploit, .lower, .upper) |> 
+    mutate(exploit = 100*exploit, .lower = 100*.lower, .upper = 100*.upper) |> 
     as.matrix() |> 
     round(2)
 prob.matrix <- biomass.df |> 
@@ -314,21 +315,34 @@ total.catch.biomass <- compute.catch.biomass(data = raw.data$PWS_ASA.dat) |>
 
 
 # FIX HOW FOOD/BAIT CATCH IS CALCULATED
-# ADD FALL FISHERY WEIGHT-AT-AGE TO DATA FILE
+# ADD FALL FISHERY WEIGHT-AT-AGE TO DATA FILE?
 waa_fall_2024 <- read.csv(here::here(dir_data, "2024", "2024-food-bait-waa.csv")) |>
     filter(age < 18) |>
     mutate(age = ifelse(age >= 9, 9, age))
 
 mean_waa_fall_2024 <- c(0, tapply(waa_fall_2024$weight, waa_fall_2024$age, mean))
+total_catch_fall_2024 <- sum(mean_waa_fall_2024*raw.data$PWS_ASA.dat$foodbait[nyr-1,])
+catch_post_fall_2024 <- biomass_df |>
+    filter(year == curr.year-2) |>
+    select(biomass, lower_95, upper_95) |>
+    sapply(FUN = \(x) 100*total_catch_fall_2024 / x) 
 
 waa_fall_2025 <- read.csv(here::here(dir_data, "2025", "2025-food-bait-waa.csv")) |>
     filter(age < 18) |>
     mutate(age = ifelse(age >= 9, 9, age)) 
 
 mean_waa_fall_2025 <- c(0, 0, tapply(waa_fall_2025$weight, waa_fall_2025$age, mean), 0)
+total_catch_fall_2025 <- sum(mean_waa_fall_2025*raw.data$PWS_ASA.dat$foodbait[nyr,])
+catch_post_fall_2025 <- biomass_df |>
+    filter(year == curr.year-1) |>
+    select(biomass, lower_95, upper_95) |>
+    sapply(FUN = \(x) 100*total_catch_fall_2025 / x) 
 
-total.catch.biomass[nyr-1] <- sum(mean_waa_fall_2024*raw.data$PWS_ASA.dat$foodbait[nyr-1,])
-total.catch.biomass[nyr] <- sum(mean_waa_fall_2025*raw.data$PWS_ASA.dat$foodbait[nyr,])
+total.catch.biomass[nyr-1] <- total_catch_fall_2024
+exploit.matrix[nyr-1,] <- catch_post_fall_2024[c(1,3,2)]
+
+total.catch.biomass[nyr] <- total_catch_fall_2025
+exploit.matrix[nyr,] <- catch_post_fall_2025[c(1,3,2)]
 
 biomass_forecast <- filter(biomass_df, year == curr.year) |>
     unlist() |>
