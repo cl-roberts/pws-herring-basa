@@ -1,14 +1,14 @@
 ---
-title: "2025 Bayesian Age-structured Stock Assessment (BASA) Results for Prince William Sound (PWS) herring"
+title: "2026 Bayesian Age-structured Stock Assessment (BASA) Results for Prince William Sound (PWS) herring"
 author:
+  - Christopher L. Roberts
   - Trevor A. Branch
-  - Joshua A. Zahner
-  - C.L. Roberts
-date: today
-date-format: long
-geometry: margin=1in
-fontsize: 11pt
-format: pdf
+# date: today
+# date-format: long
+# geometry: margin=1in
+# fontsize: 11pt
+format: docx
+reference-doc: wordtemplate.docx
 crossref:
   fig-title: 'Fig.'
   title-delim: '**.**'
@@ -26,6 +26,7 @@ library(flextable)
 library(officer)
 library(tibble)
 library(tidyr)
+library(dplyr)
 library(knitr)
 library(pwsHerringBasa)
 ```
@@ -34,9 +35,13 @@ library(pwsHerringBasa)
 #| label: opts
 
 options(scipen = 999)
-# knit_hooks$set(inline = function(x) {
-# 	prettyNum(x, big.mark = ",", big.interval = 4L)
-# })
+knit_hooks$set(inline = function(x) {
+	if (is.integer(x)) {
+		format(x)
+	} else {
+		prettyNum(x, big.mark = ",", big.interval = 3L)
+	}
+})
 ```
 
 ```{r}
@@ -53,6 +58,9 @@ dir_mcmc <- here::here(dir_model, "mcmc_out")
 nyr <- read.data.files(dir_model)$PWS_ASA.dat$nyr
 ssb_est <- readr::read_csv(here::here(dir_outputs, "outputs-for-management.csv"), 
 						   show_col_types = FALSE)
+tbl_agecomp_forecast <- read.csv(here::here(dir_outputs, "tbl-agecomp-forecast.csv"))
+agecomp_forecast <- tbl_agecomp_forecast |>
+	arrange(desc(numbers))
 pfrb.posterior <- compute.pfrb.posterior(dir_mcmc, nyr+1)
 ```
 
@@ -60,90 +68,108 @@ pfrb.posterior <- compute.pfrb.posterior(dir_mcmc, nyr+1)
 #| label: local-vars
 
 rho <- readRDS(here::here("report/mohns_rho.rds"))
-start.year <- 1980
-curr.year <- start.year+nyr
-pfrb_median <- pfrb.posterior$biomass.df |>
+start.year <- 1980L
+curr.year <- as.integer(start.year+nyr)
+pfrb_mt <- pfrb.posterior$biomass.df |>
     unlist() |>
 	median() |>
 	round()
-pfrb_interval <- pfrb.posterior$biomass.df |>
+pfrb_tons <- round(pfrb_mt*1.10231)
+pfrb_ci_mt <- pfrb.posterior$biomass.df |>
     unlist() |>
 	quantile(c(.025, .975)) |>
 	round()
+pfrb_ci_tons <- round(pfrb_ci_mt*1.10231)
 threshold_prob <- pfrb.posterior$prob.below.threshold*100
+recruits <- ssb_est[nyr+1,2]
 ```
 
 # Executive Summary
-The median expected spawning biomass of PWS herring in `r curr.year` was estimated at approximately `r pfrb_median` metric tons, above the minimum threshold required for the opening of existing herring fisheries (19,958 metric tons). Taking into account uncertainty in this estimate, there is an approximately $`r threshold_prob`\%$ probability that the true biomass of the PWS herring population is below this lower cutoff. The `r curr.year` biomass estimate is the highest since 1993, and continues the recent trend of biomass growth observed since 2018. The estimated age-composition for `r curr.year-1` shows a modest proportion of age-7 individuals, continuing to support the estimate of a strong 2016 cohort, as well as relatively large proportions of age-3 and age-4 fish, supporting a large 2020 and 2021 year-class. Based on recent trends in both the survey data and model estimates of biomass, the PWS herring stock appears to be recovering towards its mid-2000s level. While still a long way from the biomass levels sustained prior to the 1993 population crash, this is a welcome sign after nearly a decade of further biomass decline. 
+
+The median expected spring pre-fishery mature biomass of PWS herring in `r curr.year` was estimated at approximately `r pfrb_mt` metric tons (`r pfrb_tons` short tons), above the minimum threshold required for the opening of existing herring fisheries (22,000 short tons). Taking into account uncertainty in this estimate, there is an approximately `r threshold_prob`% probability that the true biomass of the PWS herring population is below this lower cutoff. The `r curr.year` biomass estimate continues a recent trend of stable biomass observed since 2020. The age-composition for `r curr.year` is expected to be fairly even, with the most abundant age class estimated to be age-`r agecomp_forecast$age[1]` (`r round(agecomp_forecast$numbers[1], 1)`%), followed by age-`r agecomp_forecast$age[2]` (`r round(agecomp_forecast$numbers[2], 1)`%), then age-`r agecomp_forecast$age[3]` (`r round(agecomp_forecast$numbers[3], 1)`%), then age-`r agecomp_forecast$age[4]` (`r round(agecomp_forecast$numbers[4], 1)`%). The recruitment of age-3 fish is forecasted based on a ten-year average. The strong 2016 year class will be age-10 in `r curr.year` and is estimated to be a small proportion of the total population. Based on recent trends in both the survey data and model estimates of biomass, the PWS herring stock appears to be comparable to its mid-2000s level. 
 
 # Background
-Before 2014, the Alaska Department of Fish and Game (ADF&G) ran an Excel-based age structured assessment (ASA) model to forecast PWS herring biomass for input into harvest control rule. The harvest control rule has a minimum biomass threshold at 19,958 metric tons, which is equivalent to 25% of the unfished biomass under equilibrium determined from simulations [@funkrowell1995]. When forecasted biomass is between 19,958 and 38,555 metric tons (22,000-42,500 short tons), the control rules scales the annual harvest rate from 0-20% [@botz2010]. These reference points were last revised by the Alaska Board of Fisheries in 1994.
 
-Since 2014, the ASA has been expanded to include a Bayesian formulation (BASA) that inherently weights the input data sources based on statistical probability distributions, and estimates uncertainty through the sampling of Bayesian posteriors [@muradian2017]. @muradian2017 first demonstrated BASA as a more robust model to the previous ASA. Since then, BASA has been used in various studies to evaluate which historical input data were the most informative given the trade-off between information gain and cost [@muradian2019] and which ecological factors most likely regulate herring recruitment and natural mortality [@trochtabranch2021].
+Before 2014, the Alaska Department of Fish and Game (ADF&G) ran an Excel-based age structured assessment (ASA) model to forecast PWS herring biomass for input into harvest control rule. The harvest control rule has a minimum biomass threshold at 19,958 metric tons, which is equivalent to 25% of the unfished biomass under equilibrium determined from simulations [@funkrowell1995]. When forecasted biomass is between 19,958 and 38,555 metric tons (22,000-42,500 short tons), the control rule scales the annual harvest rate from 0-20% [@botz2010]. These reference points were last revised by the Alaska Board of Fisheries in 1994.
+
+Since 2014, the ASA has been expanded to include a Bayesian formulation (BASA) that inherently weights the input data sources based on statistical probability distributions, and estimates uncertainty through the sampling of Bayesian posteriors [@muradian2017]. @muradian2017 first demonstrated BASA as a more robust model to the previous ASA. Since then, BASA has been used in various studies to evaluate which historical input data were the most informative given the trade-off between information gain and cost [@muradian2019], which ecological factors most likely regulate herring recruitment and natural mortality [@trochtabranch2021], and a management strategy evaluation of different harvest control rules for PWS herring [@zahnerbranch2024].
 
 Various updates have been made to the equations of BASA since @muradian2017 to reflect changes in the understanding of herring biology and life history, as well as incorporate new data. These changes included, but were not limited to:
 
 * Fitting hydroacoustic data to mature biomass instead of total age 3+ biomass [@trochtabranch2021]
 * Estimating maturity (proportions mature at ages 3 and 4) over the entire modeling time period instead of two time periods split at 1997
 * Incorporating aerial age-1 school count data to inform recruitment estimates before they enter the spawning population at age 3
-* Integrating seroprevalence and disease data to inform natural mortality estimates [@trochta2022]
+* Sampling model parameter posteriors with a more efficient Markov Chain Monte Carlo (MCMC) algorithm called the No-U-turn Sampler (NUTS) [@monnahan2019]
+* A fixed parameter was introduced to increase pre-1992 mortality for ages 0-8 fish, since there is no disease data to inform additional mortality beyond a baseline value prior to the stock's biomass decline in the early 1990's 
+* Implementing a biomass forecast based on a ten-year average of weight-at-age, disease prevalence, and model-estimated recruitment 
+* Moving the model software to Template Model Builder (TMB; @kristensen2016tmb)
 
-Furthermore, a more efficient Markov Chain Monte Carlo (MCMC) algorithm called the No-U-turn Sampler (NUTS) has been introduced to rapidly sample posteriors of the parameters in BASA [@monnahan2019].
+In December 2024, the Alaska Board of Fisheries changed the management year for PWS herring to align with the calendar year (i.e., beginning January 1 and ending December 31; @botzscannell2025spring). Consequently, the PWS herring stock assessment will now be conducted in the winter and provide management advice beginning with spring fisheries which may begin on March 1 annually [@botzscannell2025spring]. Since the previous PWS herring stock assessment, conducted in November 2024, two food/bait fisheries and one open pound fishery have occurred. These commercial fisheries represent the first since the late 1990's [@botzscannell2024; @botzscannell2025spring; @botzscannell2025fall]. 
 
-At present, BASA is primarily used to estimate spawning biomass and recruitment up to the most recent year with data. Persistent low levels of biomass and recruitment since the early 1990s continue to preclude consideration of reopening of fisheries under the current harvest strategy, and thus forecasts are not conducted. BASA has also been used as a research tool to investigate hypotheses and evaluate alternative models. In this report, we present the most recent fits and estimates from BASA for 2021 and summarize any modifications and alternative models explored.
+In this report, we provide an overview of the most recent catch and survey data for PWS herring and present the fits and estimates from `r curr.year` BASA. `r curr.year` BASA includes catch data up to the 2025/26 commercial food/bait fishery, fits to 2025 survey data, and forecasts spring 2026 pre-fishery mature biomass. Biomass is reported in metric tons, unless otherwise noted.
 
-# `r curr.year-1` BASA Summary
-To run the `r curr.year-1` BASA model, the key software and versions used include:
+# `r curr.year` BASA Model Summary
 
-* AD Model Builder v. 13.2
-* R                v. `r paste(version$major, version$minor, sep = ".")`
-* adnuts           v. `r packageVersion("adnuts")`
+## Bayesian age-structured assessment (BASA)
 
-The no-U-turn sampler (NUTS) was used within ADMB to sample the posterior distributions of BASA parameters and derived quantities. The 'adnuts' package and its dependencies were used to run NUTS and diagnostic checking from within R. Four NUTS chains were ran in total with the default arguments already supplied to 'sample_nuts()' (e.g. warmup=700, iter=2000), except for a higher target acceptance rate (adapt_delta=0.9) and using the inverse Hessian as the mass matrix (metric='mle'). Diagnostics supported convergence in all four chains (zero divergences and all R-hat convergence values < 1.05) and had sufficient sample size (estimated Bulk Effective Sample Size > 500 from merged chains). The total duration for running BASA was 1.8 minutes.
+BASA is a statistical catch-at-age model with a Bayesian formulation, utilizing Markov Chain Monte Carlo sampling methods to calculate estimates for posterior distributions for parameters relating to key life history processes such as natural mortality and recruitment [@muradian2017]. The model is structured with half-year time-steps and models ten age classes (i.e., ages 0--9+). Catches from spring purse-seine, gillnet, and closed pound fisheries, as well as a fall food/bait fishery, are assumed known without error. See Appendix A for a current, full description of BASA model data and equations.
 
-Results are shown from the BASA model fits to data up to and including `r curr.year-1` (@fig-survey-fits, @fig-age-comps, @fig-management-outputs).  The inner 95th percentiles of the posterior predictive distributions of the ongoing biomass survey data (Mile-days milt and PWSSC acoustic biomass) from BASA encompass all observations (@fig-survey-fits). Fits of the discontinued data (egg deposition and ADF&G acoustic biomass) also fit well the historical time series.
+To run the `r curr.year` BASA model, the key software and versions used included:
 
-::: {#fig-survey-fits}
-![](../figures/survey_fits.pdf)
-
-Estimated survey biomass from Bayesian age structured assessment (shading showing 50% and 95% posterior predictive intervals in dark and light gray, respectively) compared to indices of biomass in the population (points and lines showing observation CV).
-:::
-
-::: {#fig-age-comps}
-![](../figures/age_compositions.pdf)
-
-Estimated age structure from the Bayesian age structured stock assessment (points = median, lines = 95% posterior predictive intervals) compared to the age composition data from catches and surveys (bars). Each color follows a single cohort as it ages through the fishery. Data are available only for ages-3 and above. The quantity 'J' in the upper-right corner of each panel is the Shannon-Weiner evenness index score of the age composition for each year [@shannonweaver1949].
-:::
-
-::: {#fig-management-outputs}
-![](../figures/management_outputs.pdf)
-
-Bayesian age structured assessment estimates of numbers of age-3 recruitment in millions, spawning biomass with 95% credibility intervals (light gray shading), total exploitation rate, and posterior probability density of pre-fishery biomass.
-:::
-
-Posterior predictions of the juvenile aerial survey index (age-1 schools) bounded all observations, albeit with large uncertainty. BASA largely overestimated the 2017 index which was the largest in the available record, although the relative scale of this cohort (2016 age-0) agrees with the large proportions of age-3s, -4s, -5s, and -6s observed in 2019, 2020, 2021, and 2022 (@fig-age-comps). The consistent overestimation of schools since 2017 may be due to bias from a subjective standardization used to calculate this index; schools were numerated by four descriptive categories (small, medium, large, and extra large) and the largest three categories were converted to and summed as small school equivalents to calculate the index. Furthermore, the numbers of medium, large, and extra large schools in 2017 each represented the historical maxima in their respective categories, while the number of small schools was the third largest. Further investigation into the accuracy of this standardization is needed. The large aerial survey index in 2022 is also anomalous, in that two sequential years have never been observed to have near equally large numbers of age-1 schools. The exact reasons for this discrepancy remain unknown at this time.
+* Template model builder (TMB) v. `r packageVersion("TMB")`
+* R   v. `r paste(version$major, version$minor, sep = ".")`
+* tmbstan v. `r packageVersion("adnuts")`
 
 
-Posterior predictive intervals for the age composition data mostly show good fits, except for the age-3 classes in 1987 and 1998 (@fig-age-comps) as well as the age-4 and -7 class in `r curr.year-1`. The model misfit in `r curr.year-1` could be due to a reduced sample size from the ASL survey being used. Estimates of the age-3 and age-4 year classes support strong 2019 and 2020 cohort. The median spawning biomass estimate in `r curr.year-1` was approximately 28,700 metric tons which is above ADF&G's lower cut-off for fishing (@tbl-management-outputs). Additionally, uncertainty in this estimate indicates there was a 5% probability that `r curr.year-1` spawning biomass was below this lower cutoff (@tbl-management-outputs).
+## Data
 
-The spawning biomass estimate for `r curr.year` is approximately `r pfrb_median` metric tons (95% CI: `r paste(pfrb_interval, collapse = " - ")`), corresponding to a ~$`r threshold_prob` \%$ probability that spawning biomass is below the lower regulatory cutoff defined by ADF&G (@fig-management-outputs).
+### Harvest
 
-# `r curr.year-1` BASA Diagnostics
+The 2024 commercial food/bait herring fishery was the first of its kind in Prince William Sound since 1998 [@botzscannell2024]. The total harvest was 399 mt (440 tons); 553 herring samples obtained from the commercial fishery were weighed and aged by staff at the Cordova ADF&G office. Age-3 was the dominant age class harvested in fall 2024, representing $42\%$ of all fish caught, followed by age-2 ($18\%$), then age-3 ($14\%$; @fig-caa). The 2025 commercial food/bait herring fishery was similar to the 2024 food/bait fishery in overall harvest and age structure. Herring samples were again obtained from the fishery, but as of writing not all samples have been processed. The ages and weights used to calculate 2025 food/bait catch in this report were based on 238 collected samples. The total harvest was 429 mt (473 tons) and $54\%$ of fish caught were age-3, $20\%$ were age-4, and $12\%$ were age-5 (@fig-caa). Sampled fish in each age class from the 2025 fishery were heavier, on average, than those from the 2024 fishery (@fig-waa). 
 
-A retrospective analysis was conducted to evaluate the effect that adding new data has on prior predictions of stock biomass. The Mohn's rho statistic, commonly used to assess the magnitude and direction of retrospective bias, was $\rho=`r round(rho, 3)`$ in `r curr.year-1`, indicating a small negative bias in biomass estimates in previous years. This value of Mohn's rho is not considered indicative of substantial model misspecification, as it falls within the accepted interval of (-0.22, 0.30; @hurtadoferro2015). 
+Commercial fisheries were also opened in spring 2025. A total of 32,105 pounds of spawn-on-kelp were harvested in open pound structures. BASA assumes no mortality from the usage of open pound gear.
 
-::: {#fig-retrospectives}
-![](../figures/retrospective.pdf)
+### Aerial surveys
 
-5-year retrospectives for the `r curr.year-1` BASA model. Peels show 
-no pervasive retrospective bias.
+Spring aerial surveys for mile-days (md) milt were incomplete in 2025 due to poor flying conditions. Although 10.5 mile-days of milt were recorded, it is estimated that approximately 25 md to 30 md may have been observed had aerial milt surveys been completed (Jenni Morrella, pers. comm.). The BASA model estimates provided in this report were fit using no observations from the 2025 aerial milt survey. A sensitivity analysis was conducted with low (25 md) and high (30 md) aerial milt survey scenarios to ensure that model outputs robust to a year of missing aerial milt data. A juvenile aerial survey index was conducted by the Prince William Sound Science Center in summer 2025 and 2,004 age-1 schools were observed. A standardization was used wherein schools were numerated by four descriptive categories (small, medium, large, and extra large) and the largest three categories were converted to and summed as small school equivalents to calculate an index that BASA can fit to. The standardized index calculated from the juvenile schools observed in 2025 was 6,980 small school equivalents (Scott Pegau, pers. comm.).  
+
+
+### Biological sampling
+
+Spawning herring samples collected aboard ADF&G's *R/V Solstice* research vessel provided age composition, weight-at-age, and sex information to BASA. The most represented age class in these herring samples were age-3 ($35.9\%$), followed by age-5 ($19.8\%$), then age-4 ($19.4\%$; @fig-age-comps). The proportion of spawning herring samples that were female was $48.5\%$. 
+
+Surveillance of the protistan parasite *Ichthyophonus* and viral hemorrhagic septicemia virus (VHSV) is conducted annually by scientists with the United States Geological Service. These disease data help inform BASA's time-varying mortality estimates. Sampling efforts in summer 2024 showed an *Ichthyophonus* prevalence of 32.8% and a VHSV prevalence of 0.5% (Paul Hershberger, pers. comm.; @fig-mortality-ts). The 2024 observed prevalence of *Ichthyophonus* was the second-highest on record, resulting in the lowest estimated survival rates for older age classes since 2016 (@fig-mortality-ts). 
+
+Persistently low overall presence of VHSV detected by surveillance is likely due it's episodic nature, in which the virus moves through populations quickly in epizootic events resulting in mortality or immunity for infected fish [@hershberger2016]. Therefore, the probability of detecting the VHSV in herring sampled with limited temporal coverage is low. Consequently, BASA estimates of VHSV-related mortality are not strongly influenced by prevalence data (@fig-mortality-ts). Although simulations have demonstrated potential for using the presence of VHSV antibodies (i.e., seroprevalence) to estimate VHSV-related mortality [@trochta2022], efforts to integrate this information into BASA have thus far proven challenging to fit to real data. Ongoing work will seek to improve BASA's VHSV-related mortality estimates with seroprevalence data. 
+
+
+# `r curr.year` BASA Results
+
+Results are shown from the BASA model fits to data up to and including `r curr.year` (@fig-survey-fits, @fig-age-comps, @fig-management-outputs). The spring pre-fishery mature biomass of PWS herring `r curr.year` was estimated by BASA at approximately `r pfrb_mt` mt (`r pfrb_tons` short tons). There is an approximately $`r threshold_prob`\%$ probability that the true biomass of the PWS herring population is below the 22,000 short ton threshold required for the opening of PWS herring fisheries. The true `r curr.year` spring pre-fishery mature biomass lies between approximately `r pfrb_ci_mt[1]` mt (`r pfrb_ci_tons[1]` short tons) and `r pfrb_ci_mt[2]` mt (`r pfrb_ci_tons[2]` short tons) with 95\% probability @fig-management-outputs. BASA predicts an incoming recruitment of `r round(recruits)` million mature and immature age-3 fish, based on a ten-year average, to calculate the biomass forecast @fig-management-outputs. Expected age compositions and ten-year averages for weight-at-age used to calculate the mature biomass forecast are shown in @tbl-agecomp-forecast. See Appendix B for a complete description of how the spring pre-fishery mature bioamss forecast was calculated.
+
+The inner 95th percentiles of the posterior predictive distributions of the ongoing survey data (Mile-days milt, juvenile schools, and spawning age compositions) from BASA encompass most observations (@fig-survey-fits, @fig-age-comps). Fits of the discontinued data (egg deposition, ADF&G acoustic biomass, and PWSSC acoustic biomass) also fit well the historical time series. Posterior predictive intervals for the age composition data mostly show good fits, except for the age-3 classes in 1987 and 1998 (@fig-age-comps). Posterior predictions of the aerial mile-days milt survey bounded all observations except for 1997 and 1998. Posterior predictions of the juvenile aerial survey index (age-1 schools) bounded all observations, albeit with large uncertainty. BASA largely overestimated the 2017 index which was the largest in the available record, although the relative scale of this cohort (2016 age-0) agrees with the large proportions of age-3s, -4s, -5s, and -6s observed in 2019, 2020, 2021, and 2022 (@fig-age-comps). The frequent overestimation of schools since 2017 may be due to bias from a subjective standardization used to calculate this index; schools were numerated by four descriptive categories (small, medium, large, and extra large) and the largest three categories were converted to and summed as small school equivalents to calculate the index. Furthermore, the numbers of medium, large, and extra large schools in 2017 each represented the historical maxima in their respective categories, while the number of small schools was the third largest. Further investigation into the accuracy of this standardization is needed. 
+
+# Sensitivity analysis
+
+We evaluated the sensitivity of BASA's biomass estimates to the absence of 2025 aerial milt survey data (@fig-sensitivity). We fit `r curr.year` BASA to low (25 mile-days) and high (30 mile-days) possible milt survey observations that could have been observed had surveys been conducted as usual. If the 2025 aerial milt survey had resulted in 25 mile-days of milt observed, then the 2026 spring pre-fishery mature biomass forecast would have been 8.5% different, the biomass estimate over all years would have been 1.7% different on average, and the probability that the forecast would be under threshold would have been 28.8%. If the 2025 aerial milt survey had resulted in 30 mile-days of milt observed, then the 2026 spring pre-fishery mature biomass forecast would have be 2.1% different, the biomass estimate over all years would have been 0.4% different on average, and the probability that the forecast would be under threshold would have been 22.1%. The width of 95% credible intervals for the 2026 spring pre-fishery mature biomass forecast fit to missing milt data is 19% and 13.2% wider than the forecast fit to the low and high milt scenarios, respectively. Overall, these results suggest that if the aerial survey observations had lied between 25 and 30 mile-days milt, BASA's prediction of spring pre-fishery mature biomass would have been less than 10% different than reported and estimated with greater precision.
+
+# `r curr.year` BASA Diagnostics
+
+A retrospective analysis was conducted to evaluate the effect that adding new data has on prior predictions of stock biomass (@fig-retrospectives). The Mohn's rho statistic, commonly used to assess the magnitude and direction of retrospective bias, was $\rho=`r round(rho, 3)`$ in `r curr.year-1L`, indicating a small negative bias in biomass estimates in previous years. This value of Mohn's rho is not considered indicative of substantial model misspecification, as it falls within the accepted interval of (-0.22, 0.30; @hurtadoferro2015). 
+
+{{< pagebreak >}}
+
+# References 
+::: {#refs}
 :::
 
 {{< pagebreak >}}
 
+# Tables and figures
+
 ```{r}
 #| label: tbl-management-outputs
-#| tbl-cap: Time series of posterior percentile (PCTL) estimates of the population from BASA. Pre-fishery spawning biomass (SB) is mature biomass of age-3+ fish. Catch (metric tons) includes all fisheries. Exploitation fraction is the catch divided by total age-3+ biomass. P(SB<20K) is the proportion of posterior SB samples that are less than 20,000 tons.
+#| tbl-cap: Time series of posterior percentile estimates of the Prince William Sound herring population from BASA. Pre-fishery mature biomass (B) is mature biomass of age-3+ fish estimated in spring immediately prior to the onset of commercial fisheries. Catch includes all fisheries. Exploitation fraction is the catch divided by total immature and mature age-3+ biomass. P(B<threshold) is the proportion of spring pre-fishery mature biomass estimates from Markov Chain Monte Carlo samples that are less than 19,958 mt (22,000 short tons). Bolded row shows forecast quantities for 2026.
 
 set_flextable_defaults(fonts_ignore=TRUE)
 
@@ -152,7 +178,7 @@ names(ssb_est) <- paste0("col_",1:ncol(ssb_est))
 tab_head <- tibble(col_keys=names(ssb_est),
                        line2=c("",
                                rep('Age-3 recruits\n(millions)',3),
-                               rep("Spawning Biomass \n(1000 metric tons)",3),
+                               rep("Mature Biomass \n(1000 metric tons)",3),
                                '',
                                rep('Exploitation\nfraction',3),
                                ''),
@@ -161,7 +187,7 @@ tab_head <- tibble(col_keys=names(ssb_est),
                                '50th','2.5th','97.5th',
                                'Catch',
                                '50th','2.5th','97.5th',
-                               'P(SB<20K)'))
+                               'P(B<threshold)'))
 
 pgwid <- 8.5
 
@@ -171,8 +197,10 @@ ssb_est |>
 	merge_h(part = "header", i=1) |>
 	merge_v(part = "header", j=c(1,7,12)) |>
 	colformat_double(j=1, big.mark = "", digits = 0) |>
-	colformat_double(j=2:8, big.mark = ",", digits = 1) |>
+	colformat_double(j=2:8, big.mark = ",", na_str = "--", digits = 1) |>
+	colformat_double(j=8:11, na_str = "--") |>
 	bold(part="header") |>
+	bold(i = nyr+1) |>
 	compose(i = 2, j = c(2, 5, 9), part = "header", value = as_paragraph("50", as_sup("th"))) |>
 	compose(i = 2, j = c(3, 6, 10), part = "header", value = as_paragraph("2.5", as_sup("th"))) |>
 	compose(i = 2, j = c(4, 7, 11), part = "header", value = as_paragraph("97.5", as_sup("th"))) |>
@@ -181,11 +209,101 @@ ssb_est |>
 	fontsize(size=8, part="all") |>
 	hline_bottom(j=1:12,part = 'header', border = fp_border(width = 1.5)) |>
 	hline_top(j=1:12,part = 'header', border = fp_border(width = 1.5)) |> 
-	width(width = c(0.3, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4, 0.6, 0.4, 0.4, 0.4, 0.8)) |>
+	width(width = c(0.4, 0.4, 0.4, 0.45, 0.4, 0.4, 0.45, 0.6, 0.4, 0.4, 0.45, 0.8)) |>
 	line_spacing(space=1, part="body") |>
 	padding(padding=0,part="body") 
 ```
 
 {{< pagebreak >}}
 
-# References 
+```{r}
+#| label: tbl-agecomp-forecast
+#| tbl-cap: Age compositions predicted by Bayesian age structured assessment (BASA) for spring 2026. Weight-at-age used by BASA in spring pre-fishery mature biomass forecast calculated from ten-year averages. 
+
+tbl_agecomp_forecast$age <- ifelse(tbl_agecomp_forecast$age==9, "9+", tbl_agecomp_forecast$age) 
+tbl_agecomp_forecast |>
+	regulartable() |>
+	set_header_labels(values = c(
+		age = "Age",
+		numbers = "Forecast age\ncompositions\n(percent, based on numbers)", 
+		biomass = "Forecast age\ncompositions\n(percent, based on biomass)",
+		weight = "Forecast\nweight-at-age (g)"
+		)
+	) |>
+	bold(part="header") |>
+	colformat_double(j=1:4, digits = 1) |>
+	align(align="center", part = "all") |>
+	fontsize(size=10, part="all") |>
+	hline_bottom(j=1:4,part = 'header', border = fp_border(width = 1.5)) |>
+	hline_top(j=1:4,part = 'header', border = fp_border(width = 1.5)) |> 
+	width(width = c(1, 1.5, 1.5, 1.5)) |>
+	line_spacing(space=1, part="body") |>
+	padding(padding=0,part="body") 
+```
+
+
+{{< pagebreak >}}
+
+::: {#fig-caa}
+![](../figures/catch-at-age.png)
+
+Observed catch-at-ages from fall 2024 (dark grey) and fall 2025 (light grey) 
+commercial food/bait fisheries. The overall biomass caught was 399 mt (440 tons)
+in fall 2024 and 429 mt (473 tons) in fall 2025.
+:::
+
+{{< pagebreak >}}
+
+::: {#fig-waa}
+![](../figures/weight-at-age.png)
+
+Observed herring weight-at-ages in fall 2024 (dark grey), spring 2025 (medium grey), and fall 2025 (light grey). Average weights and sample sizes within each age class and sampling period are shown above individual boxes.
+:::
+
+{{< pagebreak >}}
+
+::: {#fig-age-comps}
+![](../figures/age_compositions.png)
+
+Estimated age structure from the Bayesian age structured stock assessment (points = median, lines = 95% posterior predictive intervals) compared to the age composition data from catches and surveys (bars). Each color follows a single cohort as it ages through the fishery. The forecasted age compositions for `r curr.year` are shown as points and lines without colored bars as `r curr.year` data have not yet been observed. Data are available only for ages-3 and above. The quantity 'J' in the upper-right corner of each panel is the Shannon-Weiner evenness index score of the age composition for each year [@shannonweaver1949].
+:::
+
+{{< pagebreak >}}
+
+::: {#fig-mortality-ts}
+![](../figures/mortality_ts.png)
+
+Estimated annual survivals for ages 3--4 (top), ages 5--8 (middle), and ages 9+ (bottom) herring from Bayesian age structured assessment (shading showing 50% and 95% posterior predictive intervals in dark and light gray, respectively). Secondary axis shows sampled VHSV (top) and *Ichthyophonus* (middle and bottom) prevalence over time. VHSV prevalence data informs time-varying mortality estimates for age-3 and age-4 fish, although it has a weak effect. *Ichthyophonus* prevalence informs time-varying mortality estimates for age-5+ fish. Annual survivals for ages 0--2 fish are assumed fixed at 78%.
+:::
+
+{{< pagebreak >}}
+
+::: {#fig-survey-fits}
+![](../figures/survey_fits.png)
+
+Estimated survey biomass from Bayesian age structured assessment (shading showing 50% and 95% posterior predictive intervals in dark and light gray, respectively) compared to indices of biomass in the population (points and lines showing observation CV).
+:::
+
+{{< pagebreak >}}
+
+::: {#fig-management-outputs}
+![](../figures/management_outputs.png)
+
+Bayesian age structured assessment estimates of numbers of age-3 recruitment in millions, spring pre-fishery mature biomass biomass with 95% credibility intervals (light gray shading), total exploitation rate, and posterior probability density of spring pre-fishery mature biomass forecasted for `r curr.year`. Recruitment and biomass point forecasts are shown as stars. Reference points for which biomass levels preclude closure of commercial herring fisheries (19,958 mt), or the permitting of the maximum exploitation rate (38,555 mt), are shown as horizontal dashed lines on top-right panel. 
+:::
+
+{{< pagebreak >}}
+
+::: {#fig-sensitivity}
+![](../figures/biomass-sensitivity.png)
+
+Analysis of Bayesian age structured assessment model sensitivity to missing aerial mile-days milt (MDM) data. The model run with missing MDM data, on which all estimates in this report are based, is shown as a dotted line and compared to sensitivity model runs which were fit to a low-milt observation scenario (blue; 25 MDM) and a high-milt observation scenario (red; 30 MDM). The `r curr.year` spring pre-fishery mature biomass forecasts for both scenarios are shown as points at the end of the time series. The biomass forecasts predicted in both scenarios are within 10% of the biomass forecasted by the BASA model run which was not fit to 2025 milt data.
+:::
+
+{{< pagebreak >}}
+
+::: {#fig-retrospectives}
+![](../figures/retrospective.png)
+
+5-year retrospectives for the `r curr.year` Bayesian age structured assessment model. Peels show no pervasive retrospective bias.
+:::

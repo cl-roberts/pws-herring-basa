@@ -1,5 +1,3 @@
-
-
 # Appendix A.-- Bayesian age-structured assessment (BASA) model formulation
 
 > [!warning]
@@ -139,9 +137,9 @@
 ### Effective sample sizes
 
 Due to herring schooling behavior and gear selectivity, effective sample
-sizes were estimated to weight the likelihood expressions for
+sizes were estimated to weigh the likelihood expressions for
 purse-seine age composition ($L_1$) and the ADFG spawner survey
-age-composition ($L_2$) datasets. A iterative reweighting procedure is
+age-composition ($L_2$) datasets. An iterative reweighting procedure is
 conducted for estimating effective sample sizes wherein BASA is
 initially using raw sample sizes for the age-composition datasets, and
 the effective sample size is estimated using
@@ -162,8 +160,8 @@ the effective to raw sample size converges.
 
 | Likelihood component | Form |
 |:---|:--:|
-| **Multinomial** |  |
 | Complete expression | $L = \sum_{i=1}^{7} L_i$ |
+| **Multinomial** |  |
 | Purse-seine age-composition | $L_1 = -\sum_{y \in Y_1} \left[ \tilde{Z}^1_y \sum_{a=0}^{9+} \Theta^1_{y, a} \log\left( \frac{\hat{\Theta}^1_{y, a}}{\Theta^1_{y, a}} \right) \right]$ |
 | Spawner survey age-composition | $L_2=-\sum_{y \in Y_2}\left[\tilde{Z}^{Sp}_y\sum_{a=0}^{9+}\Theta^{Sp}_{y, a} \log\left(\frac{\hat{\Theta}^{Sp}_{y,a}}{\Theta^{Sp}_{y,a}}\right)\right]$ |
 | **Lognormal** |  |
@@ -183,71 +181,3 @@ the effective to raw sample size converges.
 
 [^1]: $\Gamma$ denotes the gamma function
 
-
-
-## Forecast quantities
-
-<!-- revisit projecting N_y_a foreward rather than using 10-year median -->
-
-> [!note]
-> Notation: $(*)$ denotes forecast quantity.
-
-### Numbers-at-age forecast
-
-We forecast age-3 recruitment in year $Y+1$ based on a geometric mean of the
-previous 10 recruitment sizes estimated by the model. During the model fitting 
-process, we develop a posterior distribution for the age-3 recruitment forecast
-by generating a sample of age-2 fish for year $Y$, applying summer mortality in 
-year $Y$, subtracting the age-2 fish caught in the year $Y$ food/bait fishery, 
-and applying year-$Y$ winter mortality. The number of age-2 fish in year $Y$ is
-sampled from a lognormal distribution parameterized by the mean and standard
-deviation of age-2 fish estimated for the previous ten years:
-
-$$
-r^*_{\text{age} 2} \sim \text{lognormal} \left( \mu_{\text{age} 2}, \sigma_{\text{age} 2}\right) 
-$$
-
-where 
-
-$$
-\mu_{\text{age} 2} = \text{mean}\{\log N_{y, 2}\},  \ 
-\sigma_{\text{age} 2} = \text{SD}\{\log N_{y, 2}\} \
-\forall \ y \ \in \ [Y-9, Y],
-$$
-
-and thus
-
-$$
-N^*_{Y+1, 3} = \left(r^*_{\text{age} 2} S^1_{Y, 2} - C^4_{Y, 2}\right) S^2_{Y, 2}.
-$$
-
-Note that $(*)$ denotes a forecast quantity. The summer ($S^1_{Y, 2}$) and winter 
-($S^1_{Y, 2}$) survivals used to calculate the forecast are based on 10-year averages. 
-The forecasted numbers-at-age matrix in year $Y$ is
-
-$$
-N^*_{Y+1, a} = 
-  \begin{cases} 
-    \left(r^*_{\text{age} 2} S^1_{Y, a-1} - C^4_{Y, a-1}\right) S^2_{Y, a-1} & \text{if } a = 3 
-    \\ \\
-    \left((N_{Y, a-1}-\hat{C}^S_{Y, a-1}) S^1_{Y, a-1} - C^4_{Y, a-1}\right) S^2_{Y, a-1} & \text{if } a \geq 4 \text{ and } a \leq 8 
-    \\ \\
-    \left((N_{Y, a-1}-\hat{C}^S_{Y, a-1}) S^1_{Y, a-1} - C^4_{Y, a-1}\right) S^2_{Y, a-1}  
-    + \left((N_{Y, a}-\hat{C}^S_{Y, a}) S^1_{Y, a} - C^4_{Y, a}\right) S^2_{Y, a}  & \text{if } a = 9+ 
-  \end{cases}
-$$
-
-### Mature biomass forecast 
-
-The mature biomass forecast is given by 
-
-$$
-\tilde{B}^*_{Y+1} = \sum_{a = 0}^{9+} \rho_a \cdot \bar{W}_{Y+1, a} \cdot N^*_{Y+1, a}
-$$
-
-where the weight-at-age used in the forecast, $\bar{W}_{Y+1, a}$, is calculated
-using the average weight-at-ages over the final $10$ years in the model:
-
-$$
-\bar{W}_{Y+1, a} = \frac{1}{10} \sum_{y = Y-9}^{Y} W_{y, a}.
-$$
