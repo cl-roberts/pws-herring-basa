@@ -47,6 +47,7 @@
 0
 0
 0
+0
 
 # Spawning sample sizes (last is assumed) CHANGE LAST ONE WHEN RECEEIEVD
 511
@@ -94,6 +95,7 @@
 2827
 1545
 2203
+1570
 
 # Antibody sample sizes
 0
@@ -141,6 +143,7 @@
 0
 0
 0
+0
 
 # I. hoferi sample sizes
 0
@@ -183,6 +186,7 @@
 180
 176
 179
+0
 0
 0
 0

@@ -200,6 +200,7 @@ survey_fits <- ggarrange(
 
 # CLR: added / to file path
 ggsave(here::here(dir_figures, "survey_fits.pdf"), survey_fits, width=12, height=8, dpi=300)
+ggsave(here::here(dir_figures, "survey_fits.png"), survey_fits, width=12, height=8, dpi=300)
 
 # format survey fits for saving to files
 mdm_tbl <- mdm.pp %>% 

@@ -74,6 +74,9 @@ winter_mortality_age_3 <- -log(winter_survival)[seq(4, ncol(winter_survival), by
 summer_mortality_age_5 <- -log(summer_survival)[seq(6, ncol(summer_survival), by = 10)]
 winter_mortality_age_5 <- -log(winter_survival)[seq(6, ncol(winter_survival), by = 10)]
 
+summer_mortality_age_9 <- -log(summer_survival)[seq(10, ncol(summer_survival), by = 10)]
+winter_mortality_age_9 <- -log(winter_survival)[seq(10, ncol(winter_survival), by = 10)]
+
 # combine mortalities into a single matrix for annual mortality rate 
 
 annual_mortality_post_age_3 <- cbind(
@@ -84,23 +87,37 @@ annual_mortality_post_age_5 <- cbind(
     summer_mortality_age_5[,1:(nyr-1)] + winter_mortality_age_5[,2:nyr], 
     summer_mortality_age_5[,nyr] + winter_mortality_age_5[,(nyr+1)]
 )
+annual_mortality_post_age_9 <- cbind(
+    summer_mortality_age_9[,1:(nyr-1)] + winter_mortality_age_9[,2:nyr], 
+    summer_mortality_age_9[,nyr] + winter_mortality_age_9[,(nyr+1)]
+)
 
 # calculate 50% and 95% intervals from posterior
-annual_mortality <- expand.grid(years, c(3, 5))
+annual_mortality <- expand.grid(years, c(3, 5, 9))
 
 quants <- c(.025, .25, .5, .75, .975)
 for (q in seq(quants)) {
     quantiles_age_3 <- apply(annual_mortality_post_age_3, MARGIN = 2, FUN = \(x) quantile(x, probs = quants[q]))    
     quantiles_age_5 <- apply(annual_mortality_post_age_5, MARGIN = 2, FUN = \(x) quantile(x, probs = quants[q]))    
-    annual_mortality <- cbind(annual_mortality, c(quantiles_age_3, quantiles_age_5))
+    quantiles_age_9 <- apply(annual_mortality_post_age_9, MARGIN = 2, FUN = \(x) quantile(x, probs = quants[q]))    
+    annual_mortality <- cbind(annual_mortality, c(quantiles_age_3, quantiles_age_5, quantiles_age_9))
 }
 
 colnames(annual_mortality) <- c("year", "age", quants)
 
 # filter by the only relevant ages
 mortality <- annual_mortality |>
-    filter(age %in% c(3, 5)) 
-mortality$age_range <- recode_factor(mortality$age, "3" = "Ages 3-4", "5" = "Ages 5-8")
+    filter(age %in% c(3, 5, 9)) |>
+    mutate(
+        `0.025` = exp(-`0.025`),
+        `0.25` = exp(-`0.25`),
+        `0.5` = exp(-`0.5`),
+        `0.75` = exp(-`0.75`),
+        `0.975` = exp(-`0.975`)
+    )
+
+
+mortality$age_range <- recode_factor(mortality$age, "3" = "Ages 3-4", "5" = "Ages 5-8", "9" = "Ages 9+")
 
 # add raw disease data to mortality df for secondary axis
 disease_covs <- raw.data$PWS_ASA_covariate.ctl$disease_covs 
@@ -108,8 +125,9 @@ disease_covs[disease_covs[,1] == -9,1] <- disease_covs[disease_covs[,1] == -9,2]
 
 vhs <- data.frame(age = 3, year = years, disease = disease_covs[,3])
 ich <- data.frame(age = 5, year = years, disease = disease_covs[,1])
+ich9 <- data.frame(age = 9, year = years, disease = disease_covs[,1])
 
-disease <- rbind(ich, vhs)
+disease <- rbind(ich, vhs, ich9)
 disease$disease <- ifelse(disease$disease == -9, NA, disease$disease)
 
 mortality <- merge(mortality, disease)
@@ -121,8 +139,9 @@ vhs_mortality_ts <- ggplot(data = filter(mortality, age == 3), aes(x = year)) +
     geom_ribbon(aes(ymin = `0.25`, ymax = `0.75`), fill = "grey5", alpha = .25) +
     geom_line(aes(y = `0.5`)) +
     geom_line(aes(y = disease*vhs_scalar)) +
-    xlab("Year") + ylab("Instantaneous Mortality") +
-    labs(title = "BASA Mortality Time Series", subtitle = "Ages 3-4") +
+    # xlab("Year") + ylab("Annual survival (proportion)") +
+    xlab("") + ylab("") +
+    labs(title = "BASA-estimated herring survival and disease prevalence", subtitle = "Ages 3-4") +
     scale_y_continuous(
         breaks = seq(0, max(mortality$`0.975`), by = .25),
         sec.axis = sec_axis(~./vhs_scalar, name="VHSV Prevalence")
@@ -134,15 +153,50 @@ ich_mortality_ts <- ggplot(data = filter(mortality, age == 5), aes(x = year)) +
     geom_ribbon(aes(ymin = `0.25`, ymax = `0.75`), fill = "grey5", alpha = .25) +
     geom_line(aes(y = `0.5`)) +
     geom_line(aes(y = disease*ich_scalar)) +
-    geom_vline(aes(xintercept = 2007), color = "red") +
-    xlab("Year") + ylab("Instantaneous Mortality") +
+    # geom_vline(aes(xintercept = 2007), color = "red") +
+    xlab("Year") + ylab("Annual survival (proportion)") +
     labs(subtitle = "Ages 5-8") +
     scale_y_continuous(
         breaks = seq(0, max(mortality$`0.975`), by = .25),
         sec.axis = sec_axis(~./ich_scalar, name="Ich. Prevalence")
     )
 
-mortality_ts <- ggarrange(vhs_mortality_ts, ich_mortality_ts, ncol = 1, heights = c(1,.875))
+ich_scalar <- .75*max(mortality$`0.975`)
+ich9_mortality_ts <- ggplot(data = filter(mortality, age == 9), aes(x = year)) +
+    geom_ribbon(aes(ymin = `0.025`, ymax = `0.975`), fill = "grey5", alpha = .25) +
+    geom_ribbon(aes(ymin = `0.25`, ymax = `0.75`), fill = "grey5", alpha = .25) +
+    geom_line(aes(y = `0.5`)) +
+    geom_line(aes(y = disease*ich_scalar)) +
+    xlab("") + ylab("") +
+    # xlab("Year") + ylab("Annual survival (proportion)") +
+    labs(subtitle = "Ages 9+") +
+    scale_y_continuous(
+        breaks = seq(0, max(mortality$`0.975`), by = .25),
+        sec.axis = sec_axis(~./ich_scalar, name="Ich. Prevalence")
+    )
+
+ggarrange(vhs_mortality_ts, ich_mortality_ts, ich9_mortality_ts, ncol = 1, heights = c(1, .875, .875))
+
+mortality_ts <- ggplot(data = mortality, aes(x = year)) +
+    geom_ribbon(aes(ymin = `0.025`, ymax = `0.975`), fill = "grey5", alpha = .25) +
+    geom_ribbon(aes(ymin = `0.25`, ymax = `0.75`), fill = "grey5", alpha = .25) +
+    geom_line(aes(y = `0.5`)) +
+    geom_line(aes(y = disease*ich_scalar)) +
+    facet_wrap(~ age_range, ncol = 1) +
+    labs(title = "BASA-estimated herring survival and disease prevalence") +
+    xlab("Year") + ylab("Annual survival (proportion)") +
+    scale_y_continuous(
+        breaks = seq(0, max(mortality$`0.975`), by = .25),
+        sec.axis = sec_axis(~./ich_scalar, name="Disease prevalence (proportion)")
+    ) +
+    theme(
+        axis.title = element_text(size=12),
+        axis.text = element_text(size=12),
+        plot.title = element_text(size=14),
+        panel.grid.minor = element_blank(),
+        panel.grid.major = element_blank(),
+    )
+
 ggsave(here::here(dir_figures, "mortality_ts.pdf"), mortality_ts, height=8.5, width=11)
 ggsave(here::here(dir_figures, "mortality_ts.png"), mortality_ts, height=5, width=7)
 

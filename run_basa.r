@@ -738,6 +738,9 @@ message(paste("Total model run time:", round(time, 4), units(time)))
 if (run_retro) {
 
     retro_start_time <- Sys.time()
+    retro_parameters <- parameters
+    retro_lower <- lower 
+    retro_upper <- upper
 
     for(i in 1:n_peels){
 
@@ -756,16 +759,21 @@ if (run_retro) {
         })
         retro_data$nyr <- Y-i
 
+        # adjust par, lower, and upper vectors 
+        retro_parameters$annual_age0devs <- retro_parameters$annual_age0devs[-retro_data$nyr]
+        retro_lower <- retro_lower[names(retro_lower) != paste0("annual_age0devs", retro_data$nyr)]
+        retro_upper <- retro_upper[names(retro_upper) != paste0("annual_age0devs", retro_data$nyr)]
+
         # fit model
         model_retro <- MakeADFun(
-            retro_data, parameters, map = map, DLL = "PWS_ASA", 
+            retro_data, retro_parameters, map = map, DLL = "PWS_ASA", 
             silent = TRUE, hessian = FALSE
         )
 
         # ML optimization
         retro_fit_ML <- nlminb(
             start = model_retro$par, objective = model_retro$fn, gradient = model_retro$gr, 
-            lower = lower, upper = upper,
+            lower = retro_lower, upper = retro_upper,
             control = list(eval.max = 10000, iter.max = 1000, rel.tol = 1e-10)
         )
 
@@ -773,11 +781,11 @@ if (run_retro) {
         retro_inits <- init_tmb_params(
             chains = retro_chains, seed = seed,
             start = model_retro$env$last.par.best, 
-            lower = lower, upper = upper
+            lower = retro_lower, upper = retro_upper
         )
         retro_fits <- vector(mode = "list", length = n_peels)
         retro_fits[[i]] <- tmbstan(
-            model, chains = retro_chains, lower = lower, upper = upper, 
+            model_retro, chains = retro_chains, lower = retro_lower, upper = retro_upper, 
             cores = retro_chains, init = retro_inits, iter = retro_iter, 
             control = control, warmup = retro_warmup, seed = seed, algorithm = "NUTS", 
             silent = FALSE
@@ -793,7 +801,7 @@ if (run_retro) {
         retro_Btilde_forecast <- matrix(NA, nrow = n_retro_iter, ncol = 1)
         for(iter in 1:n_retro_iter) {
             retro_Btilde_y[[iter]] <- model_retro$report(retro_mcmc_results[iter,])$Btilde_y 
-            retro_Btilde_forecast[iter] <- model_retro$report(retro_mcmc_results[iter,])$Btilde_forecast
+            retro_Btilde_forecast[iter] <- model_retro$simulate(retro_mcmc_results[iter,])$Btilde_forecast
         }
 
         # estimated pre fishery spawning biomass 

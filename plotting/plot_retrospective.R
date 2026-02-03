@@ -24,6 +24,7 @@ library(ggplot2)
 library(ggdist)
 library(icesAdvice)
 library(pwsHerringBasa)
+theme_set(theme_bw())
 
 # directories
 
@@ -45,6 +46,7 @@ if (!dir.exists(dir_retro)) {
 nyr <- read.data.files(dir_model)$PWS_ASA.dat$nyr
 start.year <- 1980
 curr.year <- start.year+nyr
+years <- seq(start.year, curr.year-1)
 
 n.peels <- list.dirs(dir_retro, recursive = FALSE, full.names = FALSE) |>
     grep(pattern = "basa-") |>
@@ -79,25 +81,44 @@ final.year <- retro |>
     mutate(year.lag=curr.year-as.numeric(lag)) |> 
     filter(if_all(c(year.lag, year), ~ year == .x))
 
-biomass.df <- compute.biomass.traj(dir_mcmc_out, nyr) |> 
-                mutate(year = as.numeric(year)) |> 
-                filter(.width >= 0.5)
+biomass.df <- compute.biomass.traj(dir_mcmc_out, nyr)
+
+biomass_df <- biomass.df |>
+    filter(.width == 0.5) |>
+    select(year, prob, biomass, .lower, .upper) |>
+    mutate(year = c(years, curr.year)) |>
+    rename(lower_50 = .lower, upper_50 = .upper)
+
+biomass_df$lower_95 <- filter(biomass.df, .width == 0.95) |>
+    select(.lower) |>
+    unlist()
+
+biomass_df$upper_95 <- filter(biomass.df, .width == 0.95) |>
+    select(.upper) |>
+    unlist()
+
+
 
 ggplot(retro) +
-    geom_lineribbon(data=biomass.df, aes(x=year, y=biomass, ymin=.lower, ymax=.upper), size=0, alpha=0.35)+
-    geom_line(aes(x=year, y=biomass, color=lag), size=1)+
-    geom_point(data=final.year, aes(x=year, y=biomass, color=lag), size=3)+
-    geom_hline(yintercept=c(20000, 40000), linetype="dashed")+
-    geom_text(data=data.frame(), aes(x=2016, y=180000, label=paste("Mohn's rho:", round(rho, 3))))+
+    geom_ribbon(data=biomass_df, aes(x=year, y=biomass/1000, ymin=lower_95/1000, ymax=upper_95/1000), alpha=0.25)+
+    geom_ribbon(data=biomass_df, aes(x=year, y=biomass/1000, ymin=lower_50/1000, ymax=upper_50/1000), alpha=0.25)+
+    geom_line(aes(x=year, y=biomass/1000, color=lag), linewidth=.5)+
+    geom_point(data=final.year, aes(x=year, y=biomass/1000, color=lag), size=2)+
+    geom_hline(yintercept=c(20, 40), linetype="dashed")+
+    geom_text(data=data.frame(), aes(x=2016, y=180, label=paste("Mohn's rho:", round(rho, 3))))+
     scale_fill_grey(start=0.8, end=0.4)+
-    scale_y_continuous(limits=c(0, 200000), breaks=c(0, 20000, 40000, 50000, 100000, 150000, 200000), labels=scales::comma)+
+    # scale_y_continuous(limits=c(0, 2), breaks=c(0, 20000, 40000, 50000, 100000, 150000, 200000), labels=scales::comma)+
     coord_cartesian(expand=0)+
-    labs(x="Year", y="Spawning biomass (mt)", color="Data lag", title=paste0(n.peels, "-year retrospective pattern"))+
-    theme_classic()+
+    labs(x="Year", y="Pre-fishery Biomass (mt)", color="Data lag", title=paste0(n.peels, "-year retrospective pattern"))+
+    # theme_classic()+
     theme(
-        axis.title = element_text(size=16),
+        axis.title = element_text(size=12),
         axis.text = element_text(size=12),
-        plot.title = element_text(size=18)
+        plot.title = element_text(size=14),
+        panel.grid.minor = element_blank(),
+        panel.grid.major = element_blank()
     )
 
 ggsave(here::here(dir_figures, "retrospective.pdf"))
+ggsave(here::here(dir_figures, "retrospective.png"), width = 6, height = 4)
+

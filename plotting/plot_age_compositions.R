@@ -102,6 +102,7 @@ seac.raw.df <- as_tibble(model.data$seac) |>
                     fill.color=colors,
                     type="seine"
                 ) |>
+                rbind(data.frame(year = curr.year, age = 3:9, val = NA, fill.color = NA, type = "seine")) |>
                 print(n=30)
 spac.raw.df <- as_tibble(model.data$spac) |>
                 mutate(year=years) |>
@@ -111,6 +112,7 @@ spac.raw.df <- as_tibble(model.data$spac) |>
                     fill.color=colors,
                     type="spawn"
                 ) |>
+                rbind(data.frame(year = curr.year, age = 3:9, val = NA, fill.color = NA, type = "spawn")) |>
                 print(n=30)
 raw.df <- rbind(seac.raw.df, spac.raw.df)
 
@@ -177,8 +179,15 @@ age.comp.df <- rbind(seac.df, spac.df)
 age.comp.df$age <- factor(age.comp.df$age, levels=sort(unique(age.comp.df$age)), ordered=TRUE)
 age.comp.df$type <- factor(age.comp.df$type)
 
-age.class.df <- data.frame(year=raw.df$year, age=rep(c("3", "4", "5", "6", "7", "8", "9"), nrow(raw.df)), color=rep(c("black", "white", "black", "white", "black", "white", "black"), nrow(raw.df)), type=rep(c("seine", "spawn"), each=nrow(raw.df)/2))
-year.df <- data.frame(year=years, year_str=years)
+age.class.df <- data.frame(
+    year=raw.df$year, 
+    age=rep(c("3", "4", "5", "6", "7", "8", "9"), nrow(raw.df)), 
+    color=rep(c("black", "white", "black", "white", "black", "white", "black"), 
+    nrow(raw.df)), 
+    type=rep(c("seine", "spawn"), 
+    each=nrow(raw.df)/2)
+)
+year.df <- data.frame(year=c(years, curr.year), year_str=c(years, curr.year))
 
 
 #-------------------------------------------------------------------------------
@@ -219,6 +228,42 @@ naa_ridgedat <- n.y.a.median.mat |>
     mutate(Age = as.numeric(Age), Numbers = round(Numbers)) |> 
     uncount(Numbers)
 
+#-------------------------------------------------------------------------------
+
+#### age comp forecast ####
+
+Btilde_a_forecast <- read.csv(here::here(dir_mcmc_out, "Btilde_a_forecast.csv"))[,4:10] |>
+    apply(MARGIN = 1, FUN = \(x) 100*x/sum(x)) |>
+    t() |>
+    apply(MARGIN = 2, FUN = quantile, probs = c(0.025, 0.5, 0.975)) |>
+    t()
+
+Ntilde_a_forecast <- read.csv(here::here(dir_mcmc_out, "Ntilde_a_forecast.csv"))[,4:10] |>
+    apply(MARGIN = 1, FUN = \(x) 100*x/sum(x)) |>
+    t() |>
+    apply(MARGIN = 2, FUN = quantile, probs = c(0.025, 0.5, 0.975)) |>
+    t()
+
+tbl_agecomp_forecast <- data.frame(
+    age = 3:9,
+    numbers = Ntilde_a_forecast[,2],
+    biomass = Btilde_a_forecast[,2],
+    weight = colMeans(raw.data$PWS_ASA.dat$waa[(nyr-9):nyr, 4:10])
+)
+write.csv(tbl_agecomp_forecast, here::here(dir_outputs, "tbl-agecomp-forecast.csv"), row.names = FALSE)
+
+age.comp.df <- rbind(
+    age.comp.df, 
+    cbind(
+        data.frame(
+            year = curr.year,
+            age = 3:9
+        ), 
+        Ntilde_a_forecast, 
+        data.frame(type = "spawn")
+    )
+)
+
 
 #-------------------------------------------------------------------------------
 
@@ -227,7 +272,12 @@ naa_ridgedat <- n.y.a.median.mat |>
 # make age composition plot
 
 raw.df <- raw.df |> 
-    left_join(data.frame(year = 1982:(curr.year+nyr.sim-1), J = round(evenness.50, 2)))
+    left_join(
+        data.frame(
+                year = 1982:(curr.year+nyr.sim), 
+                J = c(round(evenness.50, 2), round(sw_evenness(Ntilde_a_forecast[,2]), 2))
+            )
+        )
 
 age.struct.plot <- ggplot(raw.df)+
     geom_col(aes(x=type, y=val/100, color=age, fill=fill.color), position=position_dodge(0.9), linewidth = 0, alpha = .65)+
@@ -273,6 +323,7 @@ age.struct.plot <- ggplot(raw.df)+
 # save age comps plot
 
 ggsave(here::here(dir_figures, "age_compositions.pdf"), plot = age.struct.plot, height = 11, width=8.5)
+ggsave(here::here(dir_figures, "age_compositions.png"), plot = age.struct.plot, height = 11, width=8.5)
 
 # save numbers-at-age plot
 
