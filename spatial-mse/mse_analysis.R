@@ -454,3 +454,28 @@ ggplot(all_om, aes(x = Year)) +
   labs(color = NULL, fill = NULL, linetype = NULL, y = "Spring mature biomass (1000 mt)") +
   theme(legend.position = "bottom")
 ggsave(here(dir_figures, "mse-example-lambda_0.15_all_ages.png"), width = 7.5, height = 4)
+
+
+# ---------------------------------------------------------------------------- #
+
+# boxplot for annual evostc report 
+
+
+head(metrics)
+
+metrics_base <- metrics |>
+  filter(em == "base") |>
+  select(Btilde_ratio, Btilde_prob, lambda, c) |>
+  pivot_longer(cols = c(Btilde_ratio, Btilde_prob), names_to = "metric") 
+
+metrics_base$metric <- factor(metrics_base$metric, levels = c("Btilde_ratio", "Btilde_prob"))
+
+ggplot(metrics_base, aes(x = metric, y = value)) +
+    stat_summary(fun.data = boxplot_summary, geom = "boxplot", width = 0.75) +
+    geom_hline(aes(yintercept = 1), color = "red") +
+    facet_grid2(vars(lambda), vars(c), scales = "fixed", render_empty = FALSE) +
+    xlab(NULL) + 
+    ylab("Performance metric") +
+    scale_x_discrete(labels = c("Btilde_ratio" = "Assessment\naccuracy\nratio", Btilde_prob = "Assessment\nprecision\nprobability")) +
+    scale_y_continuous(breaks = seq(0, 1.5, by = 0.5)) 
+ggsave(here::here(dir_figures, "boxplot-base-model.png"), width = 7.5, height = 5)
