@@ -105,7 +105,8 @@ recruit.plot <- recruit.plot +
     geom_line(aes(x = year, y = recruits, linetype = forecast)) +
     geom_point(aes(x = year, y = recruits, shape = forecast), size = 2) +
     scale_linetype_manual(values = c(`TRUE` = NULL, `FALSE` = 1)) +
-    scale_shape_manual(values = c(`TRUE` = 8, `FALSE` = NULL))
+    scale_shape_manual(values = c(`TRUE` = 8, `FALSE` = NULL)) +
+    ylab("Recruits (millions)")
 
 
 
@@ -137,7 +138,8 @@ biomass.plot <- biomass.plot +
     geom_line(aes(x = year, y = biomass/1000, linetype = forecast)) +
     geom_point(aes(x = year, y = biomass/1000, shape = forecast), size = 2) +
     scale_linetype_manual(values = c(`TRUE` = NULL, `FALSE` = 1)) +
-    scale_shape_manual(values = c(`TRUE` = 8, `FALSE` = NULL))
+    scale_shape_manual(values = c(`TRUE` = 8, `FALSE` = NULL)) +
+    labs(title = "Spring pre-fishery mature biomass")
 
 
 # exploitation ----
@@ -158,7 +160,9 @@ pfrb.posterior.plot <- plot_pfrb_posterior(pfrb.posterior$biomass.df,
                                            pfrb.posterior$biomass.quants, 
                                            pfrb.posterior$prob.below.threshold,
                                            curr.year,
-                                           font.size=14)
+                                           font.size=14) +
+    labs(title = paste(curr.year, "spring pre-fishery mature biomass forecast")) +
+    xlab("Mature biomass (1000s mt)")
 
 #-------------------------------------------------------------------------------
 
@@ -184,7 +188,7 @@ biomass_sensitivity_plot <- ggplot(biomass_df) +
     geom_line(data = filter(biomass_sensitivity, !is_forecast), aes(x=year, y = biomass_high_mdm/1000, color = "high_mdm"), linewidth=1, alpha = .75) +
     geom_point(data = filter(biomass_sensitivity, is_forecast), aes(x=year, y = biomass_high_mdm/1000, color = "high_mdm"), size = 2, shape = 16, alpha = .75) +
     scale_x_continuous("Year", breaks=seq(min(years), max(years), by=5), expand=c(.05, .05)) +
-    ylab("Spring pre-fishery mature biomass (1000 tons)") +
+    ylab("Spring pre-fishery mature biomass (1000s mt)") +
     scale_linetype_manual(
         labels = c("missing_mdm" = "Missing MDM"),
         breaks = "missing_mdm",

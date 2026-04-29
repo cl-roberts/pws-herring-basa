@@ -92,7 +92,7 @@ adfg.hydro.pp <- generate.post.pred(fname = adfg.hydro.fname,
 pwssc.hydro.pp <- generate.post.pred(fname = pwssc.hydro.fname, 
                                      var = variances$pwssc.hydro, years = years)
 juv.schools.pp <- generate.post.pred(fname = juv.schools.fname, var = variances$juv, 
-                                     years = years, dist="negbin", mask=juv.schools.mask)
+                                     years = years, dist="negbin")
 
 
 # save and format raw survey data for each annual survey
@@ -172,8 +172,8 @@ juv_schools_pp <- reformat_survey_data(juv.schools.pp)
 
 mdm.fit.plot <- plot_survey_fits(mdm_pp, data$mdm, y.max=500, title="Mile Days of Milt")
 egg.fit.plot <- plot_survey_fits(egg_pp, data$egg, y.max=21, title="Egg Deposition (trillions)")
-adfg.hydro.fit.plot <- plot_survey_fits(adfg_hydro_pp, data$adfg.hydro, y.max=175000, title="ADF&G Hydroacoustic Biomass (1000s tons)", scale=1000)
-pwssc.hydro.fit.plot <- plot_survey_fits(pwssc_hydro_pp, data$pwssc.hydro, y.max=205000, title="PWSSC Hydroacoustic Biomass (1000s tons)", scale=1000)
+adfg.hydro.fit.plot <- plot_survey_fits(adfg_hydro_pp, data$adfg.hydro, y.max=175000, title="ADF&G Hydroacoustic Biomass (1000s mt)", scale=1000)
+pwssc.hydro.fit.plot <- plot_survey_fits(pwssc_hydro_pp, data$pwssc.hydro, y.max=205000, title="PWSSC Hydroacoustic Biomass (1000s mt)", scale=1000)
 aer.juvenile.fit.plot <- plot_survey_fits(juv_schools_pp, data$juvenile, y.max=40000, title="Age 1 Schools")
 
 #-------------------------------------------------------------------------------
