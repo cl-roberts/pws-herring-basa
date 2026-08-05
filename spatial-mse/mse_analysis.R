@@ -13,6 +13,7 @@
 # attach packages
 library(here)
 library(ggplot2)
+library(ggpubr)
 theme_set(theme_bw(base_size = 14))
 library(dplyr)
 library(tidyr)
@@ -479,3 +480,40 @@ ggplot(metrics_base, aes(x = metric, y = value)) +
     scale_x_discrete(labels = c("Btilde_ratio" = "Assessment\naccuracy\nratio", Btilde_prob = "Assessment\nprecision\nprobability")) +
     scale_y_continuous(breaks = seq(0, 1.5, by = 0.5)) 
 ggsave(here::here(dir_figures, "boxplot-base-model.png"), width = 7.5, height = 5)
+
+
+# ---------------------------------------------------------------------------- #
+
+# boxplots for dissertation proposal
+
+ratio_base_spatial <- metrics |>
+  filter(em %in% c("base", "spatialmodel")) |>
+  select(em, Btilde_ratio, lambda, c) 
+
+ratio_base_spatial_plot <- ggplot(ratio_base_spatial, aes(x = em, y = Btilde_ratio)) +
+    stat_summary(fun.data = boxplot_summary, geom = "boxplot", width = 0.75) +
+    geom_hline(aes(yintercept = 1), color = "red") +
+    facet_grid2(vars(lambda), vars(c), scales = "fixed", render_empty = FALSE) +
+    xlab(NULL) + 
+    ylab("Assessed biomass ratio") +
+    scale_x_discrete(labels = c("base" = "Nonspatial\nmodel", "spatialmodel" = "Spatial\nmodel")) +
+    scale_y_continuous(breaks = seq(0, 1.5, by = 0.5)) 
+
+prob_base_spatial <- metrics |>
+  filter(em %in% c("base", "spatialmodel")) |>
+  select(em, Btilde_prob, lambda, c) 
+
+prob_base_spatial_plot <- ggplot(prob_base_spatial, aes(x = em, y = Btilde_prob)) +
+    stat_summary(fun.data = boxplot_summary, geom = "boxplot", width = 0.75) +
+    geom_hline(aes(yintercept = 1), color = "red") +
+    facet_grid2(vars(lambda), vars(c), scales = "fixed", render_empty = FALSE) +
+    xlab(NULL) + 
+    ylab("Assessment precision probability") +
+    scale_x_discrete(labels = c("base" = "Nonspatial\nmodel", "spatialmodel" = "Spatial\nmodel")) +
+    scale_y_continuous(breaks = seq(0, 1.5, by = 0.5)) 
+
+ggarrange(
+  ratio_base_spatial_plot, prob_base_spatial_plot,
+  ncol = 1
+)
+ggsave(here::here(dir_figures, "mse-prelim-results.png"), width = 7.5, height = 10)
